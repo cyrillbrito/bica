@@ -4,7 +4,7 @@ Bica's tests check the promises the app makes, from the outside, so they keep pa
 
 ## What gets a test
 
-A test guards a behavior that would hurt if it quietly broke: a prompt gets its reply, a follow-up waits for the run, Stop hands the queue back, a resent request acts once, a crash loses no run, another website can't open the socket, stopping a terminal ends what it started. Each test is named for that behavior in plain words.
+A test guards a behavior that would hurt if it quietly broke: a prompt gets its reply, a queued prompt waits for the run, Stop hands the queue back, a resent request acts once, a crash loses no run, another website can't open the socket, stopping a terminal ends what it started. Each test is named for that behavior in plain words.
 
 Everything else goes without one. Helpers, components, and code that is easy to see working in the app don't get tests, and neither do the shapes of data or the steps a feature takes. Fewer tests that each guard something real beat many that restate the code.
 

@@ -24,7 +24,7 @@ Archiving a parent asks which of its open child sessions go with it, with none p
 
 ## Who hears what
 
-Bica tells sessions about each other with notes: prompts from Bica itself, queued like follow-ups. Notes that pile up while a session works merge into one, so ten child sessions finishing cost their parent one run.
+Bica tells sessions about each other with notes: prompts from Bica itself, sent as steers, so a busy session hears of a finished child session or terminal at its next step instead of after its run. Notes that pile up before they land merge into one.
 
 | When a session... | A note goes to |
 | --- | --- |
@@ -45,7 +45,7 @@ Only the hub watches. Other sessions hear only from their child sessions, and as
 - `list` shows every project, workspace, session, and terminal. Agents are told to leave the rest alone unless you name it.
 - `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree, optionally in [assistant mode](./assistant-mode.md) or held for the [night run](./night-runs.md). With `detached`, it has no parent.
 - `session_read` returns a session's status, who leads it, the questions it waits on, and its last messages.
-- `session_send` sends a message, signed with the sender's name. With `steer`, it joins the receiver's current run.
+- `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.
 - `session_archive` archives a finished session, and can remove its worktree when nothing would be lost.
 - `session_watch`, the hub's alone, starts or stops a watch.

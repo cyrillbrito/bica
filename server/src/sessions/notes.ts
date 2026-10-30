@@ -7,10 +7,10 @@ const NOTE = '[Note from Bica, not from the user]';
 const NOTE_REQUEST = 'note:';
 
 /**
- * A note from Bica to a session about other work, queued like a
- * prompt: it waits for the current run and wakes an idle session. Notes that
- * pile up while it works merge into one, so ten finished sessions cost one
- * run, not ten. An archived or deleted session gets nothing.
+ * A note from Bica to a session about other work, sent as a steer: it lands
+ * at the current run's next step, so an agent polling a terminal hears it
+ * finished, and it wakes an idle session. Notes that pile up before they land
+ * merge into one. An archived or deleted session gets nothing.
  */
 export async function tell(id: string, text: string) {
   try {
@@ -41,6 +41,7 @@ export async function tell(id: string, text: string) {
       [],
       `${NOTE_REQUEST}${Date.now()}:${Math.random()}`,
       'bica',
+      'steer',
     );
   } catch (error) {
     console.error('[note]', error);

@@ -4,7 +4,7 @@ import { For, Show, createMemo, createSignal, onCleanup } from 'solid-js';
 import { pushQueued, withdrawQueued } from './sessions';
 import type { ComposerApi } from './Composer';
 import { IconButton } from '../ui/Button';
-import { CloseIcon, PencilIcon, PushIcon, QueueIcon } from '../ui/icons';
+import { ArrowDownIcon, PushIcon, QueueIcon } from '../ui/icons';
 import { Spinner } from '../ui/Spinner';
 import { errorText } from '../ui/errors';
 import { queuedLeft } from './queue-glide';
@@ -32,7 +32,7 @@ export default function Queue(props: {
   // Ids with a request in flight, so a double tap doesn't send twice.
   const [busy, setBusy] = createSignal<number[]>([]);
 
-  const act = async (item: Queued, action: 'push' | 'edit' | 'remove') => {
+  const act = async (item: Queued, action: 'push' | 'edit') => {
     const id = Number(item.id);
     if (busy().includes(id)) return;
     setBusy((list) => [...list, id]);
@@ -44,8 +44,7 @@ export default function Queue(props: {
       }
       const taken = await withdrawQueued(props.id, id);
       if (!taken) props.composer()?.problem('Already sent');
-      else if (action === 'edit')
-        props.composer()?.restore(taken.prompt, taken.images);
+      else props.composer()?.restore(taken.prompt, taken.images);
     } catch (error) {
       props.composer()?.problem(errorText(error));
     } finally {
@@ -68,19 +67,19 @@ export default function Queue(props: {
             return (
               <li
                 class={[
-                  'appear flex min-h-8 items-center gap-2 rounded-lg py-0.5 pl-1.5 transition-colors hover:bg-hover touch:min-h-11',
+                  'appear flex min-h-7 items-center gap-2 rounded-lg pl-2 text-ui transition-colors hover:bg-hover touch:min-h-10',
                   pending() && 'opacity-60',
                 ]}
               >
                 <span
                   class={[
-                    'flex shrink-0 items-center gap-1 text-meta [&_svg]:size-3.5',
+                    'grid size-4 shrink-0 place-items-center [&_svg]:size-3.5',
                     steer() ? 'text-accent' : 'text-muted',
                   ]}
                   title={
                     steer()
-                      ? 'Joins the run after the current turn'
-                      : 'Sent when the run ends'
+                      ? 'Sending now: joins the run after the current turn'
+                      : 'Queued: sends when the run ends'
                   }
                 >
                   {pending() ? (
@@ -90,50 +89,40 @@ export default function Queue(props: {
                   ) : (
                     <QueueIcon />
                   )}
-                  {steer() ? 'Next step' : 'Queued'}
                 </span>
                 <button
                   ref={(el) => (line = el)}
                   type="button"
-                  class="min-w-0 flex-1 truncate text-left"
-                  title="Edit"
+                  class="min-w-0 flex-1 truncate text-left text-muted"
+                  title="Back to the composer"
                   disabled={pending()}
                   onClick={() => void act(item(), 'edit')}
                 >
                   {text() || `${images()} image${images() === 1 ? '' : 's'}`}
                   <Show when={text() && images()}>
-                    <span class="text-muted">
-                      {' '}
-                      · {images()} image{images() === 1 ? '' : 's'}
-                    </span>
+                    {' '}
+                    · {images()} image{images() === 1 ? '' : 's'}
                   </Show>
                 </button>
                 <div class="flex shrink-0 items-center">
                   <Show when={!steer()}>
                     <IconButton
                       size="sm"
-                      title="Send now: after the current turn"
+                      title="Send now: joins the run after the current turn"
                       disabled={pending()}
                       onClick={() => void act(item(), 'push')}
                     >
                       <PushIcon />
                     </IconButton>
                   </Show>
+                  {/* One way out: back into the composer, to edit or clear. */}
                   <IconButton
                     size="sm"
-                    title="Edit"
+                    title="Back to the composer"
                     disabled={pending()}
                     onClick={() => void act(item(), 'edit')}
                   >
-                    <PencilIcon />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    title="Remove"
-                    disabled={pending()}
-                    onClick={() => void act(item(), 'remove')}
-                  >
-                    <CloseIcon />
+                    <ArrowDownIcon />
                   </IconButton>
                 </div>
               </li>

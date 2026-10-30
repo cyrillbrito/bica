@@ -110,7 +110,7 @@ The utilities in `App.css`:
 
 - `pop`: menus, popovers, dialogs fade and grow in (from `transform-origin`; modals stay centred).
 - `sheet`: phone bottom sheets slide up (`max-md:sheet md:pop` when a surface is both).
-- `appear`: things that turn up on their own (a question, a follow-up, a warning) fade and settle.
+- `appear`: things that turn up on their own (a question, a queued prompt, a warning) fade and settle.
 - `expand`: on a `<details>`, opens smoothly instead of snapping.
 - `swap-in`: an icon replacing another in place blurs and grows in (a tool call's spinner becoming its icon). Only when you saw the change happen, not on load.
 - `roll-in` / `roll-out`: a character or label rolling in where another was, from below when a value grows and from above when it shrinks (set `--roll-from` negative). `RollingNumber` and `ThinkingLoader` use them.

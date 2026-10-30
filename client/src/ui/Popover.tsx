@@ -11,6 +11,7 @@ const PLACE = {
     'md:mt-1 md:origin-top-right md:[position-area:bottom_span-left]',
   'top-start':
     'md:mb-1 md:origin-bottom-left md:[position-area:top_span-right]',
+  'top-end': 'md:mb-1 md:origin-bottom-right md:[position-area:top_span-left]',
 };
 const WIDTH = { sm: 'md:w-72', md: 'md:w-80', lg: 'md:w-96' };
 

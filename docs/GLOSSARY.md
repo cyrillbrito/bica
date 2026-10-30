@@ -38,9 +38,9 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Turn**: One model response and the tool calls it makes, as in Pi Durable. A run is one or more turns. _Avoid_: step, round
 
-**Follow-up**: A prompt sent while a run works, queued to start the next run, as in Pi Durable. The queue holds the follow-ups. _Avoid_: queued message
+**Steer**: A prompt that joins the current run after the turn in progress, as in Pi Durable (`whenBusy: 'steer'`). Sending while a run works steers; the UI says "Send now". _Avoid_: interrupt, push
 
-**Steer**: A prompt that joins the current run after the turn in progress, as in Pi Durable. Push turns a follow-up into one. _Avoid_: interrupt
+**Queue**: To hold a prompt while a run works, so it starts the next run (⌘Enter, or Queue under the send chevron). Pi Durable calls it a follow-up, so code keeps `followUp`. The queue holds queued prompts and steers not yet taken. _Avoid_: follow-up in the UI and docs
 
 **Fork**: A new session with another session's history up to a chosen reply. _Avoid_: branch, clone
 

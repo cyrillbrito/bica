@@ -141,7 +141,7 @@ export async function withdraw(id: string, submissionId: number) {
 }
 
 /**
- * Sends a queued follow-up after the current turn instead of after the run.
+ * Turns a queued prompt into a steer: it joins the run after the current turn.
  * Pi Durable can't change a queued item, so it is withdrawn and steered anew;
  * false: it was already sent.
  */

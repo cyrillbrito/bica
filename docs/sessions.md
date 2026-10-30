@@ -26,15 +26,15 @@ The transcript shows your prompts with their images, the agent's replies, its th
 
 `bun server/scripts/demo-session.ts` seeds a session with every kind of row.
 
-## Queue, push, stop
+## Steer, queue, stop
 
-While the agent works, sending queues the prompt as a follow-up, which starts the next run. Follow-ups sit on a tray above the composer, and every tab sees the same queue.
+While the agent works, sending steers: the prompt joins the current run after the turn in progress, as Enter does in Pi, Codex, and Cursor, since a prompt sent mid-run is nearly always about the work at hand. One control sits in the send spot: send when idle, stop while the agent works with nothing typed, and a split button once you type, send now plus a chevron with Queue and Stop, as in Cursor. ⌘Enter, or Queue under the chevron, queues the prompt instead, to start the next run. On a phone the chevron is the only way to queue or stop while typing. Both wait on a tray above the composer until taken, one quiet line each, marked by an icon: accent for sending now, grey for queued. Every tab sees the same queue.
 
-- Push turns a follow-up into a steer, which joins the current run after the turn in progress. ⌘Enter sends a steer straight away.
-- Edit takes a prompt back into the composer, and Remove drops it.
+- Send now on a queued line turns it into a steer.
+- Clicking a line, or its arrow, takes the prompt back into the composer, to edit or to clear. There is no separate remove.
 - When the agent takes a prompt from the queue, it glides from its line into the transcript, after affectUI's [Agent Steering](https://www.affectui.com/components/agent-steering), so you see which note went in (`sessions/queue-glide.ts`).
-- Stop ends the run, and follow-ups come back into the composer. Esc twice in the composer stops too.
-- A run that fails doesn't hold up the queue: the next follow-up runs anyway, so notes to a session nobody has open still get read.
+- Stop ends the run, and what waits comes back into the composer. Esc twice in the composer stops too, even while typing.
+- A run that fails doesn't hold up the queue: the next queued prompt runs anyway, so notes to a session nobody has open still get read.
 
 ## Other sessions
 

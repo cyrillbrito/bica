@@ -26,12 +26,17 @@ import {
   StopIcon,
 } from '../ui/icons';
 import { Spinner } from '../ui/Spinner';
+import Chevron from '../ui/Chevron';
+import Kbd from '../ui/Kbd';
+import { OptionList, optionClass } from '../ui/Option';
+import { Popover } from '../ui/Popover';
 import { errorText } from '../ui/errors';
 
 // `ref` is the n of its `[Image #n]` marker. While it's still being read,
 // `data` is empty and `preview` shows the file as picked.
 type Attached = PromptImage & { id: number; ref: number; preview?: string };
 let nextId = 0;
+let nextMenu = 0;
 
 // Prompts sent from this browser, oldest first, shared by every composer.
 const HISTORY_KEY = 'prompt-history';
@@ -112,7 +117,7 @@ export default function Composer(props: {
   actions?: JSX.Element;
   // Above the text, inside the box, e.g. the queued prompts.
   top?: JSX.Element;
-  // A run is working: sending queues, and a stop button shows.
+  // A run is working: sending steers, ⌘Enter queues, and a stop button shows.
   busy?: boolean;
   onStop?: () => Promise<unknown>;
   ref?: (api: ComposerApi) => void;
@@ -126,16 +131,14 @@ export default function Composer(props: {
   // Whether there's anything to send: the send button wakes up when there is.
   const [typed, setTyped] = createSignal(false, { name: 'composerTyped' });
   const empty = () => !typed() && !images().length;
-  // The arrow swaps back in only after it was the queue icon, not on load.
-  let queued = false;
-  createEffect(
-    () => props.busy && !empty(),
-    (on) => {
-      if (on) queued = true;
-    },
-  );
+  // Working with something typed: send splits into send now and a menu.
+  const split = () => !!props.busy && !empty();
+  // Working with nothing typed: the send button stops instead.
+  const stopHere = () => !!props.busy && !!props.onStop && empty();
   let picker!: HTMLInputElement;
   let textarea!: HTMLTextAreaElement;
+  let sendMenu: HTMLDivElement | undefined;
+  const sendMenuId = `send-menu-${++nextMenu}`;
   // Long pastes show as a short marker and go out in full.
   const pastes = new Map<number, string>();
   const unfold = (text: string) =>
@@ -428,7 +431,7 @@ export default function Composer(props: {
         class="@container/composer relative flex flex-col gap-1 rounded-sheet border border-line bg-surface py-2.5 pr-2.5 pl-4 shadow-raised transition-[border-color,box-shadow] duration-200 ease-out focus-within:border-line-strong focus-within:ring-3 focus-within:ring-accent/12"
         onSubmit={(e) => {
           e.preventDefault();
-          void send(false);
+          void send(!!props.busy);
         }}
       >
         <Show when={images().length}>
@@ -481,7 +484,7 @@ export default function Composer(props: {
           ]}
           placeholder={
             props.busy
-              ? 'Queue a follow-up…'
+              ? 'Message the agent…'
               : (props.placeholder ?? 'Ask anything…')
           }
           onInput={() => {
@@ -599,9 +602,11 @@ export default function Composer(props: {
               }
               return;
             }
+            // Steering is the default while it works, as in Pi, Codex, and
+            // Cursor: a new prompt is nearly always about the work at hand.
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              void send(!!props.busy);
+              void send(false);
               return;
             }
             // On touch keyboards Enter is the only way to add a newline.
@@ -612,7 +617,7 @@ export default function Composer(props: {
               !matchMedia('(pointer: coarse)').matches
             ) {
               e.preventDefault();
-              void send(false);
+              void send(!!props.busy);
             }
           }}
         />
@@ -691,18 +696,6 @@ export default function Composer(props: {
             </Show>
           </IconButton>
           <div class={dictating() ? 'hidden' : 'contents'}>{props.actions}</div>
-          <Show when={props.busy && props.onStop}>
-            <IconButton
-              class="ml-1 bg-active text-fg [&_svg:not([data-spinner])]:size-3"
-              size="md"
-              round
-              title="Stop (Esc twice)"
-              loading={stopping()}
-              onClick={() => void stop()}
-            >
-              <StopIcon />
-            </IconButton>
-          </Show>
           <Show when={props.sendLabel}>
             {(label) => (
               <Button
@@ -727,35 +720,131 @@ export default function Composer(props: {
               </Button>
             )}
           </Show>
-          {/* Faded while there's nothing to send, solid once there is; while
-            the agent works, the arrow turns into "queue". */}
-          <IconButton
+          {/* One control in the send spot. Idle: send. Working with nothing
+            typed: stop. Working with something typed: a split button, send
+            now, and under the chevron Queue and Stop, the only way to either
+            on a phone. The buttons stay mounted and only their icon and
+            width change, so switching never pops a new button in. */}
+          {/* One shape that clips both buttons, so the chevron widens it
+            from a circle into a pill instead of popping in beside it. */}
+          <div
             hidden={!!props.sendLabel || dictating()}
+            // Faded while there's nothing to send, solid once there is. Only
+            // this shape is round: a round button inside would leave a notch
+            // while the chevron shrinks.
             class={[
-              'ml-1 [&_svg]:size-3.5 [&_svg]:stroke-[2.5]',
-              empty() && 'opacity-30 motion-safe:scale-90',
+              'ml-1 flex overflow-hidden rounded-full transition-[opacity,scale] duration-150 ease-out',
+              empty() && !stopHere() && 'opacity-30 motion-safe:scale-90',
             ]}
-            variant="primary"
-            size="md"
-            round
-            type="submit"
-            title={props.busy ? 'Queue (⌘Enter joins the run now)' : 'Send'}
-            loading={uploading() > 0}
-            aria-disabled={empty() ? 'true' : undefined}
+            style={{ 'anchor-name': `--${sendMenuId}` }}
           >
-            <Show
-              when={props.busy && !empty()}
-              fallback={
-                <span class={queued ? 'swap-in' : 'inline-flex'}>
+            <IconButton
+              class="rounded-none!"
+              variant="primary"
+              size="md"
+              type={stopHere() ? 'button' : 'submit'}
+              title={
+                stopHere()
+                  ? 'Stop (Esc twice)'
+                  : split()
+                    ? 'Send now, into this run'
+                    : 'Send'
+              }
+              loading={stopHere() ? stopping() : uploading() > 0}
+              aria-disabled={empty() && !stopHere() ? 'true' : undefined}
+              onClick={() => stopHere() && void stop()}
+            >
+              {/* Both icons stay, stacked, and crossfade. */}
+              <span class="grid place-items-center *:col-start-1 *:row-start-1 *:transition-[opacity,scale] *:duration-200 *:ease-out">
+                <span
+                  class={[
+                    '[&_svg]:size-3',
+                    stopHere()
+                      ? 'opacity-100'
+                      : 'opacity-0 motion-safe:scale-50',
+                  ]}
+                >
+                  <StopIcon />
+                </span>
+                <span
+                  class={[
+                    '[&_svg]:size-3.5 [&_svg]:stroke-[2.5]',
+                    stopHere()
+                      ? 'opacity-0 motion-safe:scale-50'
+                      : 'opacity-100',
+                  ]}
+                >
                   <ArrowUpIcon />
                 </span>
-              }
-            >
-              <span class="swap-in">
-                <QueueIcon />
               </span>
-            </Show>
-          </IconButton>
+            </IconButton>
+            <IconButton
+              class={[
+                'relative overflow-hidden rounded-none! transition-[width] duration-200 ease-out',
+                'before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-bg/25',
+                split() ? 'w-6! touch:w-8!' : 'w-0!',
+              ]}
+              variant="primary"
+              size="md"
+              title="More ways to send"
+              aria-haspopup="menu"
+              aria-hidden={split() ? undefined : 'true'}
+              tabindex={split() ? undefined : -1}
+              popovertarget={sendMenuId}
+            >
+              <Chevron
+                class={`-rotate-90 transition-opacity duration-200 [&_svg]:size-3 ${split() ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </IconButton>
+          </div>
+          <Popover
+            ref={(el) => (sendMenu = el)}
+            id={sendMenuId}
+            label="More ways to send"
+            place="top-end"
+            width="sm"
+          >
+            <OptionList>
+              <button
+                type="button"
+                class={optionClass}
+                onClick={() => {
+                  sendMenu?.hidePopover();
+                  void send(false);
+                }}
+              >
+                <QueueIcon />
+                <span class="flex-1">
+                  Queue
+                  <span class="block text-meta text-muted">
+                    Sends when the run ends
+                  </span>
+                </span>
+                <Kbd class="-mr-1 touch:hidden">⌘Enter</Kbd>
+              </button>
+              <Show when={props.onStop}>
+                <button
+                  type="button"
+                  class={optionClass}
+                  onClick={() => {
+                    sendMenu?.hidePopover();
+                    void stop();
+                  }}
+                >
+                  <span class="grid size-4 place-items-center [&_svg]:size-2.5">
+                    <StopIcon />
+                  </span>
+                  <span class="flex-1">
+                    Stop
+                    <span class="block text-meta text-muted">
+                      Ends the run now
+                    </span>
+                  </span>
+                  <Kbd class="-mr-1 touch:hidden">Esc Esc</Kbd>
+                </button>
+              </Show>
+            </OptionList>
+          </Popover>
         </div>
         <drop.Overlay />
       </form>

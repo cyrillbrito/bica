@@ -280,19 +280,13 @@ function sessionTools(hub: boolean): ToolRegistration[] {
 
   const sessionSend = defineTool({
     name: 'session_send',
-    description: `Send a message to another session, signed with your name so it can answer with session_send. It waits for that session's current turn to end, or with \`steer\` lands at its next step; an idle session starts a turn. You hear back only when it answers with session_send, or when it's your child session${hub ? ' or you watch it' : ''}: then you get a note at the end of each turn.${hub ? ' New work, decisions, and steering only when the user asked for it.' : ' Only message your child sessions, your parent, or sessions the user named. To get an answer from another session, ask it to reply with session_send.'}`,
+    description: `Send a message to another session, signed with your name so it can answer with session_send. It lands at that session's next step, even mid-run; an idle session starts a turn. You hear back only when it answers with session_send, or when it's your child session${hub ? ' or you watch it' : ''}: then you get a note at the end of each turn.${hub ? ' New work, decisions, and steering only when the user asked for it.' : ' Only message your child sessions, your parent, or sessions the user named. To get an answer from another session, ask it to reply with session_send.'}`,
     parameters: Type.Object({
       id: Type.String({ description: 'The session id' }),
       message: Type.String({ description: 'What to tell or ask it' }),
-      steer: Type.Optional(
-        Type.Boolean({
-          description:
-            'true: deliver it at its next step instead of after its current turn, to correct work in progress',
-        }),
-      ),
       user_asked: USER_ASKED,
     }),
-    execute: async ({ id, message, steer, user_asked }, api) => {
+    execute: async ({ id, message, user_asked }, api) => {
       other(id, api.conversationId);
       const [me, target] = await Promise.all([
         readSession(String(api.conversationId)),
@@ -311,7 +305,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
         [],
         `session_send:${api.callId}`,
         me.id,
-        steer ? 'steer' : 'followUp',
+        'steer',
       );
       return text(`Sent to ${named(target)}.`);
     },
