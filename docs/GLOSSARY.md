@@ -166,11 +166,9 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Workspace card**: The summary of a workspace's changes, pull request, branch, and sync state on its page. _Avoid_: overview
 
-**Side panel**: The column on the right, with the open workspace's Files and Git tabs, and Recap on a session's page. _Avoid_: right panel, inspector
+**Side panel**: The column on the right, with the open workspace's Files and Git tabs. _Avoid_: right panel, inspector
 
 **Sidebar**: The column on the left, listing the hub, projects, workspaces, and their sessions, terminals, and kept files. _Avoid_: left panel, nav
-
-**Recap**: The fast model's reading of where a session stands, in the Recap tab: its goal, what it does now, what's done, and what likely comes next. _Avoid_: summary, overview, plan (the agent keeps none)
 
 **Kept file**: A file listed in the sidebar with Keep open, until you unpin it. _Avoid_: pinned file
 

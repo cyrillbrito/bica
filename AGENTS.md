@@ -98,7 +98,6 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [files.md](docs/files.md): the workspace page, file and diff views, review comments, file lists.
 - [git.md](docs/git.md): the Git tab and commit messages.
 - [command-palette.md](docs/command-palette.md): ⌘K and every keyboard shortcut. Read before adding a shortcut.
-- [recap.md](docs/recap.md): the Recap tab, where the fast model reads where a session stands. An experiment, in its own folders so it can be removed whole.
 - [terminals.md](docs/terminals.md): shared shells and the agent's terminal tools.
 - [models.md](docs/models.md): providers and sign-ins, more than one plan account, Exa, the default and fast models, and the model picker.
 - [realtime-communication.md](docs/realtime-communication.md): the WebSocket protocol, projection, and caching. Read before adding a topic or request.
@@ -111,7 +110,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 
 - [fast-loading.md](docs/explorations/fast-loading.md): opening, switching, and reconnecting faster on the phone.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
-- [recap-tab.md](docs/explorations/recap-tab.md): agent to-do lists, why harnesses are dropping them, and the Recap tab's options.
+- [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.
 - [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, and the DNS rebinding hole.
 - [themes.md](docs/explorations/themes.md): editor color themes.
 - [ui-hierarchy.md](docs/explorations/ui-hierarchy.md): what the side panel next to a session belongs to.

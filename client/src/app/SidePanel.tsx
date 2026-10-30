@@ -15,7 +15,6 @@ import { openFromSearch, type Open } from '../files/files';
 import { filesTab } from '../files/FilesTab';
 import { gitTab } from '../git/GitTab';
 import { useCurrentWorkspace } from '../projects/projects';
-import { recapTab } from '../recap/RecapTab';
 import { IconButton } from '../ui/Button';
 import Empty from '../ui/Empty';
 import Failed from '../ui/Failed';
@@ -26,8 +25,6 @@ import { moveFocus } from '../ui/listKeys';
 /** What a tab's content gets: where the panel stands. */
 type PanelTabProps = {
   workspace: WorkspaceRef;
-  /** The open session, on a session's page. */
-  session: string | undefined;
   /** The file or diff open in the main area. */
   open: Open | undefined;
 };
@@ -39,16 +36,14 @@ type PanelTab = {
   id: string;
   label: string;
   icon: Component;
-  /** Absent: on every page. */
-  when?: (at: { session: string | undefined }) => boolean;
   /** Header buttons while the tab is picked. */
   actions?: Component;
   content: Component<PanelTabProps>;
 };
 
 // In the order they show.
-const TABS: PanelTab[] = [filesTab, gitTab, recapTab];
-// Where a tab that isn't on this page falls back to.
+const TABS: PanelTab[] = [filesTab, gitTab];
+// Where an unknown ?panel= falls back to, such as an old link to a removed tab.
 const FALLBACK = gitTab.id;
 
 // Links that drop ?panel= show the last tab picked: switching workspaces, you
@@ -61,23 +56,11 @@ export default function SidePanel() {
   const location = useLocation();
   const [search, setSearch] = useSearchParams<{ panel: string }>();
   const current = useCurrentWorkspace();
-  const sessionId = createMemo(
-    () => {
-      const [, kind, id] = location.pathname.split('/');
-      return kind === 's' && id ? decodeURIComponent(id) : undefined;
-    },
-    { name: 'panelSession' },
-  );
-  const tabs = createMemo(
-    () => TABS.filter((t) => !t.when || t.when({ session: sessionId() })),
-    { name: 'panelTabs' },
-  );
   const shown = createMemo(
     () => {
       const want = search.panel ?? lastPicked();
       return (
-        tabs().find((t) => t.id === want) ??
-        tabs().find((t) => t.id === FALLBACK)!
+        TABS.find((t) => t.id === want) ?? TABS.find((t) => t.id === FALLBACK)!
       );
     },
     { name: 'panelShown' },
@@ -110,7 +93,7 @@ export default function SidePanel() {
           role="tablist"
           aria-label="Side panel"
         >
-          <For each={tabs()}>
+          <For each={TABS}>
             {(t) => (
               <button
                 id={`side-tab-${t.id}`}
@@ -166,7 +149,6 @@ export default function SidePanel() {
                 <Dynamic
                   component={shown().content}
                   workspace={c().ref}
-                  session={sessionId()}
                   open={open()}
                 />
               </div>

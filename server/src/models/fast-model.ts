@@ -14,22 +14,11 @@ export function fastModelId() {
 
 const THINKING_ROOM = 2_000;
 
-type FastOptions = { maxTokens: number; timeoutMs?: number };
-
 /** One system prompt and one user message in, the reply's text out. */
 export async function askFast(
   systemPrompt: string,
   prompt: string,
-  options: FastOptions,
-) {
-  return (await completeFast(systemPrompt, prompt, options)).text;
-}
-
-/** Like askFast, with the tokens and cost of the call. */
-export async function completeFast(
-  systemPrompt: string,
-  prompt: string,
-  { maxTokens, timeoutMs = 20_000 }: FastOptions,
+  { maxTokens, timeoutMs = 20_000 }: { maxTokens: number; timeoutMs?: number },
 ) {
   const id = fastModelId();
   if (!id) throw new Error('No fast model set (Settings → Models)');
@@ -50,11 +39,7 @@ export async function completeFast(
     },
   );
   if (reply.stopReason === 'error') throw new Error(reply.errorMessage);
-  return {
-    text: reply.content
-      .flatMap((part) => (part.type === 'text' ? part.text : []))
-      .join(''),
-    usage: reply.usage,
-    model: id,
-  };
+  return reply.content
+    .flatMap((part) => (part.type === 'text' ? part.text : []))
+    .join('');
 }

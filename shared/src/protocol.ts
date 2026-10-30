@@ -487,11 +487,6 @@ export interface Calls {
     args: { id: string; key: string };
     result: StepDetail | null;
   };
-  // The Recap tab (docs/recap.md): a session's counts, read from its
-  // transcript, and the fast model's guess at where it stands.
-  'recap.activity': { args: { id: string }; result: RecapActivity };
-  // null: no fast model is set. fresh: skip the cache.
-  'recap.get': { args: { id: string; fresh?: boolean }; result: Recap | null };
   // A voice call on a session: the browser's WebRTC offer in, the answer out.
   // `trace` keys the call's lines in the voice log (server/src/voice/log.ts).
   'voice.start': {
@@ -626,35 +621,6 @@ export interface Topics {
 }
 
 /** A tool call's input and output, or a thought's text; the transcript leaves them out. */
-export interface RecapActivity {
-  prompts: number;
-  replies: number;
-  calls: number;
-  failed: number;
-  // Most used first.
-  tools: { name: string; count: number }[];
-  // Files its edit and write calls touched, newest first. Changes made
-  // through bash don't show.
-  files: { path: string; edits: number }[];
-  startedAt: number | null;
-  lastAt: number | null;
-}
-
-export interface Recap {
-  goal: string;
-  // What it does right now, or where it stopped.
-  now: string;
-  done: string[];
-  // A guess from the transcript; the agent keeps no plan.
-  next: string[];
-  at: number;
-  // What the guess cost, while this is an experiment.
-  model: string;
-  tokens: number;
-  cost: number;
-  ms: number;
-}
-
 export type StepDetail =
   | { args: Record<string, unknown>; output?: string; details?: unknown }
   | { text: string };
