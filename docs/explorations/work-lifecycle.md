@@ -1,6 +1,6 @@
 # Work lifecycle
 
-Ideas for moving a piece of work from a first question to a merged pull request. Worktrees, removing them, the workspace picker's search, and pull request badges are built ([projects.md](../projects.md)).
+Ideas for moving a piece of work from a first question to a merged pull request. Worktrees, removing them, and pull request badges are built ([projects.md](../projects.md)).
 
 ## Where Bica stops
 
@@ -14,7 +14,7 @@ Ideas for moving a piece of work from a first question to a merged pull request.
 
 - Move to new worktree. In a main-folder session, make the worktree from the fast model's name, carry uncommitted changes over (stash, then apply), and move the session's folder. Codex's Hand off and Cursor's `/worktree` do this.
 - Try in main folder. With a clean main folder, `git checkout --detach <branch>` there, and the header says "Trying <branch> · Back to main". Conductor's Spotlight and Cursor's `/apply-worktree` do this. For a merged branch, offer Pull main when the main folder is behind.
-- Start from a branch or pull request. The workspace picker lists remote branches and your open pull requests below the workspaces. Picking one adds a worktree that tracks that branch. Superset's picker puts the action on each row.
+- Start from a branch or pull request. ⌘K's New session in… lists remote branches and your open pull requests below the workspaces. Picking one adds a worktree that tracks that branch. Superset's picker puts the action on each row.
 - Parked by state. Group Parked rows: merged or closed (Remove, and Remove all), needs you (CI failed, changes requested), waiting (open pull request), no pull request (Open PR).
 - Open PR next to Push: push, then `gh pr create` with a title and body the fast model drafts, the way commit messages are drafted.
 

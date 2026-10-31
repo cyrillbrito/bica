@@ -13,6 +13,14 @@ import { IconButton } from '../ui/Button';
 import { MoonIcon, VoiceIcon } from '../ui/icons';
 import { errorText } from '../ui/errors';
 
+// What the home page's next session runs as; ⌘K's "New assistant session"
+// sets it, and leaving the home page sets it back.
+const [startAgent, setStartAgent] = createSignal<'coding' | 'assistant'>(
+  'coding',
+  { name: 'startAgent' },
+);
+export { setStartAgent, startAgent };
+
 export interface StartTarget {
   projectId: string;
   cwd: string;
@@ -30,8 +38,6 @@ export default function StartComposer(props: {
   // Where the typed draft is kept, e.g. "new" on the home page.
   draft: string;
   placeholder?: string;
-  // For a voice button elsewhere on the page, like the home tips.
-  ref?: (api: { call: () => void }) => void;
 }) {
   const navigate = useNavigate();
   const settings = useSettings();
@@ -79,10 +85,7 @@ export default function StartComposer(props: {
         create(prompt, images, tonight)
       }
       draft={props.draft}
-      ref={(api) => {
-        composer = api;
-        props.ref?.({ call });
-      }}
+      ref={(api) => (composer = api)}
       placeholder={props.placeholder ?? 'Start a new session…'}
       actions={
         <>

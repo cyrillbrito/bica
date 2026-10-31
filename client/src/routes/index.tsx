@@ -1,34 +1,37 @@
-import { Show, createMemo, createSignal } from 'solid-js';
+import { Show, createMemo, onCleanup } from 'solid-js';
 
-import HomeTips from '../app/HomeTips';
-import NeedsYou from '../sessions/NeedsYou';
 import { openProjectPicker } from '../projects/ProjectPicker';
-import StartComposer from '../sessions/StartComposer';
+import ProjectSelect from '../projects/ProjectSelect';
+import StartComposer, {
+  setStartAgent,
+  startAgent,
+} from '../sessions/StartComposer';
 import TopBar from '../app/TopBar';
-import { Button } from '../ui/Button';
-import { AssistantIcon } from '../ui/icons';
-import WorkspacePicker from '../projects/WorkspacePicker';
+import { Button, IconButton } from '../ui/Button';
+import { AssistantIcon, BranchIcon, CloseIcon, PlusIcon } from '../ui/icons';
+import { Segmented, segmentClass } from '../ui/Segmented';
 import {
+  CHATS_ID,
   currentTarget,
+  folderName,
   resolveTarget,
   setCurrentTarget,
   useProjects,
 } from '../projects/projects';
-import { useSessions } from '../sessions/sessions';
-
-const ASSISTANT_HINT =
-  'Assistant mode: for a session that keeps going, such as notes or a small coordinator in this project. It compacts on its own and keeps memory in files. Less about code, more about help.';
 
 export default function Home() {
   const projects = useProjects();
-  const sessions = useSessions();
   const target = createMemo(() => resolveTarget(projects(), currentTarget()), {
     name: 'homeTarget',
   });
-  const [assistant, setAssistant] = createSignal(false, {
-    name: 'homeAssistant',
+  // Each visit starts in the main folder: a new worktree or an existing one
+  // is picked for one session, not kept for the next.
+  onCleanup(() => {
+    const t = currentTarget();
+    if (t && (t.worktree || t.cwd))
+      setCurrentTarget({ projectId: t.projectId });
+    setStartAgent('coding');
   });
-  let call = () => {};
 
   return (
     <>
@@ -49,51 +52,101 @@ export default function Home() {
             </Button>
           }
         >
-          {(t) => (
-            <div class="flex flex-col gap-2">
-              <div class="flex min-w-0 gap-1">
-                <WorkspacePicker
-                  project={t().project}
-                  workspace={t().workspace}
-                  worktree={t().worktree}
-                  onChange={setCurrentTarget}
-                  onAdd={openProjectPicker}
+          {(t) => {
+            const assistant = () => startAgent() === 'assistant';
+            const main = () =>
+              t().project.workspaces.find((w) => w.main) ?? t().workspace;
+            const chat = () => t().project.id === CHATS_ID;
+            // Assistant mode keeps to the main folder: it isn't feature work.
+            const cwd = () => (assistant() ? main().path : t().workspace.path);
+            const choose = (place: 'main' | 'new') =>
+              setCurrentTarget({
+                projectId: t().project.id,
+                worktree: place === 'new' || undefined,
+              });
+            const existing = () =>
+              !t().worktree && !t().workspace.main ? t().workspace : undefined;
+            return (
+              <div class="flex flex-col gap-2">
+                <StartComposer
+                  target={{
+                    projectId: t().project.id,
+                    cwd: cwd(),
+                    worktree: chat() || (!assistant() && t().worktree),
+                  }}
+                  agent={startAgent()}
+                  draft="new"
                 />
-                <Button
-                  size="lg"
-                  class="self-start aria-pressed:bg-active aria-pressed:text-fg"
-                  title={ASSISTANT_HINT}
-                  aria-pressed={assistant() ? 'true' : 'false'}
-                  onClick={() => setAssistant(!assistant())}
-                >
-                  <AssistantIcon />
-                  Assistant
-                </Button>
-                <Show when={assistant()}>
-                  <span class="min-w-0 self-center truncate text-meta text-muted">
-                    Long-running, with memory
-                  </span>
-                </Show>
+                <div class="flex min-w-0 flex-wrap items-center gap-2 px-1">
+                  <ProjectSelect
+                    project={t().project}
+                    onChange={setCurrentTarget}
+                    onAdd={openProjectPicker}
+                  />
+                  <Show
+                    when={!assistant()}
+                    fallback={
+                      <span class="flex items-center gap-1 rounded-md bg-active py-0.5 pr-0.5 pl-2 text-meta">
+                        <AssistantIcon />
+                        Assistant mode
+                        <IconButton
+                          size="sm"
+                          title="Start a coding session instead"
+                          onClick={() => setStartAgent('coding')}
+                        >
+                          <CloseIcon />
+                        </IconButton>
+                      </span>
+                    }
+                  >
+                    <Show when={t().project.git && !chat()}>
+                      <Segmented class="min-w-0">
+                        <button
+                          type="button"
+                          class={segmentClass}
+                          data-on={(!t().worktree && !existing()) || undefined}
+                          aria-pressed={
+                            !t().worktree && !existing() ? 'true' : 'false'
+                          }
+                          title={`${main().path}${main().branch ? `, on ${main().branch}` : ''}`}
+                          onClick={() => choose('main')}
+                        >
+                          Main folder
+                        </button>
+                        <button
+                          type="button"
+                          class={segmentClass}
+                          data-on={t().worktree || undefined}
+                          aria-pressed={t().worktree ? 'true' : 'false'}
+                          title="A new worktree and branch from the default branch, named after the session"
+                          onClick={() => choose('new')}
+                        >
+                          <PlusIcon />
+                          New worktree
+                        </button>
+                        <Show when={existing()}>
+                          {(w) => (
+                            <button
+                              type="button"
+                              class={[segmentClass, 'min-w-0']}
+                              data-on
+                              aria-pressed="true"
+                              title={w().path}
+                            >
+                              <BranchIcon />
+                              <span class="truncate font-mono">
+                                {w().branch ?? folderName(w().path)}
+                              </span>
+                            </button>
+                          )}
+                        </Show>
+                      </Segmented>
+                    </Show>
+                  </Show>
+                </div>
               </div>
-              <StartComposer
-                target={{
-                  projectId: t().project.id,
-                  cwd: t().workspace.path,
-                  worktree: t().worktree,
-                }}
-                agent={assistant() ? 'assistant' : 'coding'}
-                draft="new"
-                ref={(api) => (call = api.call)}
-              />
-            </div>
-          )}
-        </Show>
-        {/* What needs you, else first steps while nothing is going on. */}
-        <Show
-          when={sessions().some((s) => !s.archivedAt)}
-          fallback={<HomeTips onVoice={() => call()} />}
-        >
-          <NeedsYou />
+            );
+          }}
         </Show>
       </div>
     </>

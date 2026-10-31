@@ -6,7 +6,7 @@ Sessions run on Pi Durable, which saves every turn and tool call before anyone s
 
 ## Starting one
 
-The home page's composer picks a workspace, a model, and whether to turn on [assistant mode](./assistant-mode.md), then starts the session with your first prompt. The moon button holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
+The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. The moon button holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
 
 ## The transcript
 
@@ -65,7 +65,7 @@ Each session in the sidebar shows its status:
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 
-The right end of a row shows a live clock while it runs, a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed. Tabs on top of the sidebar filter to All or Needs you, which also keeps running sessions and any that moved in the last few minutes. The home page stacks the sessions that need you under the composer, most urgent first.
+The right end of a row shows a live clock while it runs, a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed. Tabs on top of the sidebar filter to All or Needs you, which also keeps running sessions and any that moved in the last few minutes.
 
 Work is stuck when Pi Durable won't run it. Work that was cut off by crashes too many times in a row, such as a tool that runs Bica out of memory, is paused instead of crashing Bica again. Work whose code is gone from Bica, such as a removed extension's tool, can't run at all. A strip above the composer says which, with Retry for paused work. Stop ends either.
 

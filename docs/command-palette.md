@@ -15,6 +15,8 @@ Typing searches sessions (archived ones last), workspaces ([projects.md](./proje
 
 ## Second pages
 
+New session in… is also the way to start in any existing workspace, and New assistant session opens the home page set for [assistant mode](./assistant-mode.md).
+
 An action ending in "…" opens a second page instead of running, like New session in…, Go to workspace…, Theme…, and Rename. The page's name shows as a chip before the search box. Backspace in an empty box, Esc, or a click on the chip goes back.
 
 ## Shortcuts

@@ -26,10 +26,12 @@ import { workspaceHref } from '../../files/files';
 import { paths } from '../../router';
 import { openProjectPicker } from '../../projects/ProjectPicker';
 import { archiveWithChildren } from '../../sessions/ArchiveDialog';
+import { setStartAgent } from '../../sessions/StartComposer';
 import StatusDot from '../../sessions/StatusDot';
 import {
   ArchiveIcon,
   ArrowDownIcon,
+  AssistantIcon,
   BranchIcon,
   CheckIcon,
   FolderIcon,
@@ -354,6 +356,18 @@ export function useCommands() {
         icon: SessionIcon,
         group,
         page: targetsPage,
+      },
+      {
+        id: 'a:assistant',
+        label: 'New assistant session',
+        hint: here,
+        words: 'assistant mode long-running memory notes helper',
+        icon: AssistantIcon,
+        group,
+        run: () => {
+          newSessionHere();
+          setStartAgent('assistant');
+        },
       },
       {
         id: 'a:hub',

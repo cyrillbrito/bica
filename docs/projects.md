@@ -19,7 +19,7 @@ Edit project, in a project's menu in the sidebar or on its name, renames it. The
 
 ## Where a session starts
 
-The home page's workspace picker searches every project's main folder and worktrees by name, branch, ticket key, or pull request number. Empty, it shows the places you used last. + Worktree on a project, or ⌘Enter, starts in a new worktree instead. Pages that show a workspace offer a new session there too.
+Under the home page's composer, the project menu lists projects, the ones used last first, then a new chat and adding a project. Beside it, a switch picks Main folder or New worktree, and each visit starts on Main folder. To continue in a worktree that exists, start from its + in the sidebar, or ⌘K's New session in…: it shows as a third choice in the switch. Pages that show a workspace offer a new session there too.
 
 ## Worktrees
 

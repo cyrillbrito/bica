@@ -41,7 +41,7 @@ Everything in `client/src/ui/`, by job. Reach for these before styling a raw ele
 
 - A modal is a `Dialog`: a bottom sheet on the phone, a centred card from `md` up, with a titled header, a close button, and an optional footer for its actions. The command palette is the one exception, since it fills the phone screen.
 - A menu that opens from a button is a `Popover`: a card on a tray under (or above) its button, a sheet on the phone. Its rows go in an `OptionList`.
-- Menu and picker rows are 32px (`optionClass`), unlike the 28px rows of the sidebar and the transcript, since they are read one by one. Pickers driven from a search field (the workspace picker, ⌘K) fill the row the keyboard is on (`data-active`) instead of gliding.
+- Menu and picker rows are 32px (`optionClass`), unlike the 28px rows of the sidebar and the transcript, since they are read one by one. Pickers driven from a search field (the project menu, ⌘K) fill the row the keyboard is on (`data-active`) instead of gliding.
 - A note above the composer (night run, parent in charge, stuck) is a `Strip`.
 - Errors that block a form show as an `Alert` in place; failures with nowhere to show go to `toast.error`. `errorText` turns whatever was thrown into its message.
 
