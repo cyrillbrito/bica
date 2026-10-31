@@ -186,6 +186,60 @@ test('archiving a parent detaches the child sessions it leaves open', async () =
   expect(after.find((s) => s.id === child)!.archivedAt).toBeNull();
 });
 
+test('a session archives itself once its turn ends, only when the user asked', async () => {
+  const tab = await bica.connect();
+  const { projectId } = await bica.project(tab, 'self-archive');
+  let self = '';
+  const archiveSelf = (userAsked: boolean) => () =>
+    fauxAssistantMessage(
+      fauxToolCall('session_archive', {
+        id: self,
+        summary: 'Archive this session',
+        ...(userAsked && { user_asked: true }),
+      }),
+      { stopReason: 'toolUse' },
+    );
+  script = {
+    Tidy: [
+      'Ready',
+      archiveSelf(false),
+      'Not archived',
+      archiveSelf(true),
+      'All done, archiving',
+    ],
+  };
+  self = await tab.request('session.create', {
+    projectId,
+    prompt: 'Tidy up',
+    requestId: crypto.randomUUID(),
+  });
+  await settled(tab, self);
+  await tab.request('session.submit', {
+    id: self,
+    prompt: 'Archive yourself',
+    requestId: crypto.randomUUID(),
+  });
+  await tab
+    .watch('conversation', { id: self })
+    .until((c) => shows(c, 'Not archived'));
+  await settled(tab, self);
+  expect(
+    (await sessionsOf(tab).until(() => true)).find((s) => s.id === self)!
+      .archivedAt,
+  ).toBeNull();
+  await tab.request('session.submit', {
+    id: self,
+    prompt: 'You may archive yourself',
+    requestId: crypto.randomUUID(),
+  });
+  await sessionsOf(tab).until((l) =>
+    l.some((s) => s.id === self && s.archivedAt),
+  );
+  await tab
+    .watch('conversation', { id: self })
+    .until((c) => shows(c, 'All done, archiving'));
+});
+
 test('the hub hears each turn of a session it watches, until the user stops the watch', async () => {
   const tab = await bica.connect();
   const { projectId } = await bica.project(tab, 'watched');

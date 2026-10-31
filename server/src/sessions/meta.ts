@@ -14,6 +14,7 @@ import {
   removeTerminal,
   terminalsIn,
 } from '../terminals/terminals';
+import { named } from './read';
 import {
   editSession,
   getConversation,
@@ -146,4 +147,26 @@ export async function archive(id: string, archived: boolean) {
   for (const t of allTerminals())
     if (t.parent === id) await removeTerminal(t.id);
   await releaseChildren([id]);
+}
+
+/**
+ * Archives a session, then with `worktree` removes its worktree too, unless
+ * another open session works there or something would be lost. Returns what
+ * happened to the worktree, '' when not asked.
+ */
+export async function archiveWithWorktree(id: string, worktree: boolean) {
+  await archive(id, true);
+  const all = await listSessions();
+  const s = all.find((o) => o.id === id);
+  if (!worktree || !s?.cwd || !s.projectId) return '';
+  const project = await getProject(s.projectId);
+  if (!project.workspaces.some((w) => w.path === s.cwd && !w.main))
+    return `Its folder ${s.cwd} isn't a worktree, so it stays.`;
+  const others = all.filter((o) => o.cwd === s.cwd && !o.archivedAt);
+  if (others.length)
+    return `Kept the worktree: ${others.map(named).join(', ')} still works there.`;
+  const risk = await removeWorktree(s.projectId, s.cwd, false);
+  return risk
+    ? `Kept the worktree ${s.cwd}: it has ${risk}.`
+    : `Removed its worktree ${s.cwd} and its branch.`;
 }

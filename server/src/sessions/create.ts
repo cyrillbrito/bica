@@ -246,6 +246,7 @@ export async function fork(id: string, at?: number) {
           'memory',
           'projects',
           'tonight',
+          'archiveAfterRun',
         ] as const)
           delete doc[field];
       },

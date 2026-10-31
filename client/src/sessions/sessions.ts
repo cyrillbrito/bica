@@ -81,32 +81,47 @@ export async function setArchived(
   if (!list.length) return;
   // Child sessions go before their parents: archiving a parent detaches the
   // ones still open, and those archived with it should keep their place.
-  const results: PromiseSettledResult<unknown>[] = [];
+  const failed: unknown[] = [];
+  const changed: SessionSummary[] = [];
   let left = [...list];
   while (left.length) {
     const leaves = left.filter((s) => !left.some((o) => o.parent === s.id));
     left = left.filter((s) => !leaves.includes(s));
-    results.push(
-      ...(await Promise.allSettled(
-        leaves.map((s) => archiveSession(s.id, archived)),
-      )),
+    const results = await Promise.allSettled(
+      leaves.map((s) => archiveSession(s.id, archived)),
+    );
+    results.forEach((r, i) =>
+      r.status === 'rejected'
+        ? failed.push(r.reason)
+        : changed.push(leaves[i]!),
     );
   }
-  const failed = results.filter((r) => r.status === 'rejected');
-  const done = list.length - failed.length;
+  const done = changed.length;
   const verb = archived ? 'Archived' : 'Unarchived';
   const count = (n: number) => `${n} session${n === 1 ? '' : 's'}`;
   if (failed.length)
     toast.error({
       title: `Couldn't ${archived ? 'archive' : 'unarchive'} ${count(failed.length)}`,
-      description: errorText(failed[0]!.reason),
+      description: errorText(failed[0]),
     });
   if (!done) return;
   const one = list.length === 1 ? list[0]!.title : '';
-  toast({
-    title: `${verb} ${count(done)}`,
-    description: [one, note].filter(Boolean).join(' · ') || undefined,
-  });
+  toast(
+    {
+      title: `${verb} ${count(done)}`,
+      description: [one, note].filter(Boolean).join(' · ') || undefined,
+    },
+    // Brings the sessions back, but not the terminals closed with them.
+    archived
+      ? {
+          action: {
+            label: 'Undo',
+            onClick: () => void setArchived(changed, false),
+          },
+          duration: 6000,
+        }
+      : undefined,
+  );
 }
 
 export function markSeen(id: string, seen = true) {

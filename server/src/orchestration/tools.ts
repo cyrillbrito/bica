@@ -5,11 +5,11 @@ import type {
   ToolRegistration,
 } from '@earendil-works/pi-durable';
 import type { SessionStatus } from '@bica/shared/protocol';
-import { CHATS_ID, getProject, listProjects } from '../projects/projects';
+import { CHATS_ID, listProjects } from '../projects/projects';
 import { allTerminals } from '../terminals/terminals';
 import { terminalState } from '../terminals/tools';
 import { spawnSession } from '../sessions/create';
-import { archive, removeWorktree } from '../sessions/meta';
+import { archiveWithWorktree } from '../sessions/meta';
 import { watch } from './notes';
 import { stop, submit } from '../sessions/prompts';
 import {
@@ -18,7 +18,7 @@ import {
   readSession,
   recentMessages,
 } from '../sessions/read';
-import { listSessions } from '../sessions/store';
+import { editSession, listSessions } from '../sessions/store';
 
 function text(value: string) {
   return {
@@ -235,7 +235,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
 
   const sessionArchive = defineTool({
     name: 'session_archive',
-    description: `Archive another session once its work is done: it leaves the session list (the user can bring it back), and the terminals it started close. With \`remove_worktree\`, its worktree folder and local branch go too, unless another open session works there, or it has uncommitted files or commits no other branch has.${hub ? ' Only when the user asked for it.' : " Only archive sessions you started or the user named. Archive one you started once its result is in your reply and the user wouldn't want to open it themselves: a lookup, a check, one child session of many. Keep it when the user might want to read or continue it: they asked for it, it holds a decision, a long back and forth, unmerged work, or a question for them. Name what you archived in your reply, so they can bring it back. A session you started that has no parent now is theirs: archive it only if they told you to."}`,
+    description: `Archive a session once its work is done: it leaves the session list (the user can bring it back), and the terminals it started close. With \`remove_worktree\`, its worktree folder and local branch go too, unless another open session works there, or it has uncommitted files or commits no other branch has.${hub ? ' Only when the user asked for it.' : " Only archive sessions you started or the user named, or this one when the user told you to: it waits for this turn to end. Archive one you started once its result is in your reply and the user wouldn't want to open it themselves: a lookup, a check, one child session of many. Keep it when the user might want to read or continue it: they asked for it, it holds a decision, a long back and forth, unmerged work, or a question for them. Name what you archived in your reply, so they can bring it back. A session you started that has no parent now is theirs: archive it only if they told you to."}`,
     parameters: Type.Object({
       id: Type.String({ description: 'The session id' }),
       remove_worktree: Type.Optional(
@@ -247,34 +247,28 @@ function sessionTools(hub: boolean): ToolRegistration[] {
       user_asked: USER_ASKED,
     }),
     execute: async ({ id, remove_worktree, user_asked }, api) => {
-      other(id, api.conversationId);
+      if (id === String(api.conversationId)) {
+        // Its own run is going, so it waits for the end (notes.ts), which
+        // also lets the final reply land first.
+        if (!user_asked)
+          throw new Error(
+            'Archive this session only when the user told you to, then pass `user_asked`.',
+          );
+        await editSession(api.conversationId, (meta) => {
+          meta.archiveAfterRun = { worktree: !!remove_worktree };
+        });
+        return text(
+          `This session is archived once this turn ends${remove_worktree ? ', and its worktree removed if nothing would be lost' : ''}. Finish your reply as usual.`,
+        );
+      }
       const s = await readSession(id);
       checkInCharge(s, String(api.conversationId), user_asked, 'archive');
       if (s.status === 'running' || s.status === 'retrying')
         throw new Error(
           `${named(s)} is still running. Wait for it, or stop it first.`,
         );
-      await archive(id, true);
-      const done = `Archived ${named(s)}.`;
-      if (!remove_worktree || !s.cwd || !s.projectId) return text(done);
-      const project = await getProject(s.projectId);
-      if (!project.workspaces.some((w) => w.path === s.cwd && !w.main))
-        return text(
-          `${done} Its folder ${s.cwd} isn't a worktree, so it stays.`,
-        );
-      const others = (await listSessions()).filter(
-        (o) => o.cwd === s.cwd && !o.archivedAt,
-      );
-      if (others.length)
-        return text(
-          `${done} Kept the worktree: ${others.map(named).join(', ')} still works there.`,
-        );
-      const risk = await removeWorktree(s.projectId, s.cwd, false);
-      return text(
-        risk
-          ? `${done} Kept the worktree ${s.cwd}: it has ${risk}.`
-          : `${done} Removed its worktree ${s.cwd} and its branch.`,
-      );
+      const worktree = await archiveWithWorktree(id, !!remove_worktree);
+      return text(`Archived ${named(s)}. ${worktree}`.trim());
     },
   });
 

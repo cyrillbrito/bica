@@ -1,6 +1,7 @@
 import { LiveDoc, type ConversationId } from '@earendil-works/pi-durable';
 
 import { context, getHarness } from '../harness';
+import { archiveWithWorktree } from '../sessions/meta';
 import { tell } from '../sessions/notes';
 import {
   lastSender,
@@ -81,7 +82,26 @@ function runChanged(id: ConversationId | undefined, running: boolean) {
   const was = runState.get(id);
   runState.set(id, running);
   if (running || !was) return;
-  void runEnded(id).catch((error) => console.error('[note]', error));
+  void runEnded(id)
+    .then(() => archiveIfAsked(id))
+    .catch((error) => console.error('[note]', error));
+}
+
+/**
+ * A session that asked to archive itself goes once its run ends, after its
+ * notes, so its parent still hears the last reply. A run that fails or asks
+ * keeps it open: the user has something to read there.
+ */
+async function archiveIfAsked(id: ConversationId) {
+  const asked = await editSession(id, (meta) => {
+    const was = meta.archiveAfterRun && { ...meta.archiveAfterRun };
+    delete meta.archiveAfterRun;
+    return was;
+  });
+  if (!asked) return;
+  const s = await readSession(String(id));
+  if (s.status === 'error' || s.status === 'waiting') return;
+  await archiveWithWorktree(String(id), asked.worktree);
 }
 
 /**

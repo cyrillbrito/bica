@@ -30,11 +30,17 @@ export async function submit(
   whenBusy: 'followUp' | 'steer' = 'followUp',
 ) {
   const conversation = await getConversation(id);
+  const meta = await sessionMeta(conversation.id);
   // Its one prompt waits for tonight (docs/night-runs.md); a second would run now.
-  if ((await sessionMeta(conversation.id))?.tonight)
+  if (meta?.tonight)
     throw new Error(
       'This session is held for tonight: edit its prompt, or run it now',
     );
+  // Writing to it means it isn't done with, and an archived one hears no notes.
+  if (from === 'user' && meta?.archivedAt)
+    await editSession(conversation.id, (m) => {
+      delete m.archivedAt;
+    });
   // Anything sent here starts a run, and agents took a note or another
   // session's message for the end of their questions.
   if (from !== 'user' && (await readSession(id)).status === 'waiting')

@@ -58,6 +58,9 @@ export type SessionMeta = {
   // The first prompt, held for tonight's run (docs/night-runs.md); '' or
   // unset: none waiting.
   tonight?: string;
+  // It asked to archive itself (session_archive), which waits for its run to
+  // end; `worktree`: remove its worktree too.
+  archiveAfterRun?: { worktree: boolean };
 };
 
 export const SessionDoc = defineDoc<SessionMeta>({
