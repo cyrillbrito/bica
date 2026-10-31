@@ -19,7 +19,23 @@ import {
   useProjects,
 } from '../projects/projects';
 
+const HEADINGS = [
+  'What are we building?',
+  'What are we brewing?',
+  'What should we ship today?',
+  'Fresh espresso, fresh idea?',
+  'What needs fixing?',
+  'One more shot?',
+  'What’s on the menu?',
+  'Got a bug for me?',
+  'Where do we start?',
+  'What are we breaking today?',
+  'Pull a shot, push a branch?',
+  'What’s next?',
+];
+
 export default function Home() {
+  const heading = HEADINGS[Math.floor(Math.random() * HEADINGS.length)];
   const projects = useProjects();
   const target = createMemo(() => resolveTarget(projects(), currentTarget()), {
     name: 'homeTarget',
@@ -38,7 +54,7 @@ export default function Home() {
       <TopBar />
       <div class="chat-column flex flex-1 flex-col justify-center gap-6 pb-[15vh]">
         <h1 class="text-center text-display font-semibold tracking-tight">
-          What are we building?
+          {heading}
         </h1>
         <Show
           when={target()}
