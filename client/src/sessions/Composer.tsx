@@ -793,7 +793,10 @@ export default function Composer(props: {
               popovertarget={sendMenuId}
             >
               <Chevron
-                class={`-rotate-90 transition-opacity duration-200 [&_svg]:size-3 ${split() ? 'opacity-100' : 'opacity-0'}`}
+                class={[
+                  '-rotate-90 transition-opacity duration-200 [&_svg]:size-3',
+                  split() ? 'opacity-100' : 'opacity-0',
+                ]}
               />
             </IconButton>
           </div>

@@ -70,12 +70,12 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 
 Pi Durable, Solid 2, and Pierre are new and change often, and the web may describe a newer version than the one installed. Read the installed copy first.
 
-- Pi Durable: `node_modules/@earendil-works/pi-durable/README.md` and `CHANGELOG.md`, plus the READMEs of `pi-ai` and `chord` next to it. Examples: https://github.com/earendil-works/pi/tree/main/packages/durable.
+- Pi Durable: `server/node_modules/@earendil-works/pi-durable/README.md` and `CHANGELOG.md`, plus the READMEs of `pi-ai` and `chord` next to it. Examples: https://github.com/earendil-works/pi/tree/main/packages/durable.
 - Pi packages as inspiration: https://github.com/earendil-works/pi/tree/main/packages. Before building or changing an agent tool, prompt, or session feature, look at how Pi does it, mostly `coding-agent` (its tools in `src/core/tools`, and `examples`), `agent`, and `ai`. Bica never runs that code, but the APIs are close, so borrow the ideas and adapt them to Pi Durable.
-- Solid 2: `node_modules/solid-js/CHEATSHEET.md` and the skills under SolidJS 2 below. Full docs for agents: https://v2.solidjs.com/llms.txt
-- Markdown: the skills in `node_modules/@tanstack/markdown/skills/` (the React ones don't apply).
+- Solid 2: `client/node_modules/solid-js/CHEATSHEET.md` and the skills under SolidJS 2 below. Full docs for agents: https://v2.solidjs.com/llms.txt
+- Markdown: the skills in `client/node_modules/@tanstack/markdown/skills/` (the React ones don't apply).
 - Pierre: https://diffs.com/llms.txt and https://trees.software/llms.txt.
-- Vite: https://vite.dev/guide/ and `node_modules/@solidjs/vite-plugin/README.md` for start mode.
+- Vite: https://vite.dev/guide/ and `client/node_modules/@solidjs/vite-plugin/README.md` for start mode.
 
 ## Docs
 
@@ -149,14 +149,14 @@ After UI changes, check them in a real browser with [`agent-browser`](https://gi
 
 This project uses SolidJS 2. Solid is not React. Components run once and never re-render. Updates flow through signals to exactly the parts that read them, and effects and memos follow Solid's own rules. Don't bring React patterns over.
 
-Read `node_modules/solid-js/CHEATSHEET.md` before writing Solid code. It matches the installed version, and it ends with the corrections for habits from Solid 1 and React.
+Read `client/node_modules/solid-js/CHEATSHEET.md` before writing Solid code. It matches the installed version, and it ends with the corrections for habits from Solid 1 and React.
 
 ### Skills that ship with the installed packages
 
 Read these when you need them. They match the installed versions.
 
-- `node_modules/solid-js/skills/reactivity-diagnostics/SKILL.md` maps every dev-mode warning code, such as `REACTIVE_WRITE_IN_OWNED_SCOPE` or `STRICT_READ_UNTRACKED`, to its fix. Read it whenever one of those codes shows up in test output or the browser console.
-- `node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` explains how to record which parts re-ran and why, find wasted work, and set limits on it, in tests and on live pages.
+- `client/node_modules/solid-js/skills/reactivity-diagnostics/SKILL.md` maps every dev-mode warning code, such as `REACTIVE_WRITE_IN_OWNED_SCOPE` or `STRICT_READ_UNTRACKED`, to its fix. Read it whenever one of those codes shows up in test output or the browser console.
+- `client/node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` explains how to record which parts re-ran and why, find wasted work, and set limits on it, in tests and on live pages.
 
 ### Debugging updates
 
