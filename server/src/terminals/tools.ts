@@ -4,6 +4,7 @@ import type { ToolRegistration } from '@earendil-works/pi-durable';
 import type { TerminalInfo } from '@bica/shared/protocol';
 import { sessionWorkspace } from '../sessions/store';
 import { tell } from '../sessions/notes';
+import { onSteer } from '../sessions/prompts';
 import {
   commandDone,
   createTerminal,
@@ -14,6 +15,7 @@ import {
   tail,
   terminalInfo,
   terminalsIn,
+  waitFor,
   writeTerminal,
 } from './terminals';
 
@@ -24,8 +26,10 @@ import {
 // so restarting a dev server never leaves a dead one behind.
 
 const MAX_WAIT = 120;
-function seconds(value: number | undefined, fallback: number) {
-  return Math.min(Math.max(value ?? fallback, 0), MAX_WAIT) * 1000;
+// Long enough for a test suite or a build; a message ends the wait early.
+const MAX_READ_WAIT = 1800;
+function seconds(value: number | undefined, fallback: number, max = MAX_WAIT) {
+  return Math.min(Math.max(value ?? fallback, 0), max) * 1000;
 }
 
 /** What a terminal is doing, in a few words; `list` uses it too. */
@@ -151,7 +155,7 @@ const terminalStart = defineTool({
 const terminalRead = defineTool({
   name: 'terminal_read',
   description:
-    "Read a terminal's latest output and state: running a command, at the prompt, or exited. `list` shows all terminals.",
+    "Read a terminal's latest output and state: running a command, at the prompt, or exited. `list` shows all terminals. To wait for a long command, use `wait` here, not sleep in bash. Pick a wait about as long as you expect it to take, and read the output between waits, so a stuck command doesn't hold you for long.",
   parameters: Type.Object({
     id: Type.String({ description: 'The terminal id' }),
     lines: Type.Optional(
@@ -159,12 +163,31 @@ const terminalRead = defineTool({
     ),
     wait: Type.Optional(
       Type.Number({
-        description: `Seconds to wait first for new output to settle or the shell to exit (default 0, max ${MAX_WAIT})`,
+        description: `Most seconds to wait first (default 0, max ${MAX_READ_WAIT}). Ends early when the command finishes, \`until\` shows up, or a message arrives for you`,
+      }),
+    ),
+    until: Type.Optional(
+      Type.String({
+        description:
+          'Text to wait for in new output, e.g. a server\'s "ready" line',
       }),
     ),
   }),
-  execute: async ({ id, lines, wait }) => {
-    if (wait) await settle(id, seconds(wait, 0));
+  execute: async ({ id, lines, wait, until }, api, context) => {
+    if (wait) {
+      const steered = new AbortController();
+      const stop = onSteer(String(api.conversationId), () => steered.abort());
+      try {
+        await waitFor(id, seconds(wait, 0, MAX_READ_WAIT), {
+          until,
+          signal: context.abortSignal
+            ? AbortSignal.any([context.abortSignal, steered.signal])
+            : steered.signal,
+        });
+      } finally {
+        stop();
+      }
+    }
     return report(id, lines);
   },
 });

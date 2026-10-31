@@ -454,6 +454,39 @@ export function tail(id: string, lines = 100) {
  * Waits up to `ms` for the process to exit or its output to settle
  * (`quiet` ms without new output, after at least some output).
  */
+/**
+ * Waits up to `ms` for the running command to finish, the shell to exit,
+ * `until` to show up in new output, or `signal`. Without `until`, a terminal
+ * at its prompt returns at once.
+ */
+export async function waitFor(
+  id: string,
+  ms: number,
+  { until, signal }: { until?: string; signal?: AbortSignal },
+) {
+  const t = get(id);
+  if (!t.pty || (!until && t.info.busy === false) || signal?.aborted) return;
+  const from = t.start + t.output.length;
+  await new Promise<void>((resolve) => {
+    const done = () => {
+      clearTimeout(deadline);
+      t.wake.delete(check);
+      t.done.delete(done);
+      signal?.removeEventListener('abort', done);
+      resolve();
+    };
+    const check = () => {
+      const fresh = t.output.slice(Math.max(0, from - t.start));
+      if (until && plain(fresh).includes(until)) done();
+    };
+    const deadline = setTimeout(done, ms);
+    t.wake.add(check);
+    t.done.add(done);
+    signal?.addEventListener('abort', done);
+    void t.exited.promise.then(done);
+  });
+}
+
 export async function settle(id: string, ms: number, quiet = 1500) {
   const t = get(id);
   await new Promise<void>((resolve) => {

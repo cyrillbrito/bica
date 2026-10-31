@@ -68,6 +68,59 @@ test('archiving a session closes the terminals it leads, and leaves the ones det
   for (const t of left) await tab.request('terminal.remove', { id: t.id });
 });
 
+test('a long terminal_read wait ends at its text, or when a message arrives', async () => {
+  const tab = await bica.connect();
+  const ref = await bica.project(tab, 'long-wait');
+  const read = (id: string, until?: string) =>
+    fauxAssistantMessage(
+      fauxToolCall('terminal_read', {
+        id,
+        wait: 600,
+        ...(until && { until }),
+        summary: 'Wait for the job',
+      }),
+      { stopReason: 'toolUse' },
+    );
+  const sessions = tab.watch('sessions', {});
+  const done = (id: string) =>
+    sessions.until((l) => l.some((s) => s.id === id && s.status === 'done'));
+
+  const ready = await tab.request('terminal.create', {
+    ...ref,
+    command: 'sleep 1; echo READY; sleep 600',
+  });
+  bica.reply(read(ready, 'READY'), fauxAssistantMessage('It is ready'));
+  const first = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Wait until ready',
+    requestId: crypto.randomUUID(),
+  });
+  await done(first);
+
+  const stuck = await tab.request('terminal.create', {
+    ...ref,
+    command: 'sleep 600',
+  });
+  bica.reply(read(stuck), fauxAssistantMessage('Stopped waiting'));
+  const second = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Wait for the job',
+    requestId: crypto.randomUUID(),
+  });
+  await sessions.until((l) =>
+    l.some((s) => s.id === second && s.status === 'running'),
+  );
+  await Bun.sleep(300);
+  await tab.request('session.submit', {
+    id: second,
+    prompt: 'Never mind',
+    requestId: crypto.randomUUID(),
+    whenBusy: 'steer',
+  });
+  await done(second);
+  for (const id of [ready, stuck]) await tab.request('terminal.remove', { id });
+});
+
 test('stopping a terminal ends the processes its command started', async () => {
   const tab = await bica.connect();
   const ref = await bica.project(tab);

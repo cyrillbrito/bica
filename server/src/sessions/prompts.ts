@@ -18,6 +18,21 @@ import { readSession } from './read';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
 
+const steerWatchers = new Map<string, Set<() => void>>();
+
+/**
+ * Calls `fn` once something steers session `id`, so a long wait in a tool
+ * ends and the agent reads it. Returns the unsubscribe.
+ */
+export function onSteer(id: string, fn: () => void) {
+  const set = steerWatchers.get(id) ?? new Set();
+  steerWatchers.set(id, set.add(fn));
+  return () => {
+    set.delete(fn);
+    if (!set.size) steerWatchers.delete(id);
+  };
+}
+
 /** Who sends a prompt: the user, Bica's own notes, or another session's id. */
 export type Sender = 'user' | 'bica' | (string & {});
 
@@ -53,6 +68,8 @@ export async function submit(
     { type: 'input', content: input(prompt, images), requestId, whenBusy },
     context,
   );
+  if (whenBusy === 'steer')
+    for (const fn of steerWatchers.get(String(conversation.id)) ?? []) fn();
 }
 
 /** Notes who sent the newest prompt, for session_read and notes. */
