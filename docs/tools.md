@@ -9,7 +9,7 @@ The agent works through tools. Every call carries a short summary of what it is 
 
 ## Code mode
 
-Code mode, the `codemode` tool, lets the model write a short JavaScript script that calls the other tools, so it can run them in parallel, chain them, and filter big output. Only what the script prints reaches the model. It is Pi Durable's code mode: each call in a script is a tool call of its own, and a script survives a restart. Scripts can't call the tools that need the model itself, such as `ask` and the session tools.
+Code mode, the `codemode` tool, lets the model write a short JavaScript script that calls the other tools, so it can run them in parallel, chain them, and filter big output. Only what the script prints reaches the model. It is Pi Durable's code mode: each call in a script is a tool call of its own, and a script survives a restart. Scripts can call every tool but `ask`, which ends the run.
 
 Scripts can also call classifier models, which answer typed yes/no, choice, or score questions in well under a second for a fraction of a cent. That makes it cheap to label many items and read only the flagged ones.
 

@@ -186,6 +186,87 @@ test('archiving a parent detaches the child sessions it leaves open', async () =
   expect(after.find((s) => s.id === child)!.archivedAt).toBeNull();
 });
 
+test('a codemode script starts child sessions and reads them', async () => {
+  const tab = await bica.connect();
+  const { projectId } = await bica.project(tab, 'scripted');
+  script = {
+    Fanout: [
+      fauxAssistantMessage(
+        fauxToolCall('codemode', {
+          summary: 'Start two child sessions',
+          code: `const ids = await Promise.all(['Scripted one', 'Scripted two'].map((prompt) => tools.session_start({ prompt })));
+return await tools.list({});`,
+        }),
+        { stopReason: 'toolUse' },
+      ),
+      'Both started',
+    ],
+  };
+  const parent = await tab.request('session.create', {
+    projectId,
+    prompt: 'Fanout the work',
+    requestId: crypto.randomUUID(),
+  });
+  await settled(tab, parent);
+  const list = await sessionsOf(tab).until(
+    (l) => l.filter((s) => s.parent === parent).length === 2,
+  );
+  expect(list.filter((s) => s.parent === parent)).toHaveLength(2);
+  await tab
+    .watch('conversation', { id: parent })
+    .until((c) => shows(c, 'Both started'));
+});
+
+test('archiving a running child session waits for its turn to end', async () => {
+  const tab = await bica.connect();
+  const { projectId } = await bica.project(tab, 'archive-running');
+  const { promise: released, resolve: release } = Promise.withResolvers();
+  script = {
+    Boss: [
+      fauxAssistantMessage(
+        fauxToolCall('session_start', {
+          prompt: 'Heldwork: take your time',
+          summary: 'Start a child session',
+        }),
+        { stopReason: 'toolUse' },
+      ),
+      (context: Context) => {
+        const started = JSON.stringify(context.messages.at(-1));
+        return fauxAssistantMessage(
+          fauxToolCall('session_archive', {
+            id: started.match(/Started session (\d+)/)![1]!,
+            summary: 'Archive the child session',
+          }),
+          { stopReason: 'toolUse' },
+        );
+      },
+      'Archive asked',
+    ],
+    Heldwork: [
+      async () => {
+        await released;
+        return fauxAssistantMessage('Work done');
+      },
+    ],
+  };
+  const parent = await tab.request('session.create', {
+    projectId,
+    prompt: 'Boss the child around',
+    requestId: crypto.randomUUID(),
+  });
+  await tab
+    .watch('conversation', { id: parent })
+    .until((c) => shows(c, 'Archive asked'));
+  const list = await sessionsOf(tab).until((l) =>
+    l.some((s) => s.parent === parent),
+  );
+  expect(list.find((s) => s.parent === parent)!.archivedAt).toBeNull();
+  release(undefined);
+  await sessionsOf(tab).until((l) =>
+    l.some((s) => s.parent === parent && s.archivedAt),
+  );
+});
+
 test('a session archives itself once its turn ends, only when the user asked', async () => {
   const tab = await bica.connect();
   const { projectId } = await bica.project(tab, 'self-archive');

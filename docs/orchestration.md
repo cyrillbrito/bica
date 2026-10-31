@@ -47,7 +47,7 @@ Only the hub watches. Other sessions hear only from their child sessions, and as
 - `session_read` returns a session's status, who leads it, the questions it waits on, and its last messages.
 - `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.
-- `session_archive` archives a finished session, and can remove its worktree when nothing would be lost. A session can archive itself only when you told it to, and it goes once its turn ends, after its last reply. A turn that ends with an error or a question keeps it open.
+- `session_archive` archives a finished session, and can remove its worktree when nothing would be lost. A session can archive itself only when you told it to. A running session, itself included, goes once its turn ends, after its last reply: a child session that reports done with `session_send` is still in that turn. A turn that ends with an error or a question keeps it open.
 - `session_watch`, the hub's alone, starts or stops a watch.
 
 The tools name sessions by title, then id, and agents are told to name them to you by title alone.

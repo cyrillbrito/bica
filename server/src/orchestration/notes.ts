@@ -88,11 +88,11 @@ function runChanged(id: ConversationId | undefined, running: boolean) {
 }
 
 /**
- * A session that asked to archive itself goes once its run ends, after its
- * notes, so its parent still hears the last reply. A run that fails or asks
- * keeps it open: the user has something to read there.
+ * A session archived while it ran (session_archive) goes once its run ends,
+ * after its notes, so its parent still hears the last reply. A run that fails
+ * or asks keeps it open: the user has something to read there.
  */
-async function archiveIfAsked(id: ConversationId) {
+export async function archiveIfAsked(id: ConversationId) {
   const asked = await editSession(id, (meta) => {
     const was = meta.archiveAfterRun && { ...meta.archiveAfterRun };
     delete meta.archiveAfterRun;

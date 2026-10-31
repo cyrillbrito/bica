@@ -10,7 +10,7 @@ import { allTerminals } from '../terminals/terminals';
 import { terminalState } from '../terminals/tools';
 import { spawnSession } from '../sessions/create';
 import { archiveWithWorktree } from '../sessions/meta';
-import { watch } from './notes';
+import { archiveIfAsked, watch } from './notes';
 import { stop, submit } from '../sessions/prompts';
 import {
   lastSender,
@@ -18,7 +18,7 @@ import {
   readSession,
   recentMessages,
 } from '../sessions/read';
-import { editSession, listSessions } from '../sessions/store';
+import { editSession, getConversation, listSessions } from '../sessions/store';
 
 function text(value: string) {
   return {
@@ -235,7 +235,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
 
   const sessionArchive = defineTool({
     name: 'session_archive',
-    description: `Archive a session once its work is done: it leaves the session list (the user can bring it back), and the terminals it started close. With \`remove_worktree\`, its worktree folder and local branch go too, unless another open session works there, or it has uncommitted files or commits no other branch has.${hub ? ' Only when the user asked for it.' : " Only archive sessions you started or the user named, or this one when the user told you to: it waits for this turn to end. Archive one you started once its result is in your reply and the user wouldn't want to open it themselves: a lookup, a check, one child session of many. Keep it when the user might want to read or continue it: they asked for it, it holds a decision, a long back and forth, unmerged work, or a question for them. Name what you archived in your reply, so they can bring it back. A session you started that has no parent now is theirs: archive it only if they told you to."}`,
+    description: `Archive a session once its work is done: it leaves the session list (the user can bring it back), and the terminals it started close. With \`remove_worktree\`, its worktree folder and local branch go too, unless another open session works there, or it has uncommitted files or commits no other branch has.${hub ? ' Only when the user asked for it.' : " Only archive sessions you started or the user named, or this one when the user told you to. A running session, this one included, goes once its turn ends, unless that turn ends with an error or a question. Archive one you started once its result is in your reply and the user wouldn't want to open it themselves: a lookup, a check, one child session of many. Keep it when the user might want to read or continue it: they asked for it, it holds a decision, a long back and forth, unmerged work, or a question for them. Name what you archived in your reply, so they can bring it back. A session you started that has no parent now is theirs: archive it only if they told you to."}`,
     parameters: Type.Object({
       id: Type.String({ description: 'The session id' }),
       remove_worktree: Type.Optional(
@@ -247,28 +247,37 @@ function sessionTools(hub: boolean): ToolRegistration[] {
       user_asked: USER_ASKED,
     }),
     execute: async ({ id, remove_worktree, user_asked }, api) => {
-      if (id === String(api.conversationId)) {
-        // Its own run is going, so it waits for the end (notes.ts), which
-        // also lets the final reply land first.
-        if (!user_asked)
-          throw new Error(
-            'Archive this session only when the user told you to, then pass `user_asked`.',
-          );
-        await editSession(api.conversationId, (meta) => {
-          meta.archiveAfterRun = { worktree: !!remove_worktree };
-        });
-        return text(
-          `This session is archived once this turn ends${remove_worktree ? ', and its worktree removed if nothing would be lost' : ''}. Finish your reply as usual.`,
-        );
-      }
-      const s = await readSession(id);
-      checkInCharge(s, String(api.conversationId), user_asked, 'archive');
-      if (s.status === 'running' || s.status === 'retrying')
+      const self = id === String(api.conversationId);
+      if (self && !user_asked)
         throw new Error(
-          `${named(s)} is still running. Wait for it, or stop it first.`,
+          'Archive this session only when the user told you to, then pass `user_asked`.',
         );
-      const worktree = await archiveWithWorktree(id, !!remove_worktree);
-      return text(`Archived ${named(s)}. ${worktree}`.trim());
+      const s = await readSession(id);
+      if (!self)
+        checkInCharge(s, String(api.conversationId), user_asked, 'archive');
+      const running = (status: string) =>
+        status === 'running' || status === 'retrying';
+      if (!self && !running(s.status)) {
+        const worktree = await archiveWithWorktree(id, !!remove_worktree);
+        return text(`Archived ${named(s)}. ${worktree}`.trim());
+      }
+      // A session that reports done with session_send is still in its turn,
+      // so it waits for the end (notes.ts), and its final reply lands first.
+      const conversation = (await getConversation(id)).id;
+      await editSession(conversation, (meta) => {
+        meta.archiveAfterRun = { worktree: !!remove_worktree };
+      });
+      // Ended between the read and the flag: nothing would archive it now.
+      if (!self && !running((await readSession(id)).status))
+        await archiveIfAsked(conversation);
+      const worktree = remove_worktree
+        ? ', and its worktree removed if nothing would be lost'
+        : '';
+      return text(
+        self
+          ? `This session is archived once this turn ends${worktree}. Finish your reply as usual.`
+          : `${named(s)} is still in its turn: it is archived once that ends${worktree}, unless it ends with an error or a question.`,
+      );
     },
   });
 
@@ -424,11 +433,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     sessionArchive,
     ...(hub ? [sessionWatch] : []),
     list,
-  ].map((tool) => ({
-    ...(tool as unknown as ToolRegistration),
-    // Orchestration stays with the model: codemode scripts can't reach it.
-    callers: ['model' as const],
-  }));
+  ] as unknown as ToolRegistration[];
 }
 
 export const SessionTools = defineExtension({
