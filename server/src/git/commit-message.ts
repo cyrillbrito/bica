@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import type { WorkspaceRef } from '@bica/shared/protocol';
 import { askFast, fastModelId } from '../models/fast-model';
 import { recentPrompts } from '../sessions/read';
@@ -16,7 +14,7 @@ Write one short line: aim for 3 to 7 words after any prefix.
 - Agent requests tell you the intent, but they can cover work outside this commit. Never describe something the diff doesn't show.
 - Plain text only: no body, no markdown, no quotes, no preamble. Reply with the line only.`;
 
-const cache = new Map<string, Promise<string>>();
+const cache = new Map<number | bigint, Promise<string>>();
 const MAX_CACHED = 40;
 
 /**
@@ -65,7 +63,7 @@ export async function suggestCommitMessage(
     .filter(Boolean)
     .join('\n\n');
 
-  const key = createHash('sha1').update(prompt).digest('hex');
+  const key = Bun.hash(prompt);
   let answer = fresh ? undefined : cache.get(key);
   if (!answer) {
     answer = askFast(SYSTEM, prompt, { maxTokens: 60 }).then(clean);

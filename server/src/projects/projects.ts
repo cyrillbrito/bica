@@ -1,9 +1,7 @@
-import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { promisify } from 'node:util';
 
 import type {
   DirListing,
@@ -12,6 +10,7 @@ import type {
   PullRequest,
   Workspace,
 } from '@bica/shared/protocol';
+import { git } from '../git/run';
 import { copyIgnored } from './copy-ignored';
 import { pullRequests } from './github';
 import { live } from '../live';
@@ -88,16 +87,12 @@ export async function listProjects(): Promise<Project[]> {
   return Promise.all([...(await load()), CHATS].map(withWorkspaces));
 }
 
-const exec = promisify(execFile);
-
 // Git is the source of truth: every worktree of the repo, wherever made.
-async function workspacesOf(path: string, git: boolean): Promise<Workspace[]> {
+async function workspacesOf(path: string, repo: boolean): Promise<Workspace[]> {
   const folder = [{ path, branch: null, main: true, pr: null }];
-  if (!git) return folder;
+  if (!repo) return folder;
   try {
-    const { stdout } = await exec('git', ['worktree', 'list', '--porcelain'], {
-      cwd: path,
-    });
+    const stdout = await git(path, ['worktree', 'list', '--porcelain']);
     const list = stdout.split('\n\n').flatMap((block, i): Workspace[] => {
       const lines = block.split('\n');
       const field = (key: string) =>
@@ -146,13 +141,11 @@ export async function createChatFolder(title: string) {
  * A folder inside another repo is left alone.
  */
 async function initRepo(path: string) {
-  const inRepo = await exec('git', ['rev-parse', '--is-inside-work-tree'], {
-    cwd: path,
-  }).then(
+  const inRepo = await git(path, ['rev-parse', '--is-inside-work-tree']).then(
     () => true,
     () => false,
   );
-  if (!inRepo) await exec('git', ['init', '-q'], { cwd: path });
+  if (!inRepo) await git(path, ['init', '-q']);
 }
 
 function slugify(title: string, fallback: string) {
@@ -237,7 +230,7 @@ export async function updateProject(id: string, edit: ProjectEdit) {
 export async function createWorktree(projectId: string, title: string) {
   const project = await getProject(projectId);
   if (!project.git) throw new Error(`${project.name} is not a git repo`);
-  const git = (args: string[]) => exec('git', args, { cwd: project.path });
+  const here = (args: string[]) => git(project.path, args);
   // The folder already says the project: `shop-ui-polish`, not
   // `shop-shop-ui-polish`.
   const prefix = `${slugify(project.name, '')}-`;
@@ -246,7 +239,7 @@ export async function createWorktree(projectId: string, title: string) {
     slug = slug.slice(prefix.length);
   const taken = async (name: string) =>
     existsSync(`${project.path}-${name}`) ||
-    (await git(['show-ref', '--verify', '-q', `refs/heads/${name}`]).then(
+    (await here(['show-ref', '--verify', '-q', `refs/heads/${name}`]).then(
       () => true,
       () => false,
     ));
@@ -256,17 +249,17 @@ export async function createWorktree(projectId: string, title: string) {
   let base = 'HEAD';
   try {
     base = (
-      await git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
-    ).stdout.trim();
+      await here(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
+    ).trim();
     const local = base.replace(/^origin\//, '');
-    await git(['fetch', '-q', 'origin', local]);
+    await here(['fetch', '-q', 'origin', local]);
     // Work merged locally but not pushed yet counts: new sessions start on it.
-    await git(['merge-base', '--is-ancestor', base, local]);
+    await here(['merge-base', '--is-ancestor', base, local]);
     base = local;
   } catch {}
   const path = `${project.path}-${branch}`;
   // No tracking: the branch pushes to its own name, not to main.
-  await git(['worktree', 'add', '-q', '--no-track', '-b', branch, path, base]);
+  await here(['worktree', 'add', '-q', '--no-track', '-b', branch, path, base]);
   await copyIgnored(project.path, path).catch((e) =>
     console.warn(`Copying ignored files into ${path} failed:`, e),
   );
@@ -276,21 +269,20 @@ export async function createWorktree(projectId: string, title: string) {
 
 /** What removing a worktree would lose, in words; null: nothing. */
 export async function worktreeRisk(path: string, pr: PullRequest | null) {
-  const git = (args: string[]) =>
-    exec('git', args, { cwd: path }).then((r) => r.stdout.trim());
-  const changed = (await git(['status', '--porcelain']))
+  const there = (args: string[]) => git(path, args).then((out) => out.trim());
+  const changed = (await there(['status', '--porcelain']))
     .split('\n')
     .filter(Boolean);
   if (changed.length)
     return `${changed.length} uncommitted file${changed.length > 1 ? 's' : ''}`;
   // Squash merges leave the commits out of main, and the merged branch is
   // often deleted on the remote, so the PR's head is the other proof.
-  const head = await git(['rev-parse', 'HEAD']);
+  const head = await there(['rev-parse', 'HEAD']);
   if (pr?.head === head) return null;
   // Merged into a local branch, say `main`, but not pushed: still safe.
-  const branch = await git(['branch', '--show-current']);
+  const branch = await there(['branch', '--show-current']);
   const unsaved = Number(
-    await git([
+    await there([
       'rev-list',
       '--count',
       'HEAD',
@@ -310,10 +302,10 @@ export async function removeGitWorktree(projectId: string, path: string) {
   const project = await getProject(projectId);
   const w = project.workspaces.find((w) => w.path === path && !w.main);
   if (!w) throw new Error(`${path} is not a worktree of ${project.name}`);
-  const git = (args: string[]) => exec('git', args, { cwd: project.path });
   // Force: the caller already checked for work, and git refuses submodules without it.
-  await git(['worktree', 'remove', '--force', path]);
-  if (w.branch) await git(['branch', '-D', w.branch]).catch(() => {});
+  await git(project.path, ['worktree', 'remove', '--force', path]);
+  if (w.branch)
+    await git(project.path, ['branch', '-D', w.branch]).catch(() => {});
   await projects.refresh();
 }
 

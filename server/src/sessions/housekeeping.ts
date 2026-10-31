@@ -34,7 +34,7 @@ const retried = new Set<string>();
 
 /** Checks long-lived sessions every minute. */
 export function startHousekeeping() {
-  setInterval(() => void housekeepAll(), MINUTE);
+  Bun.cron('* * * * *', housekeepAll);
 }
 
 async function housekeepAll() {

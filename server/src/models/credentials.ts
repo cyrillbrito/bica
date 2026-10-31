@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { Credential, CredentialStore } from '@earendil-works/pi-ai';
 
 import { jsonFile, textFile } from '../storage';
@@ -40,7 +39,7 @@ const device = textFile('device-id');
 export async function deviceId() {
   const saved = device.read();
   if (saved) return saved;
-  const id = randomUUID();
+  const id = crypto.randomUUID();
   await device.write(id);
   return id;
 }

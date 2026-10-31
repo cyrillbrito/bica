@@ -36,17 +36,15 @@ const WRAP_UP = `[Note from Bica, not from the user] This night run has gone on 
 // moment behind the submit.
 const starting = new Set<string>();
 const warned = new Set<string>();
-let ticking = false;
 
-/** Checks every minute whether a night run should start, wrap up, or end. */
+/**
+ * Checks every minute whether a night run should start, wrap up, or end.
+ * Bun.cron never starts a check before the last one ends.
+ */
 export function startNight() {
-  setInterval(() => {
-    if (ticking) return;
-    ticking = true;
-    void tick()
-      .catch((error) => console.error('[night]', error))
-      .finally(() => (ticking = false));
-  }, MINUTE);
+  Bun.cron('* * * * *', () =>
+    tick().catch((error) => console.error('[night]', error)),
+  );
 }
 
 function running(s: SessionSummary) {

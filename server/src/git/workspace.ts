@@ -1,8 +1,5 @@
-import { execFile } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { promisify } from 'node:util';
 
 import type {
   FileText,
@@ -12,8 +9,8 @@ import type {
 } from '@bica/shared/protocol';
 import { live, type Live } from '../live';
 import { getProject } from '../projects/projects';
+import { git as run } from './run';
 
-const exec = promisify(execFile);
 const MAX_FILE = 2 * 1024 * 1024;
 // Media is shown as itself, not as text, so it gets a looser cap.
 const MAX_MEDIA = 25 * 1024 * 1024;
@@ -44,10 +41,20 @@ export function inside(cwd: string, path: string) {
 
 // --no-optional-locks: our polling must never block the agent's git.
 function git(cwd: string, args: string[]) {
-  return exec('git', ['--no-optional-locks', ...args], {
+  return run(cwd, ['--no-optional-locks', ...args]);
+}
+
+/** Raw bytes, for files; 'too large' past `max`, null when git fails. */
+async function gitBytes(cwd: string, args: string[], max: number) {
+  const p = Bun.spawn(['git', ...args], {
     cwd,
-    maxBuffer: 64 * 1024 * 1024,
-  }).then((r) => r.stdout);
+    maxBuffer: max,
+    stderr: 'ignore',
+  });
+  const [bytes, code] = await Promise.all([p.stdout.bytes(), p.exited]);
+  // Killed only for going over `max`.
+  if (p.signalCode) return 'too large';
+  return code === 0 ? Buffer.from(bytes) : null;
 }
 
 function isRepo(dir: string) {
@@ -292,7 +299,7 @@ function stored(hash: string) {
 
 /** Git's own hash of a blob, so a file on disk matches its staged copy. */
 function blobHash(bytes: Buffer) {
-  return createHash('sha1')
+  return new Bun.CryptoHasher('sha1')
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
     .digest('hex');
@@ -340,15 +347,7 @@ export async function readBlob(
   const disk = s?.isFile() && s.size <= MAX_MEDIA ? await fromDisk(full) : null;
   if (disk && blobHash(disk) === hash) return { bytes: disk, exact: true };
   const repo = await repoDir(cwd, repoPath);
-  const kept = await exec('git', ['cat-file', 'blob', hash], {
-    cwd: repo,
-    encoding: 'buffer',
-    maxBuffer: MAX_MEDIA,
-  }).then(
-    (r) => r.stdout,
-    (e: { code?: string }) =>
-      e.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' ? 'too large' : null,
-  );
+  const kept = await gitBytes(repo, ['cat-file', 'blob', hash], MAX_MEDIA);
   if (kept === 'too large') return kept;
   if (kept) return { bytes: kept, exact: true };
   return disk && onDisk ? { bytes: disk, exact: false } : null;
@@ -466,8 +465,6 @@ export async function commit(
       ...(amend ? ['--amend'] : []),
       ...(message ? ['-m', message] : ['--no-edit']),
     ]);
-  } catch (error) {
-    throw gitError(error);
   } finally {
     await poke(cwd);
   }
@@ -505,25 +502,24 @@ async function discardIn(cwd: string, paths: string[]) {
       .filter(Boolean),
   );
   const tracked = paths.filter((p) => !untracked.has(p));
-  try {
-    if (tracked.length)
-      await git(cwd, ['restore', '--worktree', '--', ...tracked]);
-    if (untracked.size)
-      await git(cwd, ['clean', '--force', '--quiet', '--', ...untracked]);
-  } catch (error) {
-    throw gitError(error);
-  }
+  if (tracked.length)
+    await git(cwd, ['restore', '--worktree', '--', ...tracked]);
+  if (untracked.size)
+    await git(cwd, ['clean', '--force', '--quiet', '--', ...untracked]);
 }
 
 // Network commands: never wait on a password prompt nobody can see.
-function remote(cwd: string, args: string[]) {
-  return exec('git', args, {
+async function remote(cwd: string, args: string[]) {
+  const p = Bun.spawn(['git', ...args], {
     cwd,
     timeout: 120_000,
     env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-  }).catch((error) => {
-    throw gitError(error);
+    stdout: 'ignore',
+    stderr: 'pipe',
   });
+  const [stderr, code] = await Promise.all([p.stderr.text(), p.exited]);
+  if (p.signalCode) throw new Error(`git ${args[0]} took over two minutes`);
+  if (code !== 0) throw new Error(stderr.trim() || `git ${args[0]} failed`);
 }
 
 export async function push(ref: WorkspaceRef, repo?: string) {
@@ -548,11 +544,6 @@ export async function pull(ref: WorkspaceRef, repo?: string) {
 }
 
 /** Git explains itself on stdout ("nothing to commit") or stderr (hooks). */
-function gitError(error: unknown) {
-  const e = error as { stdout?: string; stderr?: string };
-  return new Error((e.stderr || e.stdout || String(error)).trim());
-}
-
 // Lockfiles and the like: big, generated, and say nothing about intent.
 const NOISE =
   /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb?|Cargo\.lock|go\.sum|poetry\.lock|composer\.lock|Gemfile\.lock)$|\.(min\.js|map|snap)$/;
@@ -715,14 +706,9 @@ function fromDisk(full: string) {
 }
 
 // "HEAD:path" or ":path" (the index); null when that side has no such file.
-function fromGit(cwd: string, spec: string) {
-  return exec('git', ['show', spec], {
-    cwd,
-    encoding: 'buffer',
-    maxBuffer: MAX_MEDIA * 2,
-  })
-    .then((r) => r.stdout)
-    .catch(() => null);
+async function fromGit(cwd: string, spec: string) {
+  const bytes = await gitBytes(cwd, ['show', spec], MAX_MEDIA * 2);
+  return bytes === 'too large' ? null : bytes;
 }
 
 export async function readText(ref: WorkspaceRef, path: string) {

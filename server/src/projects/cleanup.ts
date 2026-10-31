@@ -1,8 +1,8 @@
-import { $ } from 'bun';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Project, SessionSummary, Workspace } from '@bica/shared/protocol';
+import { git as run } from '../git/run';
 import { removeWorktree } from '../sessions/meta';
 import { listSessions } from '../sessions/store';
 import { listProjects } from './projects';
@@ -81,9 +81,11 @@ async function reason(project: Project, w: Workspace, idle: number) {
 }
 
 /** Git's output, trimmed; null when it fails. */
-async function git(cwd: string, args: string[]) {
-  const result = await $`git ${args}`.cwd(cwd).quiet().nothrow();
-  return result.exitCode === 0 ? result.text().trim() : null;
+function git(cwd: string, args: string[]) {
+  return run(cwd, args).then(
+    (out) => out.trim(),
+    () => null,
+  );
 }
 
 // Commits, checkouts, and resets touch the reflog; a fresh worktree's

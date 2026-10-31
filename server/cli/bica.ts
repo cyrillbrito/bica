@@ -2,7 +2,6 @@
 // Vite's dev server does. Both ways to run a build start here: start.ts from
 // the repo, and the `bica` binary that cli/build.ts compiles with the client
 // and codemode's files embedded.
-import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { dirname, extname, join } from 'node:path';
@@ -208,8 +207,8 @@ function savedProfile(file: string): Profile | undefined {
 
 function hasChrome() {
   return mac
-    ? spawnSync('open', ['-Ra', 'Google Chrome']).status === 0
-    : spawnSync('which', ['google-chrome']).status === 0;
+    ? Bun.spawnSync(['open', '-Ra', 'Google Chrome']).exitCode === 0
+    : Bun.which('google-chrome') !== null;
 }
 
 function openApp(url: string, profileDir: string) {
@@ -223,5 +222,8 @@ function openBrowser(url: string) {
 }
 
 function launch(command: string, args: string[]) {
-  spawn(command, args, { detached: true, stdio: 'ignore' }).unref();
+  Bun.spawn([command, ...args], {
+    detached: true,
+    stdio: ['ignore', 'ignore', 'ignore'],
+  }).unref();
 }

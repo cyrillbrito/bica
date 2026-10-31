@@ -1,9 +1,4 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
 import type { PullRequest } from '@bica/shared/protocol';
-
-const exec = promisify(execFile);
 
 // gh goes over the network; the projects poll is much faster than this.
 const TTL_MS = 60_000;
@@ -44,9 +39,9 @@ export function pullRequests(path: string, changed: () => void) {
 async function load(path: string) {
   // Only mine: in a fork, someone else's branch can share a name like "main".
   // gh picks the upstream repo of a fork by itself.
-  const { stdout } = await exec(
-    'gh',
+  const gh = Bun.spawn(
     [
+      'gh',
       'pr',
       'list',
       '--author',
@@ -58,8 +53,10 @@ async function load(path: string) {
       '--json',
       'number,title,url,state,isDraft,headRefName,headRefOid',
     ],
-    { cwd: path, timeout: 20_000 },
+    { cwd: path, timeout: 20_000, stderr: 'ignore' },
   );
+  const [stdout, code] = await Promise.all([gh.stdout.text(), gh.exited]);
+  if (code !== 0) throw new Error(`gh pr list failed with ${code}`);
   const list = JSON.parse(stdout) as {
     number: number;
     title: string;

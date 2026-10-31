@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { AuthInteraction, AuthType } from '@earendil-works/pi-ai';
 
 import type { Account, Accounts, SignIn } from '@bica/shared/protocol';
@@ -196,7 +195,7 @@ export async function signIn(id: string, type: AuthType) {
   current?.abort.abort();
   const run: Run = {
     state: {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       account: id,
       url: null,
       instructions: null,
@@ -233,7 +232,7 @@ export async function signIn(id: string, type: AuthType) {
     },
     prompt: (prompt) =>
       new Promise((resolve, reject) => {
-        const promptId = randomUUID();
+        const promptId = crypto.randomUUID();
         const signal = prompt.signal
           ? AbortSignal.any([prompt.signal, abort.signal])
           : abort.signal;

@@ -1,12 +1,9 @@
-import { execFile } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
-import { promisify } from 'node:util';
 import type { EntryId } from '@earendil-works/pi-durable';
-import WebSocket from 'ws';
 
 import type { PromptImage } from '@bica/shared/protocol';
 import { withCallWords, type VoiceLine } from '@bica/shared/transcript';
+import { git } from '../git/run';
 import { models } from '../models/registry';
 import { voiceLog } from './log';
 import { voiceSession } from './session';
@@ -159,7 +156,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   const session = await voiceSession(sessionId);
 
   const { token, signaling, sideband } = await route();
-  const id = randomUUID();
+  const id = crypto.randomUUID();
   // Context appended after connect reads as a turn to answer, so the voice
   // spoke first. In the instructions it is only background.
   const [recent, settings, words] = await Promise.all([
@@ -216,11 +213,14 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   if (!callId) throw new Error('Voice call has no id');
 
   // The "sideband": this server's line into the call, for events and results.
+  // Bun's WebSocket takes headers, which the browser's can't.
   const socket = new WebSocket(sideband(callId), {
     headers: headers(token, id),
   });
   const opening = Date.now();
-  socket.on('open', () => log('sideband open', { ms: Date.now() - opening }));
+  socket.addEventListener('open', () =>
+    log('sideband open', { ms: Date.now() - opening }),
+  );
   // The first of each kind of event, so a call that hears nothing shows
   // which events never came.
   const seen = new Set<string>();
@@ -378,7 +378,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
     if (fresh) said.push(`${who === 'you' ? 'User' : 'Voice'}: ${fresh}`);
   };
 
-  socket.on('message', (data) => {
+  socket.addEventListener('message', ({ data }) => {
     let event: {
       type?: string;
       turn?: { role?: string; transcript?: string };
@@ -392,7 +392,9 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       error?: unknown;
     };
     try {
-      event = JSON.parse((data as Buffer).toString('utf8'));
+      event = JSON.parse(
+        typeof data === 'string' ? data : Buffer.from(data).toString('utf8'),
+      );
     } catch {
       return;
     }
@@ -450,12 +452,13 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
     },
   };
   calls.set(callId, call);
-  socket.on('close', (code, reason) => {
-    log('sideband closed', { code, reason: reason.toString() });
+  socket.addEventListener('close', ({ code, reason }) => {
+    log('sideband closed', { code, reason });
     call.stop('sideband');
   });
-  socket.on('error', (error) => {
-    log('sideband error', { error: error.message });
+  // The event says nothing more; the close that follows has the code.
+  socket.addEventListener('error', () => {
+    log('sideband error');
     call.stop('sideband');
   });
 
@@ -479,8 +482,6 @@ function ago(at: number) {
     : `${Math.round(seconds / 60)} minutes ago`;
 }
 
-const run = promisify(execFile);
-
 /**
  * The branch and the project's file and folder names. Spoken, a name like
  * "CommitBox" or "pi-durable" is easy to mishear; written out, the voice
@@ -491,12 +492,12 @@ async function projectWords(folder: () => Promise<string>) {
   try {
     const cwd = await folder();
     const [files, branch] = await Promise.all([
-      run('git', ['-C', cwd, 'ls-files'], { maxBuffer: 16 << 20 }),
-      run('git', ['-C', cwd, 'branch', '--show-current']),
+      git(cwd, ['ls-files']),
+      git(cwd, ['branch', '--show-current']),
     ]);
     const names = new Set<string>();
-    if (branch.stdout.trim()) names.add(branch.stdout.trim());
-    for (const path of files.stdout.split('\n')) {
+    if (branch.trim()) names.add(branch.trim());
+    for (const path of files.split('\n')) {
       for (const part of path.split('/').slice(0, -1)) names.add(part);
       // Without the extension: people say "CommitBox", not "CommitBox dot tsx".
       const name = basename(path).replace(/\.[^.]+$/, '');

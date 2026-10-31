@@ -1,7 +1,8 @@
-import { $ } from 'bun';
 import { existsSync } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
+
+import { git } from '../git/run';
 
 // A copied virtualenv still points at the main folder, so its editable
 // installs would run the main folder's code.
@@ -56,11 +57,14 @@ function cloner() {
  * Ones already there are left alone.
  */
 export async function copyIgnored(from: string, to: string) {
-  const stdout =
-    await $`git ls-files -z --others --ignored --exclude-standard --directory`
-      .cwd(from)
-      .quiet()
-      .text();
+  const stdout = await git(from, [
+    'ls-files',
+    '-z',
+    '--others',
+    '--ignored',
+    '--exclude-standard',
+    '--directory',
+  ]);
   const listed = stdout
     .split('\0')
     .filter(Boolean)

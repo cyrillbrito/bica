@@ -1,7 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { constants } from 'node:os';
 import { resolve } from 'node:path';
-import { stripVTControlCharacters } from 'node:util';
 import type { Op } from '@earendil-works/chord/delta';
 
 import type {
@@ -426,7 +425,7 @@ export function commandDone(id: string) {
 
 /** Output as text: no colors, and only the last state of redrawn lines. */
 function plain(output: string) {
-  return stripVTControlCharacters(output)
+  return Bun.stripANSI(output)
     .split('\n')
     .map((line) => {
       const parts = line.replace(/\r$/, '').split('\r');
