@@ -9,8 +9,7 @@ import { startCall } from '../voice/voice';
 import { paths } from '../router';
 import Composer, { type ComposerApi } from './Composer';
 import ModelPicker from '../models/ModelPicker';
-import { IconButton } from '../ui/Button';
-import { MoonIcon, VoiceIcon } from '../ui/icons';
+import { MoonIcon } from '../ui/icons';
 import { errorText } from '../ui/errors';
 
 // What the home page's next session runs as; ⌘K's "New assistant session"
@@ -87,20 +86,12 @@ export default function StartComposer(props: {
       draft={props.draft}
       ref={(api) => (composer = api)}
       placeholder={props.placeholder ?? 'Start a new session…'}
-      actions={
-        <>
-          <IconButton
-            size="md"
-            title={`Run tonight at ${settings().nightStart}, on its own, and report in the morning`}
-            onClick={() => composer?.sendAlternate()}
-          >
-            <MoonIcon />
-          </IconButton>
-          <IconButton size="md" title="Start with a voice call" onClick={call}>
-            <VoiceIcon />
-          </IconButton>
-        </>
-      }
+      onCall={call}
+      alternate={{
+        label: 'Run tonight',
+        hint: `At ${settings().nightStart}, with a morning report`,
+        icon: <MoonIcon />,
+      }}
       controls={<ModelPicker value={choice()} onChange={setChoice} />}
     />
   );

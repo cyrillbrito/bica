@@ -1,9 +1,33 @@
 import { createSignal, untrack } from 'solid-js';
 
-import { request } from '../socket/socket';
+import { request, useTopicWhenReady } from '../socket/socket';
 import { toPromptImage } from '../sessions/images';
 import { soundOn } from '../ui/sound';
 import { errorText } from '../ui/errors';
+
+// Development only: `?voice=off` shows the app as it is without the sign-in
+// calls and dictation need, kept for the tab like `?data=`. `?voice=on`
+// goes back.
+const VOICE_KEY = 'bica.voice';
+if (import.meta.env.DEV) {
+  const param = new URLSearchParams(location.search).get('voice');
+  if (param === 'off') sessionStorage.setItem(VOICE_KEY, 'off');
+  if (param === 'on') sessionStorage.removeItem(VOICE_KEY);
+}
+const voiceOff =
+  import.meta.env.DEV && sessionStorage.getItem(VOICE_KEY) === 'off';
+
+/**
+ * Whether calls and dictation can work: they need the OpenAI Codex (legacy)
+ * sign-in (docs/voice.md). True until the providers load, so their buttons
+ * don't flash away for everyone who has it.
+ */
+export function useVoiceReady() {
+  const catalog = useTopicWhenReady('models', () => ({}));
+  return () =>
+    !voiceOff &&
+    (catalog()?.providers.some((p) => p.id === 'openai-codex') ?? true);
+}
 
 // Hold music: SomaFM's Groove Salad, https://somafm.com. An <audio> element
 // like the voice, because iOS suspends Web Audio when the phone locks.

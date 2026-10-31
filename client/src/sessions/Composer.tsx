@@ -10,6 +10,7 @@ import {
 
 import { Meter } from '../voice/CallBar';
 import { createDictation } from '../voice/dictation';
+import { useVoiceReady } from '../voice/voice';
 import { imageUrl, toPromptImage } from './images';
 import type { PromptImage } from '@bica/shared/protocol';
 import { imageMarker, imageMarkers } from '@bica/shared/images';
@@ -24,6 +25,7 @@ import {
   MicIcon,
   QueueIcon,
   StopIcon,
+  VoiceIcon,
 } from '../ui/icons';
 import { Spinner } from '../ui/Spinner';
 import Chevron from '../ui/Chevron';
@@ -85,15 +87,13 @@ export interface ComposerApi {
   // Puts a prompt taken back from the queue into the box, after what's typed.
   restore: (prompt: string, images: PromptImage[]) => void;
   problem: (message: string) => void;
-  // Sends what's typed the `alternate` way, for a button in `actions`.
-  sendAlternate: () => void;
   // Keeps what's typed as a normal draft when the hold ends, e.g. on Cancel.
   releaseHold: () => void;
 }
 
 export default function Composer(props: {
   // steer: join the current run after its step, instead of queuing.
-  // alternate: sent through `sendAlternate` instead of the send button.
+  // alternate: sent through the `alternate` entry in the send menu.
   onSend: (
     prompt: string,
     images: PromptImage[],
@@ -113,8 +113,11 @@ export default function Composer(props: {
   placeholder?: string;
   // Next to attach, e.g. the model picker.
   controls?: JSX.Element;
-  // Just left of stop and send, e.g. the voice call button.
-  actions?: JSX.Element;
+  // Starts a voice call. Its button takes the send spot while the box is
+  // empty, since a call and a typed prompt rarely go together.
+  onCall?: () => void;
+  // Another way to send, under the send button's chevron, e.g. Run tonight.
+  alternate?: { label: string; hint: string; icon: JSX.Element };
   // Above the text, inside the box, e.g. the queued prompts.
   top?: JSX.Element;
   // A run is working: sending steers, ⌘Enter queues, and a stop button shows.
@@ -131,10 +134,20 @@ export default function Composer(props: {
   // Whether there's anything to send: the send button wakes up when there is.
   const [typed, setTyped] = createSignal(false, { name: 'composerTyped' });
   const empty = () => !typed() && !images().length;
-  // Working with something typed: send splits into send now and a menu.
-  const split = () => !!props.busy && !empty();
   // Working with nothing typed: the send button stops instead.
   const stopHere = () => !!props.busy && !!props.onStop && empty();
+  // Without the sign-in voice needs, calls and dictation don't show at all.
+  const voiceReady = useVoiceReady();
+  const canCall = () => !!props.onCall && voiceReady();
+  // Idle with nothing typed: the send button starts a voice call instead.
+  const callHere = () => canCall() && !props.busy && empty();
+  // More than one way to send: send grows a menu. With an alternate it
+  // stays split while empty, unless a call holds the spot, so typing only
+  // wakes it instead of changing its shape.
+  const split = () =>
+    props.busy ? !empty() : !!props.alternate && !callHere();
+  // Working with nothing typed, where stop holds the send spot.
+  const callAside = () => canCall() && !!props.busy && empty();
   let picker!: HTMLInputElement;
   let textarea!: HTMLTextAreaElement;
   let sendMenu: HTMLDivElement | undefined;
@@ -246,7 +259,6 @@ export default function Composer(props: {
       save();
     },
     problem: setProblem,
-    sendAlternate: () => void send(false, true),
     releaseHold: () => (keepOnRelease = true),
   };
 
@@ -677,7 +689,7 @@ export default function Composer(props: {
           <IconButton
             size="md"
             round
-            hidden={!touch}
+            hidden={!touch || !voiceReady()}
             variant={dictation.phase() === 'recording' ? 'primary' : undefined}
             title={
               dictation.phase() === 'recording'
@@ -695,7 +707,14 @@ export default function Composer(props: {
               <CheckIcon />
             </Show>
           </IconButton>
-          <div class={dictating() ? 'hidden' : 'contents'}>{props.actions}</div>
+          <IconButton
+            size="md"
+            title="Voice call"
+            hidden={!callAside() || dictating()}
+            onClick={() => props.onCall?.()}
+          >
+            <VoiceIcon />
+          </IconButton>
           <Show when={props.sendLabel}>
             {(label) => (
               <Button
@@ -720,11 +739,12 @@ export default function Composer(props: {
               </Button>
             )}
           </Show>
-          {/* One control in the send spot. Idle: send. Working with nothing
-            typed: stop. Working with something typed: a split button, send
-            now, and under the chevron Queue and Stop, the only way to either
-            on a phone. The buttons stay mounted and only their icon and
-            width change, so switching never pops a new button in. */}
+          {/* One control in the send spot, after ChatGPT's. Nothing typed:
+            a voice call, or stop while working. Something typed: send, or
+            a split button when there's another way to send it, with Queue,
+            the alternate, and Stop under the chevron, the only way to any
+            of them on a phone. The buttons stay mounted and only their icon
+            and width change, so switching never pops a new button in. */}
           {/* One shape that clips both buttons, so the chevron widens it
             from a circle into a pill instead of popping in beside it. */}
           <div
@@ -734,7 +754,7 @@ export default function Composer(props: {
             // while the chevron shrinks.
             class={[
               'ml-1 flex overflow-hidden rounded-full transition-[opacity,scale] duration-150 ease-out',
-              empty() && !stopHere() && 'opacity-30 motion-safe:scale-90',
+              empty() && !stopHere() && !callHere() && 'opacity-30',
             ]}
             style={{ 'anchor-name': `--${sendMenuId}` }}
           >
@@ -742,19 +762,26 @@ export default function Composer(props: {
               class="rounded-none!"
               variant="primary"
               size="md"
-              type={stopHere() ? 'button' : 'submit'}
+              type={stopHere() || callHere() ? 'button' : 'submit'}
               title={
                 stopHere()
                   ? 'Stop (Esc twice)'
-                  : split()
-                    ? 'Send now, into this run'
-                    : 'Send'
+                  : callHere()
+                    ? 'Voice call'
+                    : props.busy
+                      ? 'Send now, into this run'
+                      : 'Send'
               }
               loading={stopHere() ? stopping() : uploading() > 0}
-              aria-disabled={empty() && !stopHere() ? 'true' : undefined}
-              onClick={() => stopHere() && void stop()}
+              aria-disabled={
+                empty() && !stopHere() && !callHere() ? 'true' : undefined
+              }
+              onClick={() => {
+                if (stopHere()) void stop();
+                else if (callHere()) props.onCall?.();
+              }}
             >
-              {/* Both icons stay, stacked, and crossfade. */}
+              {/* Every icon stays, stacked, and they crossfade. */}
               <span class="grid place-items-center *:col-start-1 *:row-start-1 *:transition-[opacity,scale] *:duration-200 *:ease-out">
                 <span
                   class={[
@@ -768,8 +795,18 @@ export default function Composer(props: {
                 </span>
                 <span
                   class={[
+                    '[&_svg]:size-4',
+                    callHere()
+                      ? 'opacity-100'
+                      : 'opacity-0 motion-safe:scale-50',
+                  ]}
+                >
+                  <VoiceIcon />
+                </span>
+                <span
+                  class={[
                     '[&_svg]:size-3.5 [&_svg]:stroke-[2.5]',
-                    stopHere()
+                    stopHere() || callHere()
                       ? 'opacity-0 motion-safe:scale-50'
                       : 'opacity-100',
                   ]}
@@ -808,24 +845,44 @@ export default function Composer(props: {
             width="sm"
           >
             <OptionList>
-              <button
-                type="button"
-                class={optionClass}
-                onClick={() => {
-                  sendMenu?.hidePopover();
-                  void send(false);
-                }}
-              >
-                <QueueIcon />
-                <span class="flex-1">
-                  Queue
-                  <span class="block text-meta text-muted">
-                    Sends when the run ends
+              <Show when={props.busy}>
+                <button
+                  type="button"
+                  class={optionClass}
+                  onClick={() => {
+                    sendMenu?.hidePopover();
+                    void send(false);
+                  }}
+                >
+                  <QueueIcon />
+                  <span class="flex-1">
+                    Queue
+                    <span class="block text-meta text-muted">
+                      Sends when the run ends
+                    </span>
                   </span>
-                </span>
-                <Kbd class="-mr-1 touch:hidden">⌘Enter</Kbd>
-              </button>
-              <Show when={props.onStop}>
+                  <Kbd class="-mr-1 touch:hidden">⌘Enter</Kbd>
+                </button>
+              </Show>
+              <Show when={props.alternate}>
+                {(a) => (
+                  <button
+                    type="button"
+                    class={optionClass}
+                    onClick={() => {
+                      sendMenu?.hidePopover();
+                      void send(false, true);
+                    }}
+                  >
+                    {a().icon}
+                    <span class="flex-1">
+                      {a().label}
+                      <span class="block text-meta text-muted">{a().hint}</span>
+                    </span>
+                  </button>
+                )}
+              </Show>
+              <Show when={props.busy && props.onStop}>
                 <button
                   type="button"
                   class={optionClass}

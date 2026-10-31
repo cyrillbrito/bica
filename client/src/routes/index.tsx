@@ -52,8 +52,8 @@ export default function Home() {
   return (
     <>
       <TopBar />
-      <div class="chat-column flex flex-1 flex-col justify-center gap-6 pb-[15vh]">
-        <h1 class="text-center text-display font-semibold tracking-tight">
+      <div class="chat-column flex flex-1 flex-col justify-center gap-8 pb-[15vh]">
+        <h1 class="text-center font-reading text-greeting font-medium tracking-tight">
           {heading}
         </h1>
         <Show

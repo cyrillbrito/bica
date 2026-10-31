@@ -181,6 +181,10 @@
   /* One big number or one page title per screen. */
   --text-display: 22px;
   --text-display--line-height: 1.25;
+  /* The greeting over the new session composer, big enough to balance its
+     full-width box. */
+  --text-greeting: 32px;
+  --text-greeting--line-height: 1.2;
 
   /* A halo swelling and fading around a dot that waits on you (a session
      asking a question), after affectUI's Agent Inbox. */

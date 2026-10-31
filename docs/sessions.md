@@ -6,7 +6,7 @@ Sessions run on Pi Durable, which saves every turn and tool call before anyone s
 
 ## Starting one
 
-The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. The moon button holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
+The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. Run tonight, under the send button's chevron, holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
 
 ## The transcript
 
@@ -28,7 +28,7 @@ The transcript shows your prompts with their images, the agent's replies, its th
 
 ## Steer, queue, stop
 
-While the agent works, sending steers: the prompt joins the current run after the turn in progress, as Enter does in Pi, Codex, and Cursor, since a prompt sent mid-run is nearly always about the work at hand. One control sits in the send spot: send when idle, stop while the agent works with nothing typed, and a split button once you type, send now plus a chevron with Queue and Stop, as in Cursor. ⌘Enter, or Queue under the chevron, queues the prompt instead, to start the next run. On a phone the chevron is the only way to queue or stop while typing. Both wait on a tray above the composer until taken, one quiet line each, marked by an icon: accent for sending now, grey for queued. Every tab sees the same queue.
+While the agent works, sending steers: the prompt joins the current run after the turn in progress, as Enter does in Pi, Codex, and Cursor, since a prompt sent mid-run is nearly always about the work at hand. One control sits in the send spot. With nothing typed it starts a [voice call](./voice.md), or stops while the agent works, and the call moves beside it. Once you type it sends, and while the agent works it splits into send now plus a chevron with Queue and Stop, as in Cursor. ⌘Enter, or Queue under the chevron, queues the prompt instead, to start the next run. On a phone the chevron is the only way to queue or stop while typing. Both wait on a tray above the composer until taken, one quiet line each, marked by an icon: accent for sending now, grey for queued. Every tab sees the same queue.
 
 - Send now on a queued line turns it into a steer.
 - Clicking a line, or its arrow, takes the prompt back into the composer, to edit or to clear. There is no separate remove.

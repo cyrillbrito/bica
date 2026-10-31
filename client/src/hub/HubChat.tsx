@@ -17,8 +17,6 @@ import CallBar from '../voice/CallBar';
 import Composer, { type ComposerApi } from '../sessions/Composer';
 import MessageRow from '../sessions/MessageRow';
 import Queue from '../sessions/Queue';
-import { IconButton } from '../ui/Button';
-import { VoiceIcon } from '../ui/icons';
 
 /**
  * The hub's conversation: the transcript, then a composer with a voice call
@@ -107,15 +105,7 @@ export default function HubChat(props: { id: string }) {
                 )}
               </Show>
             }
-            actions={
-              <IconButton
-                size="md"
-                title="Voice call"
-                onClick={() => void startCall(props.id)}
-              >
-                <VoiceIcon />
-              </IconButton>
-            }
+            onCall={() => void startCall(props.id)}
           />
         </div>
       </div>

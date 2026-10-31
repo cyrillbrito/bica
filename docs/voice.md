@@ -1,6 +1,6 @@
 # Voice calls and dictation
 
-A voice call lets you talk to a session. The sound-wave button next to send starts one, and on the home page it starts a new session with a call on it.
+A voice call lets you talk to a session. The sound-wave button in the send spot starts one while nothing is typed, as in ChatGPT, and on the home page it starts a new session with a call on it. While the agent works, stop takes the spot and the call button sits beside it.
 
 During the call, the composer becomes the call panel: a level meter, what is being said, the model picker, mute, and a red end button. Each finished line moves into the transcript.
 
@@ -34,7 +34,7 @@ On a phone, the mic button in the composer records until you tap its check, then
 
 ## Sign-in
 
-Calls and dictation need the OpenAI Codex (legacy) provider in Settings → Providers ([models.md](./models.md#providers)). The newer Sign in with ChatGPT under OpenAI only covers chat models, so it doesn't work for them. Both run on the plan, the way the `pi-live-codex` extension and Codex Desktop do. That route is unofficial and may break.
+Calls and dictation need the OpenAI Codex (legacy) provider in Settings → Providers ([models.md](./models.md#providers)). Without it, their buttons don't show, and the empty composer's send spot is a faded send. In development, `?voice=off` fakes that for the tab, and `?voice=on` brings them back. The newer Sign in with ChatGPT under OpenAI only covers chat models, so it doesn't work for them. Both run on the plan, the way the `pi-live-codex` extension and Codex Desktop do. That route is unofficial and may break.
 
 ## When a call goes wrong
 

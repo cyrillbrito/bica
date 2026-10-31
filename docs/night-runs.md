@@ -4,7 +4,7 @@ A night run is a session held for tonight. Its prompt waits until the night star
 
 ## Holding one
 
-The moon button on the home composer holds the typed prompt instead of sending it, and its sidebar row shows a Tonight tag. Until it runs, the composer edits that one prompt: edits save as you type, Run now sends it, and the strip's × turns it back into a normal draft.
+Run tonight, under the chevron of the home composer's send button, holds the typed prompt instead of sending it, and its sidebar row shows a Tonight tag. Until it runs, the composer edits that one prompt: edits save as you type, Run now sends it, and the strip's × turns it back into a normal draft.
 
 Other sessions can hold one with `session_start` and `tonight` ([orchestration.md](./orchestration.md#the-session-tools)). That is how the [hub](./hub.md) schedules work you dictate from the phone.
 

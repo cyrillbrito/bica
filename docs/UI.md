@@ -97,6 +97,7 @@ Sizes are defined by role in `@theme`, and Tailwind's own sizes (`text-sm`, `tex
 - `text-code` (13px): code blocks, tool output, diffs, terminals.
 - `text-read` (16px, 1.65): the conversation (agent replies, your prompts, the composer) and touch inputs, since iOS zooms below 16px.
 - `text-display` (22px): one big number or title per screen.
+- `text-greeting` (32px): the greeting over the new session composer, in `font-reading`.
 - `font-ui` (Atkinson Hyperlegible Next, built for legibility and narrower than Lexend, so rows fit more) for the app, `font-reading` (Libron, a book face) for what the agent writes (`.markdown`), and `font-mono` (Atkinson Hyperlegible Mono, the same family) for code, paths, diffs and terminals. Fonts are self-hosted in `public/fonts/`. Tables in replies stay in `font-ui`, and Markdown headings scale in `em`.
 - The `bica/type-tokens` lint rule (`lint/bica.js`) fails on removed Tailwind names and raw sizes like `text-[13px]`. A new role goes in `@theme` and here, not inline.
 

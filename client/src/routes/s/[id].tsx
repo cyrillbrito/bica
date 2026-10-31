@@ -34,7 +34,7 @@ import TitleInput from '../../sessions/TitleInput';
 import TopBar from '../../app/TopBar';
 import { IconButton } from '../../ui/Button';
 import Empty from '../../ui/Empty';
-import { CloseIcon, ParentIcon, SessionIcon, VoiceIcon } from '../../ui/icons';
+import { CloseIcon, ParentIcon, SessionIcon } from '../../ui/icons';
 import { drawer, hasPanels, setNoPanels } from '../../ui/layout';
 import { openFromSearch, sameOpen, sessionFileHref } from '../../files/files';
 import { useCurrentWorkspace } from '../../projects/projects';
@@ -501,16 +501,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                     </Ready>
                   }
                   controls={modelPicker()}
-                  actions={
-                    <IconButton
-                      size="md"
-                      title="Voice call"
-                      hidden={held() !== null}
-                      onClick={() => void startCall(props.params.id!)}
-                    >
-                      <VoiceIcon />
-                    </IconButton>
-                  }
+                  onCall={() => void startCall(props.params.id!)}
                 />
               </div>
             </div>
