@@ -3,7 +3,7 @@
 The agent works through tools. Every call carries a short summary of what it is for, so the transcript reads as a list of intentions. The exception is `codemode` on models that write its script as raw text, such as GPT-5, which take no other field. Other models, such as Claude, get codemode as a plain JSON tool, so its calls carry a summary too. What the agent is told about using them is in [system-prompt.md](./system-prompt.md).
 
 - Read, write, edit, and bash work in the session's workspace. Read also shows images to the model, shrunk when they are too big.
-- Web search and fetch go through Exa, once its key is set ([models.md](./models.md#providers)).
+- Web search and fetch go through Exa, once its key is set ([models.md](./models.md#providers)). Both take a list: search runs its queries in parallel, and fetch reads all its URLs in one Exa request. A fetch returns at most 50,000 characters of page text, split evenly between its URLs, and a page that fails shows its error without failing the others.
 - Terminal tools share the workspace's terminals with you ([terminals.md](./terminals.md)).
 - The session tools start, read, message, and stop other sessions ([orchestration.md](./orchestration.md#the-session-tools)).
 
@@ -20,4 +20,5 @@ Scripts can also call classifier models, which answer typed yes/no, choice, or s
 ## Sources
 
 - Pi Durable's [`codemode`](https://github.com/earendil-works/pi/tree/main/packages/durable).
+- Exa's own [`web_fetch_exa`](https://github.com/exa-labs/exa-mcp-server/blob/main/src/tools/webFetch.ts) and Parallel's [Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp), which take lists of URLs and queries. Before lists, most web calls ran inside codemode scripts that only looped over them.
 - The [web search benchmark for coding agents](https://github.com/openbenchmarks-labs/web-search-for-coding-agents), where Exa leads search and fetch.

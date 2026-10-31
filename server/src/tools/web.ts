@@ -6,6 +6,7 @@ import type { ToolRegistration } from '@earendil-works/pi-durable';
 // https://exa.ai/docs/reference/search · https://exa.ai/docs/reference/get-contents
 
 type ExaResult = {
+  id?: string;
   title?: string;
   url?: string;
   publishedDate?: string;
@@ -23,6 +24,10 @@ type ExaResponse = {
 };
 
 const DAYS = { day: 1, week: 7, month: 30, year: 365 } as const;
+
+// One fetch returns at most this much page text, split evenly between its
+// URLs, so a long list costs no more context than one full page.
+const FETCH_BUDGET = 50_000;
 
 async function exa(
   apiKey: () => Promise<string | undefined>,
@@ -60,18 +65,20 @@ function heading(result: ExaResult) {
     : `## ${result.url}${date}`;
 }
 
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function createWebTools(apiKey: () => Promise<string | undefined>) {
   const webSearch = defineTool({
     name: 'web_search',
     description:
       'Search the web. Returns the top results with title, URL, date and the most relevant passages. Use web_fetch to read a result in full.',
     parameters: Type.Object({
-      query: Type.String({
+      queries: Type.Array(Type.String(), {
+        minItems: 1,
         description: 'What to search for, in natural language',
       }),
-      numResults: Type.Optional(
-        Type.Number({ description: 'Number of results (default 5, max 20)' }),
-      ),
       recency: Type.Optional(
         Type.Union(
           [
@@ -91,36 +98,52 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
       ),
     }),
     replay: 'safe',
-    async execute({ query, numResults, recency, domains }, _api, context) {
+    async execute({ queries, recency, domains }, _api, context) {
       const include = domains?.filter((d) => !d.startsWith('-'));
       const exclude = domains
         ?.filter((d) => d.startsWith('-'))
         .map((d) => d.slice(1));
-      const data = await exa(
-        apiKey,
-        '/search',
-        {
-          query,
-          type: 'auto',
-          numResults: Math.min(Math.max(numResults ?? 5, 1), 20),
-          ...(include?.length && { includeDomains: include }),
-          ...(exclude?.length && { excludeDomains: exclude }),
-          ...(recency && {
-            startPublishedDate: new Date(
-              Date.now() - DAYS[recency] * 86_400_000,
-            ).toISOString(),
-          }),
-          // Exa sizes each excerpt by its relevance, as its docs recommend.
-          contents: { highlights: true },
-        },
-        context.abortSignal,
+      const search = async (query: string) => {
+        const data = await exa(
+          apiKey,
+          '/search',
+          {
+            query,
+            type: 'auto',
+            numResults: 5,
+            ...(include?.length && { includeDomains: include }),
+            ...(exclude?.length && { excludeDomains: exclude }),
+            ...(recency && {
+              startPublishedDate: new Date(
+                Date.now() - DAYS[recency] * 86_400_000,
+              ).toISOString(),
+            }),
+            // Exa sizes each excerpt by its relevance, as its docs recommend.
+            contents: { highlights: true },
+          },
+          context.abortSignal,
+        );
+        const results = data.results ?? [];
+        if (!results.length) return 'No results.';
+        return results
+          .map((r) => `${heading(r)}\n\n${(r.highlights ?? []).join('\n\n')}`)
+          .join('\n\n');
+      };
+      // Exa answers 429 to most of 25 searches started at once.
+      const settled: PromiseSettledResult<string>[] = [];
+      for (let i = 0; i < queries.length; i += 5)
+        settled.push(
+          ...(await Promise.allSettled(queries.slice(i, i + 5).map(search))),
+        );
+      if (settled.every((s) => s.status === 'rejected'))
+        throw (settled[0] as PromiseRejectedResult).reason;
+      const parts = settled.map((s) =>
+        s.status === 'fulfilled' ? s.value : `Failed: ${errorText(s.reason)}`,
       );
-      const results = data.results ?? [];
-      if (!results.length)
-        return { output: [{ type: 'text', text: 'No results.' }] };
-      const text = results
-        .map((r) => `${heading(r)}\n\n${(r.highlights ?? []).join('\n\n')}`)
-        .join('\n\n');
+      const text =
+        parts.length === 1
+          ? parts[0]!
+          : parts.map((p, i) => `# Search: ${queries[i]}\n\n${p}`).join('\n\n');
       return { output: [{ type: 'text', text }] };
     },
   });
@@ -128,9 +151,12 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
   const webFetch = defineTool({
     name: 'web_fetch',
     description:
-      'Read a public web page (articles, docs, PDFs) as clean text. Pass `query` to get only the passages relevant to it instead of the whole page. Cannot reach localhost or private networks; use bash (curl) for those.',
+      'Read public web pages (articles, docs, PDFs) as clean text. Pass `query` to get only the passages relevant to it instead of the whole page. Cannot reach localhost or private networks; use bash (curl) for those.',
     parameters: Type.Object({
-      url: Type.String({ description: 'The page URL' }),
+      urls: Type.Array(Type.String(), {
+        minItems: 1,
+        description: 'The page URLs',
+      }),
       query: Type.Optional(
         Type.String({
           description: 'Return only the passages relevant to this question',
@@ -143,34 +169,45 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
       ),
     }),
     replay: 'safe',
-    async execute({ url, query, fresh }, _api, context) {
+    async execute({ urls, query, fresh }, _api, context) {
       const data = await exa(
         apiKey,
         '/contents',
         {
-          urls: [url],
+          urls,
           ...(query
             ? { highlights: { query } }
-            : { text: { maxCharacters: 50_000 } }),
+            : {
+                text: {
+                  maxCharacters: Math.floor(FETCH_BUDGET / urls.length),
+                },
+              }),
           ...(fresh && { maxAgeHours: 0 }),
         },
         context.abortSignal,
       );
-      const failed = data.statuses?.find((s) => s.status !== 'success');
-      const result = data.results?.[0];
-      if (failed || !result) {
-        const reason = failed?.error?.tag ?? 'no content';
-        const status = failed?.error?.httpStatusCode;
-        throw new Error(
-          `Could not fetch ${url}: ${reason}${status ? ` (HTTP ${status})` : ''}`,
+      const pages = urls.map((url) => {
+        const failed = data.statuses?.find(
+          (s) => s.id === url && s.status !== 'success',
         );
-      }
-      const body = query
-        ? (result.highlights ?? []).join('\n\n')
-        : (result.text ?? '');
-      return {
-        output: [{ type: 'text', text: `${heading(result)}\n\n${body}` }],
-      };
+        const result = data.results?.find((r) => (r.id ?? r.url) === url);
+        if (failed || !result) {
+          const reason = failed?.error?.tag ?? 'no content';
+          const status = failed?.error?.httpStatusCode;
+          return {
+            ok: false,
+            text: `Could not fetch ${url}: ${reason}${status ? ` (HTTP ${status})` : ''}`,
+          };
+        }
+        const body = query
+          ? (result.highlights ?? []).join('\n\n')
+          : (result.text ?? '');
+        return { ok: true, text: `${heading(result)}\n\n${body}` };
+      });
+      if (!pages.some((p) => p.ok))
+        throw new Error(pages.map((p) => p.text).join('\n'));
+      const text = pages.map((p) => p.text).join('\n\n');
+      return { output: [{ type: 'text', text }] };
     },
   });
 

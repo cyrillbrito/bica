@@ -257,7 +257,7 @@ function finished(id: string) {
         },
         {
           name: 'web_search',
-          args: { query: 'CSS anchor positioning resize handle' },
+          args: { queries: ['CSS anchor positioning resize handle'] },
           output: '5 results',
           ms: 4100,
         },
@@ -397,7 +397,9 @@ function live(id: string, worst: boolean) {
         args: {
           command: `bun test client/src/lib/layout.test.ts --filter "${'width '.repeat(i + 3)}"`,
           path: `/Users/aleksandra/Repos/northwind-enterprise-platform/packages/${'deeply/'.repeat(4)}file-${i}.ts`,
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage',
+          urls: [
+            'https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage',
+          ],
         },
       }))
     : [
