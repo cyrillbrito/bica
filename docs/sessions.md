@@ -73,6 +73,6 @@ Read state lives on the server, so opening a session on the phone marks it read 
 
 ## Archiving
 
-Archive moves a session to the sidebar's Archived section, and unarchive brings it back, as does sending it a prompt. Nothing is deleted. The toast after archiving has an Undo button, which unarchives the same sessions; terminals closed with them stay closed, and detached child sessions stay detached. You can't archive a running session, but an agent can, and it goes once its turn ends. Archiving a parent asks which of its child sessions go with it, none by default, and detaches the rest ([orchestration](./orchestration.md)).
+Archive moves a session to the sidebar's Archived section, and unarchive brings it back, as does sending it a prompt. Nothing is deleted. The toast after archiving has an Undo button, which unarchives the same sessions; terminals closed with them stay closed, and detached child sessions stay detached. You can't archive a running session, but an agent can, and it goes once its turn ends. Archiving a parent asks which of its child sessions go with it, none by default, and detaches the rest ([orchestration](./orchestration.md)). Archiving a worktree's last open session offers to remove the worktree instead of Undo ([projects](./projects.md#worktrees)).
 
 To archive many at once, ⌘ click or shift click sessions in the sidebar, then use the bar at the bottom.

@@ -19,15 +19,9 @@ import {
   createWorktree,
   getProject,
   listProjects,
-  setupCommand,
 } from '../projects/projects';
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
-import {
-  commandDone,
-  createTerminal,
-  removeTerminal,
-} from '../terminals/terminals';
 import { VOICE_TITLE, nameSession, promptTitle, retitle } from './names';
 import { submit } from './prompts';
 import {
@@ -88,20 +82,9 @@ export async function createSession({
   const project = await getProject(projectId);
   // The branch needs a name now, so the title is waited for here.
   const named = worktree ? await nameSession(prompt) : '';
-  if (worktree) {
+  if (worktree)
     cwd = await createWorktree(projectId, named || promptTitle(prompt));
-    const command = setupCommand(cwd);
-    if (command) {
-      const id = await createTerminal(
-        { projectId, cwd },
-        { command, title: 'Setup' },
-      );
-      // Like Zed's `hide: on_success`: only a failed setup stays to be read.
-      void commandDone(id).then((code) => {
-        if (code === 0) void removeTerminal(id);
-      });
-    }
-  } else if (cwd && !project.workspaces.some((w) => w.path === cwd))
+  else if (cwd && !project.workspaces.some((w) => w.path === cwd))
     throw new Error(`${cwd} is not a workspace of ${project.name}`);
   const { model, thinkingLevel } = choice
     ? checkChoice(atLeast(agent, choice))

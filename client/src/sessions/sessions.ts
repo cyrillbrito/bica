@@ -5,7 +5,9 @@ import type {
   PromptImage,
   SessionSummary,
   VoiceSettings,
+  WorkspaceRef,
 } from '@bica/shared/protocol';
+import { removeEmptied } from '../projects/remove';
 import { errorText } from '../ui/errors';
 import { toast } from '../ui/Toast';
 import {
@@ -72,7 +74,11 @@ function archiveSession(id: string, archived = true) {
   return request('session.archive', { id, archived });
 }
 
-/** Archives or brings back `list`, and says how it went in a toast. */
+/**
+ * Archives or brings back `list`, and says how it went in a toast. A
+ * worktree left with no open session is offered for removal there, so
+ * finished work doesn't linger on disk.
+ */
 export async function setArchived(
   list: readonly SessionSummary[],
   archived = true,
@@ -83,6 +89,7 @@ export async function setArchived(
   // ones still open, and those archived with it should keep their place.
   const failed: unknown[] = [];
   const changed: SessionSummary[] = [];
+  const emptied: WorkspaceRef[] = [];
   let left = [...list];
   while (left.length) {
     const leaves = left.filter((s) => !left.some((o) => o.parent === s.id));
@@ -90,11 +97,12 @@ export async function setArchived(
     const results = await Promise.allSettled(
       leaves.map((s) => archiveSession(s.id, archived)),
     );
-    results.forEach((r, i) =>
-      r.status === 'rejected'
-        ? failed.push(r.reason)
-        : changed.push(leaves[i]!),
-    );
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') return failed.push(r.reason);
+      changed.push(leaves[i]!);
+      if (r.value && !emptied.some((o) => o.cwd === r.value!.cwd))
+        emptied.push(r.value);
+    });
   }
   const done = changed.length;
   const verb = archived ? 'Archived' : 'Unarchived';
@@ -106,21 +114,30 @@ export async function setArchived(
     });
   if (!done) return;
   const one = list.length === 1 ? list[0]!.title : '';
+  const alone =
+    emptied.length === 1 &&
+    `No sessions left in ${emptied[0]!.cwd.split('/').pop()}`;
+  // One button: removing the emptied worktree matters more than Undo, which
+  // unarchiving still does.
+  const action = emptied.length
+    ? {
+        label:
+          emptied.length === 1
+            ? 'Remove worktree'
+            : `Remove ${emptied.length} worktrees`,
+        onClick: () => void removeEmptied(emptied),
+      }
+    : // Brings the sessions back, but not the terminals closed with them.
+      archived && {
+        label: 'Undo',
+        onClick: () => void setArchived(changed, false),
+      };
   toast(
     {
       title: `${verb} ${count(done)}`,
-      description: [one, note].filter(Boolean).join(' · ') || undefined,
+      description: [one, note, alone].filter(Boolean).join(' · ') || undefined,
     },
-    // Brings the sessions back, but not the terminals closed with them.
-    archived
-      ? {
-          action: {
-            label: 'Undo',
-            onClick: () => void setArchived(changed, false),
-          },
-          duration: 6000,
-        }
-      : undefined,
+    action ? { action, duration: emptied.length ? 8000 : 6000 } : undefined,
   );
 }
 

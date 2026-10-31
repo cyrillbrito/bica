@@ -12,6 +12,7 @@ import type {
   PullRequest,
   Workspace,
 } from '@bica/shared/protocol';
+import { copyIgnored } from './copy-ignored';
 import { pullRequests } from './github';
 import { live } from '../live';
 import { BICA_HOME, jsonFile } from '../storage';
@@ -230,7 +231,8 @@ export async function updateProject(id: string, edit: ProjectEdit) {
 /**
  * A new worktree for a session: its own branch from the freshly fetched
  * default branch, or the local one when it is ahead, in a sibling folder
- * like `../shop-sidebar-resize`. Its path.
+ * like `../shop-sidebar-resize`, with the main folder's ignored files
+ * cloned in. Its path.
  */
 export async function createWorktree(projectId: string, title: string) {
   const project = await getProject(projectId);
@@ -265,6 +267,9 @@ export async function createWorktree(projectId: string, title: string) {
   const path = `${project.path}-${branch}`;
   // No tracking: the branch pushes to its own name, not to main.
   await git(['worktree', 'add', '-q', '--no-track', '-b', branch, path, base]);
+  await copyIgnored(project.path, path).catch((e) =>
+    console.warn(`Copying ignored files into ${path} failed:`, e),
+  );
   await projects.refresh();
   return path;
 }
@@ -310,20 +315,6 @@ export async function removeGitWorktree(projectId: string, path: string) {
   await git(['worktree', 'remove', '--force', path]);
   if (w.branch) await git(['branch', '-D', w.branch]).catch(() => {});
   await projects.refresh();
-}
-
-const LOCKFILES: [string, string][] = [
-  ['pnpm-lock.yaml', 'pnpm install'],
-  ['bun.lock', 'bun install'],
-  ['bun.lockb', 'bun install'],
-  ['yarn.lock', 'yarn install'],
-  ['package-lock.json', 'npm install'],
-  ['uv.lock', 'uv sync'],
-];
-
-/** What gets a fresh worktree ready: an install guessed from the lockfile. */
-export function setupCommand(path: string) {
-  return LOCKFILES.find(([file]) => existsSync(join(path, file)))?.[1];
 }
 
 /** Folders inside `path` (home by default), for picking a project. */

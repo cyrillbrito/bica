@@ -461,7 +461,8 @@ export interface Calls {
   'session.retry': { args: { id: string }; result: null };
   'session.archive': {
     args: { id: string; archived: boolean };
-    result: null;
+    // The worktree it left with no open session; null: none.
+    result: WorkspaceRef | null;
   };
   'session.rename': { args: { id: string; title: string }; result: null };
   // Summarizes older context now; instructions: what the summary keeps.

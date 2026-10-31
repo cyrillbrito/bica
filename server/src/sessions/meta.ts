@@ -1,7 +1,11 @@
 import type { ConversationId } from '@earendil-works/pi-durable';
 
 import type { AgentId } from '@bica/shared/agents';
-import type { PullRequest, VoiceSettings } from '@bica/shared/protocol';
+import type {
+  PullRequest,
+  VoiceSettings,
+  WorkspaceRef,
+} from '@bica/shared/protocol';
 import { context } from '../harness';
 import { getAgent, selection } from '../agents/registry';
 import {
@@ -132,8 +136,15 @@ async function releaseChildren(parents: string[]) {
       });
 }
 
-/** Hides a session from the list, or brings it back. Nothing is deleted. */
-export async function archive(id: string, archived: boolean) {
+/**
+ * Hides a session from the list, or brings it back. Nothing is deleted.
+ * The worktree it leaves with no open session, so the user can be offered
+ * to remove it; null: none.
+ */
+export async function archive(
+  id: string,
+  archived: boolean,
+): Promise<WorkspaceRef | null> {
   const { id: conversationId } = await getConversation(id);
   await editSession(conversationId, (meta) => {
     // Done with, so nobody watches it any more.
@@ -142,11 +153,23 @@ export async function archive(id: string, archived: boolean) {
       delete meta.watchedBy;
     } else delete meta.archivedAt;
   });
-  if (!archived) return;
+  if (!archived) return null;
   // The dev servers and shells it leads go with it; detached ones stay.
   for (const t of allTerminals())
     if (t.parent === id) await removeTerminal(t.id);
   await releaseChildren([id]);
+  return emptiedWorktree(id);
+}
+
+async function emptiedWorktree(id: string) {
+  const all = await listSessions();
+  const s = all.find((s) => s.id === id);
+  if (!s?.cwd || !s.projectId) return null;
+  if (all.some((o) => o.cwd === s.cwd && !o.archivedAt)) return null;
+  const project = await getProject(s.projectId).catch(() => null);
+  if (!project?.workspaces.some((w) => w.path === s.cwd && !w.main))
+    return null;
+  return { projectId: s.projectId, cwd: s.cwd };
 }
 
 /**

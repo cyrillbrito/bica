@@ -7,10 +7,10 @@ import { openProjectPicker } from '../../projects/ProjectPicker';
 import {
   CHATS_ID,
   pinProject,
-  removeWorktree,
   setCurrentTarget,
   type Target,
 } from '../../projects/projects';
+import { removeWorktreeAsking } from '../../projects/remove';
 import { paths } from '../../router';
 import { archiveWithChildren } from '../../sessions/ArchiveDialog';
 import { forkSession, markSeen, setArchived } from '../../sessions/sessions';
@@ -99,12 +99,7 @@ export function createSidebarMenus(props: {
     )
       return;
     try {
-      const risk = await removeWorktree(projectId, cwd!);
-      if (risk) {
-        if (!confirm(`${label} has ${risk}. Delete it anyway? They are lost.`))
-          return;
-        await removeWorktree(projectId, cwd!, true);
-      }
+      if (!(await removeWorktreeAsking(projectId, cwd!, label))) return;
       // Any file open or panel tab picked there is in the query too.
       if (
         location.pathname === paths.p(projectId)() &&

@@ -30,10 +30,6 @@ export function listDirs(path?: string) {
   return request('fs.dirs', { path });
 }
 
-export function removeWorktree(projectId: string, cwd: string, force = false) {
-  return request('worktree.cleanUp', { projectId, cwd, force });
-}
-
 function baseName(path: string) {
   return path.split('/').filter(Boolean).pop() ?? path;
 }

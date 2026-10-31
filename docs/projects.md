@@ -25,8 +25,10 @@ The home page's workspace picker searches every project's main folder and worktr
 
 - Git is the source of truth, so worktrees made in a terminal show up too.
 - New worktree makes one per session. The session's name becomes the branch and a folder next to the project's, and the branch starts from the freshly fetched default branch.
-- Setup runs in a terminal in the new worktree: an install guessed from the lockfile, like `bun install` for `bun.lock`.
+- A new worktree gets the main folder's gitignored files, such as `.env` and `node_modules`, so it runs without an install. They are copy-on-write clones, which share the disk until one side changes, and a whole folder clones in one call: `node_modules` takes seconds on macOS. Where the disk can't clone (APFS on macOS, btrfs or XFS on Linux), nothing is copied. Files already in the worktree are left alone, and a Python `.venv` is skipped, since a copy still points at the main folder.
+- There are no setup scripts: the agent runs an install itself when it needs one.
 - Remove worktree, in a worktree's menu, deletes its folder and local branch, archives its sessions, and closes its terminals. A worktree whose pull request merged or closed shows it as a button too. It asks first when that would lose uncommitted files or unmerged commits. A branch whose pull request was squash-merged counts as merged.
+- Archiving a worktree's last open session, however it's archived, offers Remove worktree in the toast, with the same check for lost work.
 
 ## Chats
 
@@ -54,3 +56,5 @@ The folder browser can list any folder the server can read. That is fine only be
 
 - Conductor searches workspaces by branch, repo, or PR number: https://www.conductor.build/changelog/0.26.0-search-workspaces-view-files-from-chat
 - Superset's branch picker puts an Open action on rows that already have a worktree: https://github.com/superset-sh/superset/pull/3397
+- Worktrunk's `copy-ignored` clones gitignored files into new worktrees: https://worktrunk.dev/step/. Conductor and Codex copy only listed ones, through `.worktreeinclude`: https://www.conductor.build/docs/reference/files-to-copy
+- Claude Code's desktop archive deletes the worktree with no check, the bug the archive offer avoids: https://github.com/anthropics/claude-code/issues/56639

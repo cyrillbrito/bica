@@ -179,10 +179,7 @@ const calls: Handlers = {
     await retryStuck(id);
     return null;
   },
-  'session.archive': async ({ id, archived }) => {
-    await archive(id, archived);
-    return null;
-  },
+  'session.archive': async ({ id, archived }) => archive(id, archived),
   'session.rename': async ({ id, title }) => {
     await rename(id, title);
     return null;
