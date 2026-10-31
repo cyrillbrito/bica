@@ -795,7 +795,8 @@
 
 /* Pierre trees and diffs live in shadow roots; they read these variables. */
 .file-tree {
-  --trees-bg-override: transparent;
+  /* Opaque: sticky folder rows paint it over the rows scrolling under them. */
+  --trees-bg-override: var(--color-panel);
   --trees-fg-override: var(--color-fg);
   --trees-fg-muted-override: var(--color-muted);
   --trees-selected-bg-override: var(--color-active);
