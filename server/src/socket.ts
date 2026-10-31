@@ -46,6 +46,7 @@ import {
   startNight,
 } from './night-runs/night';
 import { startHousekeeping } from './sessions/housekeeping';
+import { startWorktreeCleanup } from './projects/cleanup';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
 import { wsLogger } from './ws-log';
@@ -98,6 +99,7 @@ import {
 
 installAgents();
 startHousekeeping();
+startWorktreeCleanup();
 startNight();
 // Opens the harness, which resumes runs a restart left unfinished, and
 // follows them at once: a parent hears when one ends, open tab or not.

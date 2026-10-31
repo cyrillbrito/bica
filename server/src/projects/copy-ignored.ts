@@ -1,10 +1,7 @@
-import { execFile } from 'node:child_process';
+import { $ } from 'bun';
 import { existsSync } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
-import { promisify } from 'node:util';
-
-const exec = promisify(execFile);
 
 // A copied virtualenv still points at the main folder, so its editable
 // installs would run the main folder's code.
@@ -38,11 +35,16 @@ function cloner() {
     return { clone, close: () => worker.terminate() };
   }
   // btrfs and XFS clone; elsewhere `always` fails rather than copy in full.
-  const clone = (from: string, to: string) =>
-    exec('cp', ['-a', '--reflink=always', from, to]).then(
-      () => true,
-      async () => (await rm(to, { recursive: true, force: true }), false),
-    );
+  // Spawned, not through Bun Shell, whose built-in `cp` lacks `--reflink`.
+  const clone = async (from: string, to: string) => {
+    const cp = Bun.spawn(['cp', '-a', '--reflink=always', from, to], {
+      stdout: 'ignore',
+      stderr: 'ignore',
+    });
+    if ((await cp.exited) === 0) return true;
+    await rm(to, { recursive: true, force: true });
+    return false;
+  };
   return { clone, close: () => {} };
 }
 
@@ -54,18 +56,11 @@ function cloner() {
  * Ones already there are left alone.
  */
 export async function copyIgnored(from: string, to: string) {
-  const { stdout } = await exec(
-    'git',
-    [
-      'ls-files',
-      '-z',
-      '--others',
-      '--ignored',
-      '--exclude-standard',
-      '--directory',
-    ],
-    { cwd: from, maxBuffer: 64 << 20 },
-  );
+  const stdout =
+    await $`git ls-files -z --others --ignored --exclude-standard --directory`
+      .cwd(from)
+      .quiet()
+      .text();
   const listed = stdout
     .split('\0')
     .filter(Boolean)

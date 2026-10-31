@@ -7,7 +7,7 @@ Ideas for moving a piece of work from a first question to a merged pull request.
 - A session in the main folder can't move into a new worktree, so committing to an idea means starting over.
 - A worktree has no "try this in the main folder", where the heavy dev stack already runs.
 - Pull requests are created on GitHub, and CI and review state live there.
-- Merged worktrees wait in Parked until removed one by one.
+- Merged worktrees wait in Parked for a day before the hourly cleanup removes them, and a merged one with uncommitted files stays until removed by hand.
 - A branch with no worktree, such as a teammate's pull request, can't be picked as a place to start.
 
 ## Ideas

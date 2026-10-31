@@ -29,6 +29,7 @@ The home page's workspace picker searches every project's main folder and worktr
 - There are no setup scripts: the agent runs an install itself when it needs one.
 - Remove worktree, in a worktree's menu, deletes its folder and local branch, archives its sessions, and closes its terminals. A worktree whose pull request merged or closed shows it as a button too. It asks first when that would lose uncommitted files or unmerged commits. A branch whose pull request was squash-merged counts as merged.
 - Archiving a worktree's last open session, however it's archived, offers Remove worktree in the toast, with the same check for lost work.
+- Every hour, on the hour, Bica removes finished worktrees on its own, without a word: one whose pull request merged and that has sat idle for a day, or one unused for a week whose commits are all in the default branch. Use means a session there or a commit, checkout, or reset in it. Uncommitted files, a running session, or the check for lost work keep it, and its sessions go to Archived with the branch and pull request noted. Only worktrees in Bica's sibling folders, like `shop-sidebar`, are touched; other tools' worktrees can hold ignored files they need.
 
 ## Chats
 
@@ -58,3 +59,4 @@ The folder browser can list any folder the server can read. That is fine only be
 - Superset's branch picker puts an Open action on rows that already have a worktree: https://github.com/superset-sh/superset/pull/3397
 - Worktrunk's `copy-ignored` clones gitignored files into new worktrees: https://worktrunk.dev/step/. Conductor and Codex copy only listed ones, through `.worktreeinclude`: https://www.conductor.build/docs/reference/files-to-copy
 - Claude Code's desktop archive deletes the worktree with no check, the bug the archive offer avoids: https://github.com/anthropics/claude-code/issues/56639
+- T3 Code's storage cleanup removes worktrees an hour apart: on merge, after days unused, or once unchanged, and keeps ones with uncommitted work: https://github.com/pingdotgg/t3code/blob/main/apps/server/src/storageCleanup.ts
