@@ -3,7 +3,7 @@
 A project is a folder on the dev machine you want agents to work in, usually a git repo. A workspace is the exact folder a session runs in: the project's main folder, or one of its git worktrees. Worktrees let parallel agents work without stepping on each other's files.
 
 ```
-Project  vaibica
+Project  bica
 ├─ main folder        ← sessions: "fix sidebar", "hi"
 ├─ worktree: projects ← sessions: "add project picker"
 └─ worktree: diffs    ← sessions: "changes panel"

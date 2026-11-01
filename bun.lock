@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "vaibica",
+      "name": "bica",
       "devDependencies": {
         "@oxlint/plugins": "^1.90.0",
         "eslint-plugin-solid": "~0.18.1",

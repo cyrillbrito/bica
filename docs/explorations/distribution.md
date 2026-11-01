@@ -10,7 +10,7 @@ What is left to install and update `bica` on another machine. The binary, its ke
 ## What's left
 
 - `bica upgrade` and an in-app update button. Find the binary through `process.execPath` (or say `brew upgrade` when it sits in Homebrew), download the new one next to it, check it against `SHA256SUMS`, rename it over the old path, and restart. A rename is atomic, and the running process keeps the old file open.
-- An install script or Homebrew tap that drops the file in `~/.local/bin`. Files from curl or Homebrew get no quarantine flag, so an unsigned binary runs.
+- An install script at `bica.sh` (`curl -fsSL bica.sh | sh`) or a Homebrew tap that drops the file in `~/.local/bin`. Files from curl or Homebrew get no quarantine flag, so an unsigned binary runs.
 - `bica service install`: a launchd or systemd user unit, so it runs at login with no terminal, like Ollama and `opencode service`.
 - A first-run screen for providers, since a new machine has no `auth.json`.
 - Windows, where terminals need a PTY that Bun doesn't have there.

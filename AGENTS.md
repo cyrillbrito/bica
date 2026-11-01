@@ -2,7 +2,7 @@
 
 Bica is a fast web UI for Pi agents, built on Pi Durable. It runs on the dev machine and works from any browser, on desktop or phone.
 
-The name is Bica, a Lisbon espresso, in the UI, docs, code, the binary, env vars, and the data folder. `vaibica` ("Vai Bica", go, Bica!) is only for what you find or install it by: the domains `vaibica.com` and `vaibica.dev`, the GitHub repo, the package name, and an npm scope.
+The name is Bica, a Lisbon espresso, everywhere: the UI, docs, code, the binary, env vars, the data folder, the GitHub repo, and the package name. The domain is `bica.sh`. There is no second name ([naming record](docs/records/naming.md)).
 
 ## Mindset
 
@@ -122,6 +122,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 `docs/records/` holds big decisions the user asked to record: what was tried, what was found, and what was decided. Read the matching one before reopening its question. Write one only when the user asks for it; how the code is laid out today goes in `architecture.md`.
 
 - [extensibility.md](docs/records/extensibility.md): why features aren't extensions.
+- [naming.md](docs/records/naming.md): why the name is Bica and the domain is bica.sh.
 
 `docs/inspiration/` holds screenshots of other agent UIs, as ideas, not specs.
 

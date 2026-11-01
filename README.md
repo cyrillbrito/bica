@@ -6,7 +6,7 @@
 
 **A lean agent harness for coding, used from the browser.**<br /> It runs on your dev machine and works from any browser, on desktop or phone.
 
-[vaibica.com](https://vaibica.com) · [Releases](https://github.com/cyrillbrito/vaibica/releases) · [Docs](docs/architecture.md)
+[bica.sh](https://bica.sh) · [Releases](https://github.com/cyrillbrito/bica/releases) · [Docs](docs/architecture.md)
 
 </div>
 
@@ -21,7 +21,7 @@ The agent runs on [Pi Durable](https://github.com/earendil-works/pi/tree/main/pa
 
 ## For users
 
-Bica is early. Grab the `bica` binary for your system from [Releases](https://github.com/cyrillbrito/vaibica/releases) and run it. It opens on `http://localhost:3141`. Add a provider in Settings, add a project folder, and start a session.
+Bica is early. Grab the `bica` binary for your system from [Releases](https://github.com/cyrillbrito/bica/releases) and run it. It opens on `http://localhost:3141`. Add a provider in Settings, add a project folder, and start a session.
 
 Bica has no login, so keep it on localhost or a private network. [docs/deploy.md](docs/deploy.md) covers reaching it from the phone over Tailscale.
 
@@ -30,7 +30,7 @@ Bica has no login, so keep it on localhost or a private network. [docs/deploy.md
 Requires [Bun](https://bun.sh).
 
 ```sh
-git clone https://github.com/cyrillbrito/vaibica.git && cd vaibica
+git clone https://github.com/cyrillbrito/bica.git && cd bica
 bun install
 bun run dev   # http://localhost:3142, data in .data/
 ```

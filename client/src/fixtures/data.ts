@@ -248,13 +248,13 @@ Each session is one conversation with an agent, in one folder.
 // What the design was drawn against: short names, a few rows, all filled in.
 // Also the screenshot data: one session tells the whole story.
 function demo(): Dataset {
-  const bica = `${HOME}/Repos/vaibica`;
+  const bica = `${HOME}/Repos/bica`;
   const keys = `${bica}-shortcuts`;
   const voice = `${bica}-voice`;
   const blog = `${HOME}/Repos/blog`;
   return {
     projects: [
-      project('vaibica', 'vaibica', [
+      project('bica', 'bica', [
         ws(bica, 'main', true),
         ws(
           keys,
@@ -273,24 +273,17 @@ function demo(): Dataset {
         id: 'demo-hub',
         agent: 'hub',
       }),
-      session('vaibica', keys, 'Keyboard shortcuts for sessions', 'idle', MIN, {
+      session('bica', keys, 'Keyboard shortcuts for sessions', 'idle', MIN, {
         id: 'demo-shortcuts',
         watchedBy: ['demo-hub'],
       }),
+      session('bica', bica, 'Stream tool output in terminals', 'running', 0, {
+        id: 'demo-terminals',
+        startedBy: 'demo-hub',
+        parent: 'demo-hub',
+      }),
       session(
-        'vaibica',
-        bica,
-        'Stream tool output in terminals',
-        'running',
-        0,
-        {
-          id: 'demo-terminals',
-          startedBy: 'demo-hub',
-          parent: 'demo-hub',
-        },
-      ),
-      session(
-        'vaibica',
+        'bica',
         bica,
         'Why does reconnect drop the queue?',
         'waiting',
@@ -301,19 +294,19 @@ function demo(): Dataset {
           parent: 'demo-hub',
         },
       ),
-      session('vaibica', bica, 'Research offline drafts', 'idle', 30 * MIN, {
+      session('bica', bica, 'Research offline drafts', 'idle', 30 * MIN, {
         id: 'demo-tonight',
         agent: 'night',
         tonight:
           'Research how other apps keep drafts offline on the phone and sync them later. Write a report to docs/explorations/offline-drafts.md with options, trade-offs, and sources.',
       }),
-      session('vaibica', bica, 'Release notes for 0.9', 'idle', 2 * HOUR, {
+      session('bica', bica, 'Release notes for 0.9', 'idle', 2 * HOUR, {
         id: 'demo-release',
         startedBy: 'demo-shortcuts',
         parent: 'demo-shortcuts',
       }),
       session(
-        'vaibica',
+        'bica',
         voice,
         'Hand off a voice call to a new session',
         'running',
@@ -324,7 +317,7 @@ function demo(): Dataset {
           parent: 'demo-hub',
         },
       ),
-      session('vaibica', voice, 'Pick a calmer voice', 'done', 25 * MIN, {
+      session('bica', voice, 'Pick a calmer voice', 'done', 25 * MIN, {
         id: 'demo-voice',
         startedBy: 'demo-shortcuts',
         // You detached it before your follow-up, the fourth turn (20s apart).
@@ -342,20 +335,13 @@ function demo(): Dataset {
           startedBy: 'demo-hub',
         },
       ),
+      session('bica', bica, 'Fix the flaky reconnect test', 'error', 40 * MIN, {
+        id: 'demo-flaky',
+        startedBy: 'demo-hub',
+        parent: 'demo-hub',
+      }),
       session(
-        'vaibica',
-        bica,
-        'Fix the flaky reconnect test',
-        'error',
-        40 * MIN,
-        {
-          id: 'demo-flaky',
-          startedBy: 'demo-hub',
-          parent: 'demo-hub',
-        },
-      ),
-      session(
-        'vaibica',
+        'bica',
         bica,
         'Bisect the reconnect test across 40 commits',
         'done',
@@ -374,13 +360,13 @@ function demo(): Dataset {
         DAY,
         { id: 'demo-sourdough' },
       ),
-      session('vaibica', bica, 'Old idea', 'idle', 2 * DAY, {
+      session('bica', bica, 'Old idea', 'idle', 2 * DAY, {
         archivedAt: now - DAY,
       }),
     ],
     terminals: [
-      terminal('vaibica', bica, 'bun run dev', null),
-      terminal('vaibica', keys, 'bun run check', 0),
+      terminal('bica', bica, 'bun run dev', null),
+      terminal('bica', keys, 'bun run check', 0),
     ],
     kept: [],
     chats: {
@@ -802,17 +788,17 @@ function worst(): Dataset {
 
 // One of everything: one project, one workspace, one session, counts of 1.
 function one(): Dataset {
-  const p = `${HOME}/Repos/vaibica`;
+  const p = `${HOME}/Repos/bica`;
   return {
     projects: [
-      project('vaibica', 'vaibica', [
+      project('bica', 'bica', [
         ws(p, 'main', true),
         ws(`${p}-parked`, 'parked', false, pr(1, 'merged')),
       ]),
     ],
     sessions: [
-      session('vaibica', p, 'Only session', 'idle', MIN),
-      session('vaibica', p, 'Only archived', 'idle', DAY, { archivedAt: now }),
+      session('bica', p, 'Only session', 'idle', MIN),
+      session('bica', p, 'Only archived', 'idle', DAY, { archivedAt: now }),
     ],
     terminals: [],
     kept: [],
@@ -831,7 +817,7 @@ function one(): Dataset {
 
 // The realistic upper bound: months of daily use with nothing archived.
 function huge(): Dataset {
-  const p = `${HOME}/Repos/vaibica`;
+  const p = `${HOME}/Repos/bica`;
   const statuses: SessionStatus[] = ['idle', 'idle', 'idle', 'done', 'running'];
   const worktrees = Array.from({ length: 40 }, (_, i) =>
     ws(`${p}-feature-${i}`, `feature-${i}`, false, pr(1000 + i, 'merged')),
@@ -842,13 +828,11 @@ function huge(): Dataset {
   );
   const first = `fixture-${n + 1}`;
   return {
-    projects: [
-      project('vaibica', 'vaibica', [ws(p, 'main', true), ...worktrees]),
-    ],
+    projects: [project('bica', 'bica', [ws(p, 'main', true), ...worktrees])],
     sessions: [
       ...Array.from({ length: 1000 }, (_, i) =>
         session(
-          'vaibica',
+          'bica',
           p,
           `Session number ${i + 1}`,
           statuses[i % 5]!,
@@ -856,7 +840,7 @@ function huge(): Dataset {
         ),
       ),
       ...Array.from({ length: 1284 }, (_, i) =>
-        session('vaibica', p, `Archived ${i + 1}`, 'idle', i * HOUR, {
+        session('bica', p, `Archived ${i + 1}`, 'idle', i * HOUR, {
           archivedAt: now - i * HOUR,
         }),
       ),

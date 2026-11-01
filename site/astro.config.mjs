@@ -3,7 +3,7 @@ import starlight from '@astrojs/starlight';
 import d2 from 'astro-d2';
 
 export default defineConfig({
-  site: 'https://vaibica.com',
+  site: 'https://bica.sh',
   // Next to Bica's own ports (client/vite.config.ts), clear of Astro's 4321
   // that other projects use.
   server: { port: 3144 },
@@ -29,7 +29,7 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/cyrillbrito/vaibica',
+          href: 'https://github.com/cyrillbrito/bica',
         },
       ],
       sidebar: [
