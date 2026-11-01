@@ -7,7 +7,7 @@ import {
 } from '@earendil-works/pi-durable';
 
 import { promptBlocks, promptOf } from '@bica/shared/images';
-import { PRUNE_ENTRY, pruneEdits, prunedTokens } from '@bica/shared/prune';
+import { PruneEntry, pruneEdits, prunedTokens } from '@bica/shared/prune';
 import type { ModelChoice, PromptImage } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
 import { getAgent } from '../agents/registry';
@@ -241,7 +241,10 @@ export async function pruneContext(id: string) {
   if (!edits.length) return 0;
   const freed = Math.round(prunedTokens(view, edits));
   const submission = await conversation.submit(
-    { type: 'write', entry: { kind: PRUNE_ENTRY, edits, data: { freed } } },
+    {
+      type: 'write',
+      entry: { kind: PruneEntry.kind, edits, data: { freed } },
+    },
     context,
   );
   await submission.wait(context);

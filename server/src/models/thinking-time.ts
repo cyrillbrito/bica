@@ -21,8 +21,7 @@ export function timeThinking(models: MutableModels) {
     const stamp = (message: AssistantMessage) => {
       for (const [i, ms] of took) {
         const block = message.content[i];
-        if (block?.type === 'thinking')
-          (block as { durationMs?: number }).durationMs = ms;
+        if (block?.type === 'thinking') block.durationMs = ms;
       }
       return message;
     };

@@ -6,6 +6,7 @@ import type { Message, ToolCall } from '@earendil-works/pi-ai';
 import { calculateContextTokens } from '@earendil-works/pi-ai/utils/estimate';
 
 import type { ModelContext } from './context-usage';
+import { CompactionEntry } from './pi-types';
 
 export type Group = 'system' | 'tools' | 'conversation';
 
@@ -86,7 +87,7 @@ export function contextBreakdown(
       return;
     }
     if (message.role === 'user') {
-      const summary = kind === 'pi.compaction';
+      const summary = kind === CompactionEntry.kind;
       const content = message.content;
       const text =
         typeof content === 'string' ? content.length : textLength(content);

@@ -15,7 +15,7 @@ import type {
 
 import { contextBreakdown, type ContextBreakdown } from './context-breakdown';
 import { contextOf, contextUsage, type ContextUsage } from './context-usage';
-import { piDocs } from './pi-docs';
+import { piDocs } from './pi-types';
 import type { ModelCatalog, StepDetail } from './protocol';
 
 type Json = Record<string, unknown>;
@@ -163,11 +163,11 @@ function slimMessage(
       if (b.type === 'thinking')
         // Kept so the row shows; its text comes when opened.
         return defined({
-          type: 'thinking',
+          type: 'thinking' as const,
           thinking: '',
           folded: !!b.thinking.trim(),
-          durationMs: (b as { durationMs?: number }).durationMs,
-        }) as never;
+          durationMs: b.durationMs,
+        });
       if (b.type !== 'toolCall') return b;
       const { partialJson, ...call } = b as typeof b & {
         partialJson?: string;

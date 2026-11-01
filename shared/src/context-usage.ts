@@ -9,8 +9,8 @@ import {
 } from '@earendil-works/pi-ai/utils/estimate';
 import type { ContextView, ConversationView } from '@earendil-works/pi-durable';
 
-import { piDocs } from './pi-docs';
-import { PRUNE_ENTRY, pruneEdits, prunedTokens } from './prune';
+import { piDocs } from './pi-types';
+import { PruneEntry, pruneEdits, prunedTokens } from './prune';
 import type { ModelCatalog } from './protocol';
 
 export interface ContextUsage {
@@ -99,8 +99,8 @@ export function contextUsage(
   let stale = 0;
   if (measuredAt >= 0)
     for (const entry of ctx.entries.slice(measuredAt + 1)) {
-      if (entry.kind !== PRUNE_ENTRY) continue;
-      const freed = (entry.data as { freed?: number } | undefined)?.freed;
+      if (!PruneEntry.is(entry)) continue;
+      const freed = entry.data.freed;
       // Older prunes didn't store it: estimate all, as before an answer.
       if (freed === undefined) {
         used = estimated;

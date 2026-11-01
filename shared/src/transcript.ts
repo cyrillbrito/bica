@@ -12,7 +12,8 @@ import type { EntryRecord, LiveState } from '@earendil-works/pi-durable';
 
 import { promptOf } from './images';
 import type { ProjectedView } from './projection';
-import { PRUNE_ENTRY } from './prune';
+import { CompactionEntry, entryKind } from './pi-types';
+import { PruneEntry } from './prune';
 import type { PromptImage, SessionStatus } from './protocol';
 
 // `key` stays the same while a row updates, so its DOM (and open state) survives.
@@ -88,8 +89,8 @@ export function senderOf(text: string): { from?: Sender; text: string } {
  * One thing said in a voice call (server/src/voice/voice.ts). Stored as an entry
  * without model messages, so the agent never reads it.
  */
-export const VOICE_ENTRY = 'bica.voice';
 export type VoiceLine = { who: 'you' | 'voice'; text: string; at: number };
+export const VoiceEntry = entryKind<VoiceLine>('bica.voice');
 
 // A handoff from a call carries what was said since the last one, as
 // Codex's voice sends a transcript delta, so the agent reads the user's own
@@ -110,7 +111,7 @@ export function withoutCallWords(text: string) {
 
 /** From the agent or a prompt: voice lines and pruning don't set the status. */
 export function isTurn(entry: EntryRecord) {
-  return entry.kind !== VOICE_ENTRY && entry.kind !== PRUNE_ENTRY;
+  return !VoiceEntry.is(entry) && !PruneEntry.is(entry);
 }
 
 /** One question of the `ask` tool (server/src/tools/ask.ts). */
@@ -193,8 +194,8 @@ export function toMessages(
       startedAt: num(time.startedAt),
       // Durable times results; older ones carry it in their details.
       durationMs: num(result?.durationMs ?? time.durationMs),
-      stats: time.stats ?? (block as { stats?: ToolCall['stats'] }).stats,
-      streaming: (block as { streaming?: boolean }).streaming,
+      stats: time.stats ?? block.stats,
+      streaming: block.streaming,
     };
   };
 
@@ -241,14 +242,14 @@ export function toMessages(
       if (
         thinking &&
         block.type === 'thinking' &&
-        (block.thinking.trim() || (block as { folded?: boolean }).folded)
+        (block.thinking.trim() || block.folded)
       )
         messages.push({
           key: `${key}:${i}`,
           kind: 'thinking',
           text: block.thinking,
           // Stamped by the server as the block streams (server/src/models/thinking-time.ts).
-          durationMs: (block as { durationMs?: number }).durationMs,
+          durationMs: block.durationMs,
         });
       // Shown as a card of its own, not a row in the activity list.
       if (block.type === 'toolCall' && block.name === ASK)
@@ -313,8 +314,8 @@ export function toMessages(
   view.entries.forEach((entry, n) => {
     if (entry.kind === 'pi.user') end(view.entries[n - 1]?.id);
     if (entry.id > forkedAt!) divider();
-    if (entry.kind === VOICE_ENTRY) {
-      const line = entry.data as VoiceLine;
+    if (VoiceEntry.is(entry)) {
+      const line = entry.data;
       const last = messages.at(-1);
       if (last?.kind === 'call') last.lines.push(line);
       else messages.push({ key: `${entry.id}`, kind: 'call', lines: [line] });
@@ -328,17 +329,17 @@ export function toMessages(
       if (last?.role === 'assistant' && last.stopReason !== 'toolUse')
         end(prev!.id);
     };
-    if (entry.kind === PRUNE_ENTRY) {
+    if (PruneEntry.is(entry)) {
       settle();
       messages.push({
         key: `${entry.id}`,
         kind: 'prune',
         at: entry.id,
-        freed: (entry.data as { freed?: number } | undefined)?.freed,
+        freed: entry.data.freed,
       });
       return;
     }
-    if (entry.kind === 'pi.compaction') {
+    if (CompactionEntry.is(entry)) {
       settle();
       const text = textOf(
         (entry.model?.[0]?.content ?? []) as { type: string }[],
@@ -353,8 +354,7 @@ export function toMessages(
         summary,
         before: measured,
         after: estimateTextTokens(text),
-        auto:
-          (entry.data as { reason?: string } | undefined)?.reason !== 'manual',
+        auto: entry.data.reason !== 'manual',
       });
       return;
     }

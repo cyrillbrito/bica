@@ -13,8 +13,8 @@ import {
   stepDetail,
   type ProjectedView,
 } from '@bica/shared/projection';
-import { PRUNE_ENTRY } from '@bica/shared/prune';
-import { VOICE_ENTRY } from '@bica/shared/transcript';
+import { PruneEntry } from '@bica/shared/prune';
+import { VoiceEntry } from '@bica/shared/transcript';
 import type {
   ModelCatalog,
   PromptImage,
@@ -222,7 +222,7 @@ export function chat(id: string, turns: Turn[], opts: ChatOptions): Chat {
         at += ms;
       });
     } else if ('cleaned' in turn) {
-      entry(PRUNE_ENTRY, undefined, { freed: turn.cleaned });
+      entry(PruneEntry.kind, undefined, { freed: turn.cleaned });
       context -= turn.cleaned;
     } else if ('compacted' in turn) {
       entry(
@@ -246,7 +246,7 @@ export function chat(id: string, turns: Turn[], opts: ChatOptions): Chat {
     } else
       for (const [who, text] of turn.voice) {
         at += 4_000;
-        entry(VOICE_ENTRY, undefined, { who, text, at });
+        entry(VoiceEntry.kind, undefined, { who, text, at });
       }
   }
 

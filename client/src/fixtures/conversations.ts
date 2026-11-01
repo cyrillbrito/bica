@@ -5,7 +5,7 @@ import type { ConversationView } from '@earendil-works/pi-durable';
 import { createSignal } from 'solid-js';
 
 import type { StepDetail } from '@bica/shared/protocol';
-import { PRUNE_ENTRY } from '@bica/shared/prune';
+import { PruneEntry } from '@bica/shared/prune';
 import { fixtureContext } from './usage';
 
 const MIN = 60_000;
@@ -634,7 +634,7 @@ function withContext(
     prune: async () => {
       const freed = context.value().prunable;
       await context.prune();
-      talk.write?.(PRUNE_ENTRY, { freed });
+      talk.write?.(PruneEntry.kind, { freed });
     },
   };
 }

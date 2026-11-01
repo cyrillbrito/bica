@@ -1,4 +1,7 @@
-import type { ConversationId } from '@earendil-works/pi-durable';
+import {
+  CompactionEntry,
+  type ConversationId,
+} from '@earendil-works/pi-durable';
 
 import {
   BLOATED,
@@ -75,7 +78,7 @@ async function housekeep(id: string, unread: boolean) {
       // hourly. Not compacted: a restart or an error cut in after the save.
       const done = view.entries
         .slice(at + 1)
-        .some((e) => e.kind === 'pi.compaction');
+        .some((e) => CompactionEntry.is(e));
       if (done || retried.has(String(save.id))) return;
       retried.add(String(save.id));
     } else {

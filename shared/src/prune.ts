@@ -11,6 +11,8 @@ import type {
 import { estimateMessageTokens } from '@earendil-works/pi-ai/utils/estimate';
 import type { ContextEdit, ContextView } from '@earendil-works/pi-durable';
 
+import { entryKind } from './pi-types';
+
 export const PRUNE_HINT =
   'Clears old tool output and images from what the model reads, so the next prompt sends less. The text of your prompts, the replies and the reasoning stay, and the transcript keeps everything.';
 
@@ -19,7 +21,7 @@ export const PRUNE_HINT =
  * freed; it adds nothing to the context itself. Sessions store it, so its
  * kind keeps the name from when pruning was called clean up.
  */
-export const PRUNE_ENTRY = 'bica.cleanup';
+export const PruneEntry = entryKind<{ freed?: number }>('bica.cleanup');
 
 // Outputs and arguments this short stay as they are: they cost little and
 // often carry the point ("Edited 2 files", a path, a short command).

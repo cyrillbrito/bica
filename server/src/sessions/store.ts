@@ -1,5 +1,6 @@
 import {
   AgentDoc,
+  CompactionEntry,
   type CommitChange,
   type ConversationId,
   type Cursor,
@@ -54,7 +55,7 @@ export function load() {
         // prompt takes a fresh memory index and project list (prompts.ts).
         if (
           change.type === 'entry' &&
-          change.value.kind === 'pi.compaction' &&
+          CompactionEntry.is(change.value) &&
           !subagents.has(change.value.conversationId)
         )
           void editSession(change.value.conversationId, (meta) => {

@@ -7,7 +7,7 @@ import {
 
 import type { PromptImage } from '@bica/shared/protocol';
 import {
-  VOICE_ENTRY,
+  VoiceEntry,
   withoutCallWords,
   type VoiceLine,
 } from '@bica/shared/transcript';
@@ -121,7 +121,7 @@ export async function voiceSession(sessionId: string) {
     save(line: VoiceLine) {
       conversation
         .submit(
-          { type: 'write', entry: { kind: VOICE_ENTRY, data: line } },
+          { type: 'write', entry: { kind: VoiceEntry.kind, data: line } },
           context,
         )
         .catch((error) => console.error('[voice] transcript', error));
