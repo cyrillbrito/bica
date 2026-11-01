@@ -153,7 +153,6 @@ export async function spawnSession(
   folder?: string,
   worktree?: boolean,
   detached?: boolean,
-  agent: Exclude<AgentId, 'hub'> = 'coding',
   tonight?: boolean,
   effort?: ThinkingLevel,
 ) {
@@ -181,7 +180,7 @@ export async function spawnSession(
       ? { model: parentAgent.model, thinkingLevel: parentAgent.thinkingLevel }
       : undefined;
   if (effort) {
-    const base = choice ?? (await agentChoice(getAgent(agent)));
+    const base = choice ?? (await agentChoice(getAgent('coding')));
     choice = checkChoice({ ...base, thinkingLevel: effort });
   }
   return createSession({
@@ -193,7 +192,6 @@ export async function spawnSession(
     startedBy: String(parent),
     worktree,
     detached,
-    agent,
     tonight,
   });
 }

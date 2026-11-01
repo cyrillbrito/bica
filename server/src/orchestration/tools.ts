@@ -105,12 +105,6 @@ function sessionTools(hub: boolean): ToolRegistration[] {
             "true: hand it off instead of leading it: no parent, so it's the user's and you hear nothing of its turns. Default: your child session",
         }),
       ),
-      assistant: Type.Optional(
-        Type.Boolean({
-          description:
-            'true: an assistant-mode session, a long-running helper for one project that keeps memory in files and compacts on its own. Default: a coding session',
-        }),
-      ),
       tonight: Type.Optional(
         Type.Boolean({
           description:
@@ -128,7 +122,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
       ),
     }),
     execute: async (
-      { prompt, folder, worktree, detached, assistant, tonight, effort },
+      { prompt, folder, worktree, detached, tonight, effort },
       api,
     ) => {
       if (!prompt.trim()) throw new Error('The prompt is empty');
@@ -144,7 +138,6 @@ function sessionTools(hub: boolean): ToolRegistration[] {
         folder,
         worktree,
         detached,
-        assistant ? 'assistant' : 'coding',
         tonight,
         effort,
       );

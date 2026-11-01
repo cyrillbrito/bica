@@ -43,7 +43,7 @@ Only the hub watches. Other sessions hear only from their child sessions, and as
 ## The session tools
 
 - `list` shows every project, workspace, session, and terminal. Agents are told to leave the rest alone unless you name it.
-- `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree, optionally in [assistant mode](./assistant-mode.md) or held for the [night run](./night-runs.md). With `detached`, it has no parent.
+- `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree, optionally held for the [night run](./night-runs.md). With `detached`, it has no parent.
 - `session_read` returns a session's status, who leads it, the questions it waits on, and its last messages.
 - `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.

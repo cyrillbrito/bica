@@ -27,6 +27,6 @@ The picker's button shows a short name, such as Opus for Claude Opus 4.5. Only t
 
 ## Sources
 
-- [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) and [opencode-auth-load-balancer](https://github.com/owjs3901/opencode-auth-load-balancer) for accounts that take turns.
+- [opencode-auth-load-balancer](https://github.com/owjs3901/opencode-auth-load-balancer) for accounts that take turns.
 - [LobeHub Icons](https://github.com/lobehub/lobe-icons) for the provider logos.
 - affectUI's [Usage Meter](https://www.affectui.com/components/usage-meter) for the meters, and [Model Picker](https://www.affectui.com/components/model-picker) for the picker.
