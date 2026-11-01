@@ -26,7 +26,7 @@ test('a spoken correction joins the running work, and the transcript shows it wi
   );
   bica.reply(fauxAssistantMessage('Fixed on the other branch'));
   const { projectId } = await bica.project(tab);
-  const id = await tab.request('session.create', {
+  const { id } = await tab.request('session.create', {
     projectId,
     prompt: 'Fix the cache bug',
     requestId: crypto.randomUUID(),

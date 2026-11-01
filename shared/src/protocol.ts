@@ -407,7 +407,9 @@ export interface Calls {
       // Holds the prompt for tonight's run instead of sending it.
       tonight?: boolean;
     };
-    result: string;
+    // warning: the session started, but not quite as asked, such as a
+    // worktree from an unfetched branch.
+    result: { id: string; warning?: string };
   };
   // A session held for tonight: save an edited prompt, run it now (edited
   // when `prompt` is given), or cancel the run and get the prompt back.

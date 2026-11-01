@@ -10,7 +10,7 @@ import type {
   PullRequest,
   Workspace,
 } from '@bica/shared/protocol';
-import { git } from '../git/run';
+import { git, remote } from '../git/run';
 import { copyIgnored } from './copy-ignored';
 import { pullRequests } from './github';
 import { live } from '../live';
@@ -225,7 +225,7 @@ export async function updateProject(id: string, edit: ProjectEdit) {
  * A new worktree for a session: its own branch from the freshly fetched
  * default branch, or the local one when it is ahead, in a sibling folder
  * like `../shop-sidebar-resize`, with the main folder's ignored files
- * cloned in. Its path.
+ * cloned in. Its path, and a warning when the fetch failed.
  */
 export async function createWorktree(projectId: string, title: string) {
   const project = await getProject(projectId);
@@ -245,18 +245,34 @@ export async function createWorktree(projectId: string, title: string) {
     ));
   let branch = slug;
   for (let i = 2; await taken(branch); i++) branch = `${slug}-${i}`;
-  // No origin, or offline: start from what is checked out locally.
+  // No origin: start from what is checked out locally.
   let base = 'HEAD';
-  try {
-    base = (
-      await here(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
-    ).trim();
-    const local = base.replace(/^origin\//, '');
-    await here(['fetch', '-q', 'origin', local]);
+  let warning: string | undefined;
+  const tracked = await here([
+    'symbolic-ref',
+    '--short',
+    'refs/remotes/origin/HEAD',
+  ]).then(
+    (out) => out.trim(),
+    () => '',
+  );
+  if (tracked) {
+    base = tracked;
+    const local = tracked.replace(/^origin\//, '');
+    // A fetch normally takes a second or two; the session shouldn't wait
+    // long on a remote that is down.
+    await remote(project.path, ['fetch', '-q', 'origin', local], 10_000).catch(
+      (e) => {
+        warning = `Couldn't fetch ${local}: ${fetchProblem(e)}. The worktree starts from the last fetched copy.`;
+      },
+    );
     // Work merged locally but not pushed yet counts: new sessions start on it.
-    await here(['merge-base', '--is-ancestor', base, local]);
-    base = local;
-  } catch {}
+    const ahead = await here(['merge-base', '--is-ancestor', base, local]).then(
+      () => true,
+      () => false,
+    );
+    if (ahead) base = local;
+  }
   const path = `${project.path}-${branch}`;
   // No tracking: the branch pushes to its own name, not to main.
   await here(['worktree', 'add', '-q', '--no-track', '-b', branch, path, base]);
@@ -264,7 +280,19 @@ export async function createWorktree(projectId: string, title: string) {
     console.warn(`Copying ignored files into ${path} failed:`, e),
   );
   await projects.refresh();
-  return path;
+  return { path, warning };
+}
+
+function fetchProblem(e: unknown) {
+  const said = e instanceof Error ? e.message : String(e);
+  if (
+    /could not read (username|password)|authentication failed|permission denied/i.test(
+      said,
+    )
+  )
+    return 'origin needs a sign-in';
+  if (said.includes('got no answer')) return 'origin is not answering';
+  return said.split('\n')[0].replace(/^fatal: /, '');
 }
 
 /** What removing a worktree would lose, in words; null: nothing. */

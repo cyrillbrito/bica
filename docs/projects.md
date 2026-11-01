@@ -24,7 +24,7 @@ Under the home page's composer, the project menu lists projects, the ones used l
 ## Worktrees
 
 - Git is the source of truth, so worktrees made in a terminal show up too.
-- New worktree makes one per session. The session's name becomes the branch and a folder next to the project's, and the branch starts from the freshly fetched default branch.
+- New worktree makes one per session. The session's name becomes the branch and a folder next to the project's, and the branch starts from the freshly fetched default branch. When origin needs a sign-in or doesn't answer within 10 seconds, it starts from the last fetched copy instead, and a toast says why.
 - A new worktree gets the main folder's gitignored files, such as `.env` and `node_modules`, so it runs without an install. They are copy-on-write clones, which share the disk until one side changes, and a whole folder clones in one call: `node_modules` takes seconds on macOS. Where the disk can't clone (APFS on macOS, btrfs or XFS on Linux), nothing is copied. Files already in the worktree are left alone, and a Python `.venv` is skipped, since a copy still points at the main folder.
 - There are no setup scripts: the agent runs an install itself when it needs one.
 - Remove worktree, in a worktree's menu, deletes its folder and local branch, archives its sessions, and closes its terminals. A worktree whose pull request merged or closed shows it as a button too. It asks first when that would lose uncommitted files or unmerged commits. A branch whose pull request was squash-merged counts as merged.

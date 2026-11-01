@@ -14,11 +14,12 @@ afterAll(() => bica?.stop());
 
 async function newSession(tab: Tab, prompt: string, requestId?: string) {
   const { projectId } = await bica.project(tab);
-  return tab.request(
+  const { id } = await tab.request(
     'session.create',
     { projectId, prompt, requestId: crypto.randomUUID() },
     requestId,
   );
+  return id;
 }
 
 function statusOf(tab: Tab, id: string) {
@@ -155,7 +156,7 @@ test('the model reads each image where the prompt names it, with its file', asyn
     data,
     ...(ref && { ref }),
   });
-  const id = await tab.request('session.create', {
+  const { id } = await tab.request('session.create', {
     projectId,
     prompt: 'Compare [Image #1] with [Image #2] please',
     images: [image('second', 2), image('first', 1), image('unnamed')],
@@ -207,7 +208,7 @@ test("Prune takes old prompts' images out of what the model reads, and keeps the
   const { projectId } = await bica.project(tab);
   const conversation = (id: string) => tab.watch('conversation', { id });
   bica.reply(fauxAssistantMessage('answer 0'));
-  const id = await tab.request('session.create', {
+  const { id } = await tab.request('session.create', {
     projectId,
     prompt: 'Look at [Image #1]',
     images: [{ mimeType: 'image/png', data: 'old', ref: 1 }],

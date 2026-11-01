@@ -54,7 +54,7 @@ async function startWork(port: number, root: string) {
   await mkdir(cwd);
   const tab = await connect(port);
   const projectId = await tab.request('project.add', { path: cwd });
-  const id = await tab.request('session.create', {
+  const { id } = await tab.request('session.create', {
     projectId,
     prompt: 'Work through the crash',
     requestId: crypto.randomUUID(),

@@ -133,7 +133,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     ) => {
       if (!prompt.trim()) throw new Error('The prompt is empty');
       const me = named(await readSession(String(api.conversationId)));
-      const id = await spawnSession(
+      const { id, warning } = await spawnSession(
         api.conversationId,
         `${prompt}\n\n(${
           detached
@@ -152,7 +152,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
         ...text(
           tonight
             ? `Session ${id} is held for tonight's run.`
-            : `Started session ${id}.`,
+            : `Started session ${id}.${warning ? ` ${warning}` : ''}`,
         ),
         details: { sessionId: id },
       };

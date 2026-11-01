@@ -82,8 +82,12 @@ export async function createSession({
   const project = await getProject(projectId);
   // The branch needs a name now, so the title is waited for here.
   const named = worktree ? await nameSession(prompt) : '';
+  let warning: string | undefined;
   if (worktree)
-    cwd = await createWorktree(projectId, named || promptTitle(prompt));
+    ({ path: cwd, warning } = await createWorktree(
+      projectId,
+      named || promptTitle(prompt),
+    ));
   else if (cwd && !project.workspaces.some((w) => w.path === cwd))
     throw new Error(`${cwd} is not a workspace of ${project.name}`);
   const { model, thinkingLevel } = choice
@@ -132,7 +136,7 @@ export async function createSession({
     );
   // Not awaited: the session opens now and the title swaps in when ready.
   if (prompt && !worktree) void retitle(conversation.id, prompt);
-  return String(conversation.id);
+  return { id: String(conversation.id), warning };
 }
 
 /**

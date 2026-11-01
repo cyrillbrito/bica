@@ -11,6 +11,7 @@ import Composer, { type ComposerApi } from './Composer';
 import ModelPicker from '../models/ModelPicker';
 import { MoonIcon } from '../ui/icons';
 import { errorText } from '../ui/errors';
+import { toast } from '../ui/Toast';
 
 // What the home page's next session runs as; ⌘K's "New assistant session"
 // sets it, and leaving the home page sets it back.
@@ -58,7 +59,7 @@ export default function StartComposer(props: {
   ) => {
     const t = props.target;
     if (!t) throw new Error('No project');
-    const id = await startSession(
+    const { id, warning } = await startSession(
       t.projectId,
       t.cwd,
       prompt,
@@ -69,6 +70,7 @@ export default function StartComposer(props: {
       tonight || undefined,
     );
     navigate(paths.s(id));
+    if (warning) toast.info(warning);
     return id;
   };
   let composer: ComposerApi | undefined;

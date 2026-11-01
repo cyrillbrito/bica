@@ -69,7 +69,7 @@ test('a child session reports each turn to its parent, with what the user told i
     ],
     Childwork: ['First pick: red', 'Second pick: blue', 'Third pick: green'],
   };
-  const parent = await tab.request('session.create', {
+  const { id: parent } = await tab.request('session.create', {
     projectId,
     prompt: 'Lead the colour work',
     requestId: crypto.randomUUID(),
@@ -140,7 +140,7 @@ test('a child session that messages its parent mid-turn still reports the end of
       'Sorted ascending, all done',
     ],
   };
-  const parent = await tab.request('session.create', {
+  const { id: parent } = await tab.request('session.create', {
     projectId,
     prompt: 'Chief of sorting',
     requestId: crypto.randomUUID(),
@@ -169,7 +169,7 @@ test('archiving a parent detaches the child sessions it leaves open', async () =
       'Helper started',
     ],
   };
-  const parent = await tab.request('session.create', {
+  const { id: parent } = await tab.request('session.create', {
     projectId,
     prompt: 'Boss the counting',
     requestId: crypto.randomUUID(),
@@ -202,7 +202,7 @@ return await tools.list({});`,
       'Both started',
     ],
   };
-  const parent = await tab.request('session.create', {
+  const { id: parent } = await tab.request('session.create', {
     projectId,
     prompt: 'Fanout the work',
     requestId: crypto.randomUUID(),
@@ -249,7 +249,7 @@ test('archiving a running child session waits for its turn to end', async () => 
       },
     ],
   };
-  const parent = await tab.request('session.create', {
+  const { id: parent } = await tab.request('session.create', {
     projectId,
     prompt: 'Boss the child around',
     requestId: crypto.randomUUID(),
@@ -289,11 +289,11 @@ test('a session archives itself once its turn ends, only when the user asked', a
       'All done, archiving',
     ],
   };
-  self = await tab.request('session.create', {
+  ({ id: self } = await tab.request('session.create', {
     projectId,
     prompt: 'Tidy up',
     requestId: crypto.randomUUID(),
-  });
+  }));
   await settled(tab, self);
   await tab.request('session.submit', {
     id: self,
@@ -330,7 +330,7 @@ test('the hub hears each turn of a session it watches, until the user stops the 
   script = {
     Solowork: ['Files listed', 'Watched answer', 'Unwatched answer'],
   };
-  const watched = await tab.request('session.create', {
+  const { id: watched } = await tab.request('session.create', {
     projectId,
     prompt: 'Solowork: list the files',
     requestId: crypto.randomUUID(),

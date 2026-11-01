@@ -44,7 +44,7 @@ test('archiving a session closes the terminals it leads, and leaves the ones det
     start('close me'),
     fauxAssistantMessage('Both running'),
   );
-  const id = await tab.request('session.create', {
+  const { id } = await tab.request('session.create', {
     projectId,
     prompt: 'Start two servers',
     requestId: crypto.randomUUID(),
@@ -90,7 +90,7 @@ test('a long terminal_read wait ends at its text, or when a message arrives', as
     command: 'sleep 1; echo READY; sleep 600',
   });
   bica.reply(read(ready, 'READY'), fauxAssistantMessage('It is ready'));
-  const first = await tab.request('session.create', {
+  const { id: first } = await tab.request('session.create', {
     projectId: ref.projectId,
     prompt: 'Wait until ready',
     requestId: crypto.randomUUID(),
@@ -102,7 +102,7 @@ test('a long terminal_read wait ends at its text, or when a message arrives', as
     command: 'sleep 600',
   });
   bica.reply(read(stuck), fauxAssistantMessage('Stopped waiting'));
-  const second = await tab.request('session.create', {
+  const { id: second } = await tab.request('session.create', {
     projectId: ref.projectId,
     prompt: 'Wait for the job',
     requestId: crypto.randomUUID(),

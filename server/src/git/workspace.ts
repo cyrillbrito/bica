@@ -9,7 +9,7 @@ import type {
 } from '@bica/shared/protocol';
 import { live, type Live } from '../live';
 import { getProject } from '../projects/projects';
-import { git as run } from './run';
+import { remote, git as run } from './run';
 
 const MAX_FILE = 2 * 1024 * 1024;
 // Media is shown as itself, not as text, so it gets a looser cap.
@@ -506,20 +506,6 @@ async function discardIn(cwd: string, paths: string[]) {
     await git(cwd, ['restore', '--worktree', '--', ...tracked]);
   if (untracked.size)
     await git(cwd, ['clean', '--force', '--quiet', '--', ...untracked]);
-}
-
-// Network commands: never wait on a password prompt nobody can see.
-async function remote(cwd: string, args: string[]) {
-  const p = Bun.spawn(['git', ...args], {
-    cwd,
-    timeout: 120_000,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-    stdout: 'ignore',
-    stderr: 'pipe',
-  });
-  const [stderr, code] = await Promise.all([p.stderr.text(), p.exited]);
-  if (p.signalCode) throw new Error(`git ${args[0]} took over two minutes`);
-  if (code !== 0) throw new Error(stderr.trim() || `git ${args[0]} failed`);
 }
 
 export async function push(ref: WorkspaceRef, repo?: string) {
