@@ -8,6 +8,7 @@ import {
 } from '@earendil-works/pi-ai';
 
 import type { PlanWindow } from '@bica/shared/protocol';
+import { limitWindows } from './known-providers';
 
 /*
  * More than one account on a plan provider (docs/models.md#more-than-one-account).
@@ -97,61 +98,11 @@ export function recordLimits(id: string, headers: Record<string, string>) {
   const lower = Object.fromEntries(
     Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
   );
-  const windows = [...claudeWindows(lower), ...codexWindows(lower)];
+  const windows = limitWindows(lower);
   if (!windows.length) return;
   limits.set(id, { windows, updatedAt: Date.now() });
   cooling.delete(id);
   changed();
-}
-
-function seconds(value: string | undefined) {
-  return value && Number(value) ? Number(value) * 1000 : null;
-}
-
-function claudeWindows(s: Record<string, string>): PlanWindow[] {
-  return (
-    [
-      ['5h', 'Session'],
-      ['7d', 'Week'],
-      ['overage', 'Extra'],
-    ] as const
-  ).flatMap(([key, label]) => {
-    const used = s[`anthropic-ratelimit-unified-${key}-utilization`];
-    if (used === undefined) return [];
-    return [
-      {
-        key,
-        label,
-        utilization: Number(used),
-        resetsAt: seconds(s[`anthropic-ratelimit-unified-${key}-reset`]),
-        limited: s[`anthropic-ratelimit-unified-${key}-status`] === 'rejected',
-        spent: null,
-      },
-    ];
-  });
-}
-
-function codexWindows(s: Record<string, string>): PlanWindow[] {
-  return (['primary', 'secondary'] as const).flatMap((key) => {
-    const used = s[`x-codex-${key}-used-percent`];
-    if (used === undefined) return [];
-    const minutes = Number(s[`x-codex-${key}-window-minutes`]);
-    return [
-      {
-        key,
-        label:
-          minutes === 300
-            ? 'Session'
-            : minutes === 10_080
-              ? 'Week'
-              : `${Math.round(minutes / 60)}h`,
-        utilization: Number(used) / 100,
-        resetsAt: seconds(s[`x-codex-${key}-reset-at`]),
-        limited: Number(used) >= 100,
-        spent: null,
-      },
-    ];
-  });
 }
 
 /** The plan windows still running; extra usage is paid, so it never counts. */

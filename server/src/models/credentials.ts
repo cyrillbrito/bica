@@ -27,12 +27,6 @@ export const credentials: CredentialStore = {
   },
 };
 
-/** Exa isn't a model provider, but its key lives here too, under `exa`. */
-export async function exaKey() {
-  const saved = await credentials.read('exa');
-  return saved?.type === 'api_key' ? saved.key : undefined;
-}
-
 // Sign in with ChatGPT names this installation with a stable UUID.
 const device = textFile('device-id');
 

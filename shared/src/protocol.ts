@@ -168,6 +168,10 @@ export interface Account {
   methods: { type: 'oauth' | 'api_key'; label: string }[];
   // A plan signed in here, which can take an extra account (docs/models.md).
   addAccount: boolean;
+  // Another account of a plan: anthropic:2.
+  extra: boolean;
+  // Not a model provider but a tool's key, like Exa's for web search.
+  tool: boolean;
 }
 
 /** A sign-in in progress: what the provider asked so far. */
@@ -317,19 +321,17 @@ export interface PlanWindow {
   resetsAt: number | null;
   // Blocked until it resets.
   limited: boolean;
-  // Spend caps: dollars used of the limit.
-  spent: { used: number; limit: number; currency: string } | null;
 }
 
 /** The limits of one signed-in plan account, from its last reply. */
 export interface ProviderUsage {
   // The account's provider id: anthropic, or anthropic:work.
   id: string;
-  provider: string;
   // The provider whose models it serves: anthropic for anthropic:work.
   family: string;
   name: string;
-  plan: string | null;
+  // With more than one account, the one the next request takes.
+  inUse: boolean;
   windows: PlanWindow[];
   updatedAt: number;
 }

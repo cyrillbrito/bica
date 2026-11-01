@@ -1,6 +1,5 @@
 import { For, Show, createMemo } from 'solid-js';
 
-import { formatCost } from '@bica/shared/context-usage';
 import { openModel } from './models';
 import type { PlanWindow, ProviderUsage } from '@bica/shared/protocol';
 import { useTopic } from '../socket/socket';
@@ -58,8 +57,8 @@ function Provider(props: { usage: ProviderUsage }) {
         title={`As of ${timeAgo(props.usage.updatedAt)} ago. Refreshes every minute.`}
       >
         <span class="truncate text-fg">{props.usage.name}</span>
-        <Show when={props.usage.plan}>
-          {(plan) => <span class="shrink-0">{plan()}</span>}
+        <Show when={props.usage.inUse}>
+          <span class="shrink-0">In use</span>
         </Show>
       </div>
       <For each={props.usage.windows} keyed={(w) => w.key}>
@@ -92,7 +91,6 @@ const TEXT = {
 
 function Row(props: { label: string; window: PlanWindow }) {
   const l = createMemo(() => level(props.window), { name: 'planLevel' });
-  const spent = () => props.window.spent;
   return (
     <>
       <span>{props.label}</span>
@@ -108,32 +106,18 @@ function Row(props: { label: string; window: PlanWindow }) {
         </Show>
         <RollingNumber value={l().percent} format={(n) => `${n}%`} />
       </span>
-      <Show
-        when={spent()}
-        fallback={
-          <span
-            class="min-w-12 text-right"
-            title={
-              l().reset || props.window.resetsAt === null
-                ? 'Reset'
-                : `Resets ${clockTime(props.window.resetsAt)}`
-            }
-          >
-            {l().reset || props.window.resetsAt === null
-              ? '—'
-              : timeUntil(props.window.resetsAt)}
-          </span>
+      <span
+        class="min-w-12 text-right"
+        title={
+          l().reset || props.window.resetsAt === null
+            ? 'Reset'
+            : `Resets ${clockTime(props.window.resetsAt)}`
         }
       >
-        {(s) => (
-          <span
-            class="min-w-12 text-right"
-            title={`${formatCost(s().used)} of ${formatCost(s().limit)} this month`}
-          >
-            ${Math.round(s().used)}
-          </span>
-        )}
-      </Show>
+        {l().reset || props.window.resetsAt === null
+          ? '—'
+          : timeUntil(props.window.resetsAt)}
+      </span>
     </>
   );
 }

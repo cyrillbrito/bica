@@ -246,14 +246,12 @@ function AddProvider(props: {
       .filter(Boolean)
       .every((w) => text.toLowerCase().includes(w));
   const open = () =>
-    props.accounts.filter(
-      (a) => !a.status && a.id !== 'exa' && !a.id.includes(':'),
-    );
+    props.accounts.filter((a) => !a.status && !a.tool && !a.extra);
   // A plan signed in already is listed again, for another account of it.
   const groups = createMemo(
     () => {
       const plans = props.accounts
-        .filter((a) => (!a.status && !a.id.includes(':')) || a.addAccount)
+        .filter((a) => (!a.status && !a.extra) || a.addAccount)
         .flatMap((a) =>
           a.methods
             .filter(
@@ -278,23 +276,20 @@ function AddProvider(props: {
             note: '',
           })),
       );
-      const exa = props.accounts.find((a) => a.id === 'exa' && !a.status);
+      const tools = props.accounts.filter(
+        (a) => a.tool && !a.status && matches(`${a.name} ${a.about ?? ''} key`),
+      );
       return [
         { label: 'Sign in with a plan', items: plans },
         { label: 'Add an API key', items: keys },
         {
           label: 'More',
-          items:
-            exa && matches('Exa web search key')
-              ? [
-                  {
-                    account: exa,
-                    type: 'api_key' as const,
-                    title: exa.name,
-                    note: 'Web search for the agents',
-                  },
-                ]
-              : [],
+          items: tools.map((a) => ({
+            account: a,
+            type: 'api_key' as const,
+            title: a.name,
+            note: 'For the agents',
+          })),
         },
       ].filter((g) => g.items.length);
     },
@@ -391,7 +386,7 @@ function Panel(props: {
 
   return (
     <div class="ml-11 flex flex-col gap-3 rounded-card border border-line bg-panel p-3 appear max-sm:ml-0">
-      <Show when={props.account.id.includes(':')}>
+      <Show when={props.account.extra}>
         <p class="text-meta">
           Sign in with the other account. If the page opens on one already here,
           switch accounts there first.

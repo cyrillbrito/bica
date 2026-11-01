@@ -11,7 +11,7 @@ import { Codemode } from '../tools/codemode';
 import { CodingTools, HubFileTools } from '../tools/coding';
 import { ToolSummary } from '../tools/summary';
 import { createWebTools } from '../tools/web';
-import { exaKey } from '../models/credentials';
+import { exaKey } from '../models/exa';
 import { install } from '../harness';
 import { SessionDoc, agentIdOf } from '../sessions/session-doc';
 import { HubSessionTools, SessionTools } from '../orchestration/tools';

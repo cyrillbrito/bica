@@ -380,6 +380,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: { type: 'oauth', hint: null },
         methods: [{ type: 'oauth', label: 'Sign in with Claude' }, key],
         addAccount: true,
+        extra: false,
+        tool: false,
       },
       {
         id: 'anthropic:2',
@@ -394,6 +396,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: { type: 'oauth', hint: null },
         methods: [{ type: 'oauth', label: 'Sign in with Claude' }],
         addAccount: false,
+        extra: true,
+        tool: false,
       },
       {
         id: 'openai-codex',
@@ -406,6 +410,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: { type: 'oauth', hint: null },
         methods: [{ type: 'oauth', label: 'Sign in with ChatGPT' }],
         addAccount: true,
+        extra: false,
+        tool: false,
       },
       {
         id: 'openrouter',
@@ -418,6 +424,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: { type: 'api_key', hint: 'f3a9' },
         methods: [key],
         addAccount: false,
+        extra: false,
+        tool: false,
       },
       {
         id: 'openai',
@@ -433,6 +441,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: null,
         methods: [key],
         addAccount: false,
+        extra: false,
+        tool: false,
       },
       {
         id: 'exa',
@@ -447,6 +457,8 @@ export function fixtureAccounts(worst: boolean): Accounts {
         status: null,
         methods: [key],
         addAccount: false,
+        extra: false,
+        tool: true,
       },
     ],
     signIn: null,
@@ -459,10 +471,9 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
   return [
     {
       id: 'anthropic',
-      provider: 'anthropic',
       family: 'anthropic',
       name: 'ana.silva@example.com',
-      plan: null,
+      inUse: false,
       updatedAt: now - 3 * MIN,
       windows: [
         {
@@ -471,7 +482,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: worst ? 1 : 0.93,
           resetsAt: now + 2 * HOUR + 14 * MIN,
           limited: worst,
-          spent: null,
         },
         {
           key: 'seven_day',
@@ -479,7 +489,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.86,
           resetsAt: now + 3 * 24 * HOUR,
           limited: false,
-          spent: null,
         },
         {
           key: 'seven_day_opus',
@@ -487,7 +496,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.31,
           resetsAt: now + 3 * 24 * HOUR,
           limited: false,
-          spent: null,
         },
         {
           key: 'extra',
@@ -495,18 +503,16 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.62,
           resetsAt: null,
           limited: false,
-          spent: { used: 31, limit: 50, currency: 'USD' },
         },
       ],
     },
     {
       id: 'anthropic:2',
-      provider: 'anthropic:2',
       family: 'anthropic',
       name: worst
         ? 'ana.margarida.silva.contractor@northwind-industries-consulting.example'
         : 'ana@northwind.example',
-      plan: 'In use',
+      inUse: true,
       updatedAt: now - 2 * MIN,
       windows: [
         {
@@ -515,7 +521,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.08,
           resetsAt: now + 4 * HOUR,
           limited: false,
-          spent: null,
         },
         {
           key: '7d',
@@ -523,16 +528,14 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.21,
           resetsAt: now + 6 * 24 * HOUR,
           limited: false,
-          spent: null,
         },
       ],
     },
     {
       id: 'openai-codex',
-      provider: 'openai-codex',
       family: 'openai-codex',
       name: 'ChatGPT',
-      plan: null,
+      inUse: false,
       updatedAt: now - MIN,
       windows: [
         {
@@ -541,7 +544,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.12,
           resetsAt: now + 4 * HOUR,
           limited: false,
-          spent: null,
         },
         {
           key: 'secondary',
@@ -549,7 +551,6 @@ export function fixturePlanUsage(worst: boolean): PlanUsage {
           utilization: 0.4,
           resetsAt: now + 5 * 24 * HOUR,
           limited: false,
-          spent: null,
         },
       ],
     },

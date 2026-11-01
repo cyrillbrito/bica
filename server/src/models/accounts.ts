@@ -14,34 +14,10 @@ import {
   planOf,
   useFirst as preferAccount,
 } from './account-info';
+import { EXA, exaAccount, exaSignIn } from './exa';
+import { GUIDES } from './known-providers';
 import { accountsOf, baseOf, forgetLimits, isExtra } from './plans';
 import { refreshPlanUsage } from './usage';
-
-// Listed first, with a guide; every other pi-ai provider follows by name.
-const GUIDES: Record<string, Pick<Account, 'about' | 'link'>> = {
-  anthropic: {
-    about:
-      'Sign in with a Claude Pro or Max plan, or add an API key (billed per use).',
-    link: {
-      label: 'API keys',
-      url: 'https://console.anthropic.com/settings/keys',
-    },
-  },
-  'openai-codex': {
-    about:
-      'Sign in with a ChatGPT Plus or Pro plan: sessions get the Codex models, and voice calls and dictation use it.',
-    link: null,
-  },
-  openai: {
-    about:
-      'Sign in with a ChatGPT Plus or Pro plan, or add an API key (billed per use). Voice calls and dictation need OpenAI Codex (legacy) instead.',
-    link: { label: 'API keys', url: 'https://platform.openai.com/api-keys' },
-  },
-  exa: {
-    about: "The agents' web search and page fetch. The free plan is enough.",
-    link: { label: 'API keys', url: 'https://dashboard.exa.ai/api-keys' },
-  },
-};
 
 // Only what's saved here counts: Bica reads no keys from the environment.
 async function status(id: string): Promise<Account['status']> {
@@ -62,7 +38,7 @@ async function accounts(): Promise<Account[]> {
   };
   const list = await Promise.all(
     models.getProviders().map(async (p): Promise<Account | undefined> => {
-      const guide = GUIDES[isExtra(p.id) ? baseOf(p.id) : p.id];
+      const guide = GUIDES[baseOf(p.id)];
       const current = await status(p.id);
       if (current?.type === 'oauth' && !emailOf(p.id))
         void learn(p.id, false, () => void feed.refresh());
@@ -91,14 +67,16 @@ async function accounts(): Promise<Account[]> {
           !isExtra(p.id) &&
           !!p.auth.oauth?.isSubscription &&
           current?.type === 'oauth',
+        extra: isExtra(p.id),
+        tool: false,
       };
     }),
   );
   const featured = Object.keys(GUIDES);
-  // Exa isn't a model provider, so it goes after them. A plan's accounts
-  // stay together, in the order they're used.
+  // Tools go after the model providers. A plan's accounts stay together,
+  // in the order they're used.
   const rank = (a: Account): number => {
-    if (a.id === 'exa') return Infinity;
+    if (a.tool) return Infinity;
     const base = baseOf(a.id);
     const within = accountsOf(models, base).indexOf(a.id) / 100;
     return (
@@ -106,18 +84,7 @@ async function accounts(): Promise<Account[]> {
       within
     );
   };
-  const exa: Account = {
-    id: 'exa',
-    name: 'Exa',
-    email: null,
-    plan: null,
-    place: null,
-    about: GUIDES.exa!.about,
-    link: GUIDES.exa!.link,
-    status: await status('exa'),
-    methods: [{ type: 'api_key', label: 'Add key' }],
-    addAccount: false,
-  };
+  const exa = exaAccount(await status(EXA));
   return [...list.filter((a) => !!a), exa].sort((a, b) => rank(a) - rank(b));
 }
 
@@ -147,15 +114,6 @@ async function dropUnsigned() {
       models.deleteProvider(p.id);
       await forgetAccount(p.id);
     }
-}
-
-// Exa has no pi-ai provider: its sign-in is one prompt for the key.
-async function exaSignIn(interaction: AuthInteraction) {
-  const key = (
-    await interaction.prompt({ type: 'secret', message: 'Exa API key' })
-  ).trim();
-  if (!key) throw new Error('Expected a key');
-  await credentials.modify('exa', async () => ({ type: 'api_key', key }));
 }
 
 /** Starts the sign-in of another account of a plan. */
@@ -190,7 +148,7 @@ async function refuseTwin(id: string) {
 
 /** Runs a provider's sign-in; its steps show on `accounts`. */
 export async function signIn(id: string, type: AuthType) {
-  if (id !== 'exa' && !models.getProvider(id))
+  if (id !== EXA && !models.getProvider(id))
     throw new Error(`Unknown provider ${id}`);
   current?.abort.abort();
   const run: Run = {
@@ -269,7 +227,7 @@ export async function signIn(id: string, type: AuthType) {
   const device = await deviceId();
   void (async () => {
     try {
-      if (id === 'exa') await exaSignIn(interaction);
+      if (id === EXA) await exaSignIn(interaction);
       else
         await models.login(id, type, interaction, {
           getDeviceId: () => device,
@@ -306,7 +264,7 @@ export async function cancel() {
 }
 
 export async function signOut(id: string) {
-  if (id === 'exa') await credentials.delete('exa');
+  if (id === EXA) await credentials.delete(EXA);
   else await models.logout(id);
   await forgetAccount(id);
   forgetLimits(id);

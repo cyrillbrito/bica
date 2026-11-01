@@ -42,7 +42,7 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `sessions/`: the transcript, the composer, prompts and the queue, notes from Bica, archive, and housekeeping ([sessions.md](./sessions.md)).
 - `orchestration/`: sessions working with other sessions, built on `sessions/`: the session tools, parents and child sessions, Detach, watching, and the notes when a run ends ([orchestration.md](./orchestration.md)). The hub builds on it from its own folder.
 - `agents/` (server): Coding and Assistant, the shared prompt sections, the registry that lists every agent, and `extensions.ts`, which installs the extensions behind the names agents pick into Pi Durable's registry at startup ([agents.md](./agents.md), [system-prompt.md](./system-prompt.md)). `tools/` holds the agent's general tools, and `harness.ts` opens Pi Durable ([tools.md](./tools.md)).
-- `models/`: models, keys, sign-ins, and plan accounts ([models.md](./models.md)).
+- `models/`: models, keys, sign-ins, and plan accounts ([models.md](./models.md)). The rest of the folder works the same for every provider: what Bica knows about particular ones sits in `known-providers.ts`, and Exa's key in `exa.ts`.
 - `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)).
 - `files/` and `git/`: file and diff views and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)).
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).

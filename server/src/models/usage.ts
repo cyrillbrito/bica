@@ -38,12 +38,10 @@ async function read(): Promise<PlanUsage> {
       const accounts = pickOrder(models, baseOf(id));
       return {
         id,
-        provider: id,
         family: baseOf(id),
         // The meters only show one plan's accounts: the email tells them apart.
         name: emailOf(id) ?? nameOf(id),
-        // With more than one account, which one the next request takes.
-        plan: accounts.length > 1 && accounts[0] === id ? 'In use' : null,
+        inUse: accounts.length > 1 && accounts[0] === id,
         windows,
         updatedAt,
       };
@@ -59,6 +57,3 @@ onLimits(() => {
 
 export const watchPlanUsage = feed.watch;
 export const refreshPlanUsage = feed.refresh;
-
-/** The plans' latest limits, for jobs nobody watches. */
-export const planUsageNow = read;
