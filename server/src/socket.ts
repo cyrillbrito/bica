@@ -57,6 +57,7 @@ import {
   watchProjects,
 } from './projects/projects';
 import { suggestCommitMessage } from './git/commit-message';
+import { log, show } from './git/history';
 import { findPath, openInEditor, openPath } from './files/editor';
 import { workspaceFileLink } from './files/download';
 import {
@@ -182,6 +183,9 @@ const calls: Handlers = {
     }),
   'git.diff': async (args) =>
     diff(ref(args), args.path, args.staged, args.oldPath, args.repo),
+  'git.log': async (args) =>
+    log(ref(args), { skip: args.skip, count: args.count, repo: args.repo }),
+  'git.show': async (args) => show(ref(args), args.hash, args.repo),
   'file.read': async (args) => readText(ref(args), args.path),
   'editor.open': async (args) => openInEditor(ref(args), args.path),
   'path.open': async ({ path, cwd, reveal }) =>
@@ -211,6 +215,8 @@ const REPEATABLE = new Set<Call>([
   'file.link',
   'path.find',
   'git.diff',
+  'git.log',
+  'git.show',
   'git.suggest',
   'terminal.resize',
 ]);

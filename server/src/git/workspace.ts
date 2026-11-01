@@ -19,7 +19,7 @@ import * as git from './commands';
 const STATUS_MS = 1500;
 
 /** The workspace's own repo, or one of its submodules by relative path. */
-async function repoDir(cwd: string, repo?: string) {
+export async function repoDir(cwd: string, repo?: string) {
   if (!repo) return cwd;
   const dir = inside(cwd, repo);
   if (!(await isRepo(dir))) throw new Error(`${repo} is not a repository`);

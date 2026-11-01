@@ -172,6 +172,8 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Sidebar**: The column on the left, listing the hub, projects, workspaces, and their sessions, terminals, and kept files. _Avoid_: left panel, nav
 
+**Not pushed**: A commit no remote branch has yet, marked with an arrow in the Git tab's Commits. _Avoid_: local commit, unpublished
+
 **Kept file**: A file listed in the sidebar with Keep open, until you unpin it. _Avoid_: pinned file
 
 ## Terminals

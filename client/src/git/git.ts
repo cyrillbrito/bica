@@ -5,6 +5,7 @@ import type {
   WorkspaceRef,
 } from '@bica/shared/protocol';
 import { request, useLiveTopic, useTopic } from '../socket/socket';
+import { pageOf, paths } from '../router';
 
 export function useGitStatus(ref: () => WorkspaceRef) {
   return useTopic('git.status', ref);
@@ -135,4 +136,53 @@ export function readDiff(
     oldPath,
     repo: repo || undefined,
   });
+}
+
+/** A page of the branch's commits, newest first. */
+export function readLog(
+  ref: WorkspaceRef,
+  options: { skip?: number; count: number; repo?: string },
+) {
+  return request('git.log', {
+    ...ref,
+    ...options,
+    repo: options.repo || undefined,
+  });
+}
+
+export function showCommit(ref: WorkspaceRef, hash: string, repo?: string) {
+  return request('git.show', { ...ref, hash, repo: repo || undefined });
+}
+
+/** A commit open full size, or one of its files' diffs with `path`. */
+export type OpenCommit = { hash: string; repo?: string; path?: string };
+
+/** ?c=hash, with &cr=repo for a submodule and &cd=path for a file. */
+export function commitFromSearch(search: string): OpenCommit | undefined {
+  const q = new URLSearchParams(search);
+  const hash = q.get('c');
+  if (!hash) return undefined;
+  return {
+    hash,
+    repo: q.get('cr') ?? undefined,
+    path: q.get('cd') ?? undefined,
+  };
+}
+
+export function sameCommit(a?: OpenCommit, b?: OpenCommit) {
+  return a?.hash === b?.hash && a?.repo === b?.repo && a?.path === b?.path;
+}
+
+/**
+ * Where opening a commit goes: over the chat when a session is open, like
+ * a file, the workspace page otherwise. Read at click time.
+ */
+export function commitHref(ref: WorkspaceRef, open: OpenCommit) {
+  const page = pageOf(location);
+  const q = new URLSearchParams(page.kind === 's' ? {} : { w: ref.cwd });
+  q.set('c', open.hash);
+  if (open.repo) q.set('cr', open.repo);
+  if (open.path) q.set('cd', open.path);
+  const at = page.kind === 's' ? paths.s(page.id) : paths.p(ref.projectId);
+  return `${String(at)}?${q}`;
 }

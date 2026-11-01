@@ -205,29 +205,133 @@ export async function lineCounts(cwd: string, staged: boolean) {
     '--no-ext-diff',
     ...(staged ? ['--cached'] : []),
   ]).catch(() => '');
+  return parseNumstat(out);
+}
+
+// "added\tremoved\tpath\0", renames "added\tremoved\t\0old\0new\0".
+function parseNumstat(out: string) {
   const counts = new Map<string, LineCount>();
   const parts = out.split('\0');
   for (let i = 0; i < parts.length; i++) {
     const [added, removed, path] = parts[i]!.split('\t');
     if (path === undefined) continue;
-    // Renames: "a\tr\t\0old\0new".
     const target = path === '' ? ((i += 2), parts[i]!) : path;
     if (added !== '-') counts.set(target, [Number(added), Number(removed)]);
   }
   return counts;
 }
 
-/** The newest commits, newest first; none before the first commit. */
-export async function recentCommits(cwd: string, count: number) {
+/** HEAD's commits, newest first, from `skip` on; none before the first commit. */
+export async function recentCommits(cwd: string, count: number, skip = 0) {
   const out = await run(cwd, [
     'log',
     `-n${count}`,
-    '--format=%h%x1f%s%x1f%ct',
+    `--skip=${skip}`,
+    '--format=%H%x1f%s%x1f%ct',
   ]).catch(() => '');
   return split(out, '\n').map((line) => {
     const [hash, subject, time] = line.split('\x1f');
     return { hash: hash!, subject: subject ?? '', time: Number(time) * 1000 };
   });
+}
+
+/** Commits of `from` on no remote branch, newest first, at most `count`. */
+export async function unpushedCommits(
+  cwd: string,
+  count: number,
+  from = 'HEAD',
+) {
+  const out = await run(cwd, [
+    'rev-list',
+    `-n${count}`,
+    from,
+    '--not',
+    '--remotes',
+  ]).catch(() => '');
+  return new Set(split(out, '\n'));
+}
+
+/** One commit's message and author; null when there is no such commit. */
+export async function commitInfo(cwd: string, hash: string) {
+  // The body comes last: it may hold anything, the separator included.
+  const out = await run(cwd, [
+    'show',
+    '-s',
+    '--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b',
+    hash,
+    '--',
+  ]).catch(() => null);
+  if (!out) return null;
+  const [full, parents, author, email, time, subject, ...body] =
+    out.split('\x1f');
+  return {
+    hash: full!,
+    parents: parents!.split(' ').filter(Boolean),
+    author: author!,
+    email: email!,
+    time: Number(time) * 1000,
+    subject: subject!,
+    body: body.join('\x1f').trim(),
+  };
+}
+
+export interface CommitFile {
+  path: string;
+  oldPath?: string;
+  status: 'A' | 'D' | 'M' | 'R';
+  // Null for a side that has no file.
+  oldHash: string | null;
+  newHash: string | null;
+  submodule: boolean;
+  lines?: LineCount;
+}
+
+/**
+ * The files a commit changed against `parent`, or against nothing for a
+ * root commit, with renames found and lines counted.
+ */
+export async function commitFiles(
+  cwd: string,
+  commit: string,
+  parent: string | null,
+) {
+  const range = parent ? [parent, commit] : ['--root', commit];
+  const args = ['diff-tree', '-r', '-z', '-M', '--no-commit-id'];
+  const [raw, numstat] = await Promise.all([
+    run(cwd, [...args, '--raw', '--no-abbrev', ...range]),
+    run(cwd, [...args, '--numstat', ...range]),
+  ]);
+  const files: CommitFile[] = [];
+  const parts = raw.split('\0');
+  for (let i = 0; i < parts.length; i++) {
+    // ":<old mode> <new mode> <old hash> <new hash> <status>\0<path>", and
+    // renames and copies "\0<old path>\0<new path>".
+    const r = parts[i]!;
+    if (!r.startsWith(':')) continue;
+    const [oldMode, newMode, oldHash, newHash, letter] = r.slice(1).split(' ');
+    const moved = letter![0] === 'R' || letter![0] === 'C';
+    const from = parts[++i]!;
+    const path = moved ? parts[++i]! : from;
+    files.push({
+      path,
+      ...(moved ? { oldPath: from } : {}),
+      status:
+        letter![0] === 'A' || letter![0] === 'D' || letter![0] === 'R'
+          ? letter![0]
+          : letter![0] === 'C'
+            ? 'A'
+            : 'M',
+      oldHash: hash(oldHash!),
+      newHash: hash(newHash!),
+      submodule: oldMode === '160000' || newMode === '160000',
+    });
+  }
+  const counts = parseNumstat(numstat);
+  for (const f of files) {
+    const n = counts.get(f.path);
+    if (n) f.lines = n;
+  }
+  return files;
 }
 
 /** Subjects of the newest commits, merges left out. */
@@ -479,6 +583,14 @@ export async function removeWorktree(cwd: string, path: string) {
 
 export async function remotes(cwd: string) {
   return split(await run(cwd, ['remote']), '\n');
+}
+
+/** Where a remote fetches from; null when there is no such remote. */
+export function remoteUrl(cwd: string, name: string) {
+  return run(cwd, ['remote', 'get-url', name]).then(
+    (out) => out.trim() || null,
+    () => null,
+  );
 }
 
 /** Origin's default branch as last fetched, like "origin/main"; null if unknown. */

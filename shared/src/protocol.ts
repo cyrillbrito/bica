@@ -280,10 +280,38 @@ export interface GitChange {
 
 /** A commit on the current branch. */
 export interface GitCommit {
+  // The full hash.
   hash: string;
   subject: string;
   // Committer time, ms.
   time: number;
+  // On no remote branch yet. Set by `git.log`; status leaves it out.
+  unpushed?: boolean;
+}
+
+/** A page of the current branch's history, newest first. */
+export interface GitLog {
+  commits: GitCommit[];
+  // Older commits follow.
+  more: boolean;
+  // A commit's page on GitHub or GitLab is this plus its hash; null when
+  // `origin` is neither.
+  commitUrl: string | null;
+}
+
+/**
+ * One commit, opened: its message, author, and the files it changed against
+ * its first parent, or against nothing for the first commit. Each file's
+ * blobs are read like a staged change's.
+ */
+export interface GitCommitDetail extends GitCommit {
+  body: string;
+  author: string;
+  email: string;
+  // Here `time` is when the author wrote it.
+  parents: string[];
+  files: GitChange[];
+  commitUrl: string | null;
 }
 
 export interface GitStatus {
@@ -580,6 +608,16 @@ export interface Calls {
       repo?: string;
     };
     result: { old: FileText; new: FileText };
+  };
+  // The branch's commits from `skip` on, `count` at most.
+  'git.log': {
+    args: WorkspaceRef & { skip?: number; count: number; repo?: string };
+    result: GitLog;
+  };
+  // A commit by hash; paths are from the workspace.
+  'git.show': {
+    args: WorkspaceRef & { hash: string; repo?: string };
+    result: GitCommitDetail;
   };
   'file.read': { args: WorkspaceRef & { path: string }; result: FileText };
   // Opens it in the editor on the dev machine (server/src/git/editor.ts); absent

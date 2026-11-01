@@ -3,6 +3,8 @@ import { useLocation, type RouteProps } from '@solidjs/router';
 import { Show, createMemo } from 'solid-js';
 
 import OpenFile from '../../files/OpenFile';
+import CommitView from '../../git/CommitView';
+import { commitFromSearch, sameCommit } from '../../git/git';
 import PullRequestBadge from '../../projects/PullRequestBadge';
 import TopBar from '../../app/TopBar';
 import WorkspaceOverview from '../../projects/WorkspaceOverview';
@@ -17,6 +19,10 @@ export default function WorkspacePage(_props: RouteProps<'/p/:id'>) {
   const open = createMemo(() => openFromSearch(location.search), {
     name: 'openFile',
     equals: sameOpen,
+  });
+  const commit = createMemo(() => commitFromSearch(location.search), {
+    name: 'openCommit',
+    equals: sameCommit,
   });
 
   return (
@@ -33,7 +39,10 @@ export default function WorkspacePage(_props: RouteProps<'/p/:id'>) {
         const name = () => workspaceName(c().project, c().workspace.path);
         return (
           <>
-            <Title>{open()?.path.split('/').pop() ?? name()}</Title>
+            <Title>
+              {(commit()?.path ?? open()?.path)?.split('/').pop() ??
+                (commit() ? commit()!.hash.slice(0, 7) : name())}
+            </Title>
             <TopBar>
               <h1 class="truncate font-semibold">{name()}</h1>
               <Show when={c().workspace.branch}>
@@ -45,14 +54,23 @@ export default function WorkspacePage(_props: RouteProps<'/p/:id'>) {
                 {(pr) => <PullRequestBadge pr={pr()} />}
               </Show>
             </TopBar>
+            <Show when={commit()}>
+              {(o) => (
+                <div class="flex min-h-0 flex-1 flex-col border-t border-line">
+                  <CommitView workspace={c().ref} open={o()} />
+                </div>
+              )}
+            </Show>
             <Show
-              when={open()}
+              when={!commit() && open()}
               fallback={
-                <WorkspaceOverview
-                  project={c().project}
-                  workspace={c().workspace}
-                  at={c().ref}
-                />
+                <Show when={!commit()}>
+                  <WorkspaceOverview
+                    project={c().project}
+                    workspace={c().workspace}
+                    at={c().ref}
+                  />
+                </Show>
               }
             >
               {(o) => (

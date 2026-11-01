@@ -20,6 +20,8 @@ import { isPruning } from '../../context-usage/context-usage';
 import MessageRow, { RULE } from '../../sessions/MessageRow';
 import ModelPicker from '../../models/ModelPicker';
 import OpenFile from '../../files/OpenFile';
+import CommitView from '../../git/CommitView';
+import { commitFromSearch, sameCommit } from '../../git/git';
 import {
   detachSession,
   unwatchSession,
@@ -115,10 +117,19 @@ export default function Session(props: RouteProps<'/s/:id'>) {
     name: 'fileOverChat',
     equals: sameOpen,
   });
+  const commit = createMemo(() => commitFromSearch(location.search), {
+    name: 'commitOverChat',
+    equals: sameCommit,
+  });
   const closeFile = () => navigate(paths.s(props.params.id!)());
   onSettled(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open() && !drawer() && !e.defaultPrevented)
+      if (
+        e.key === 'Escape' &&
+        (open() || commit()) &&
+        !drawer() &&
+        !e.defaultPrevented
+      )
         closeFile();
     };
     addEventListener('keydown', onKey);
@@ -521,7 +532,29 @@ export default function Session(props: RouteProps<'/s/:id'>) {
             </div>
           </div>
         </div>
-        <Show when={workspace() && open()}>
+        <Show when={workspace() && commit()}>
+          {(o) => (
+            <section
+              class="absolute inset-0 z-10 flex flex-col border-t border-line bg-bg"
+              aria-label={`Commit ${o().hash.slice(0, 7)}`}
+            >
+              <CommitView
+                workspace={workspace()!.ref}
+                open={o()}
+                actions={
+                  <IconButton
+                    size="md"
+                    title="Back to the session (Esc)"
+                    onClick={closeFile}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                }
+              />
+            </section>
+          )}
+        </Show>
+        <Show when={workspace() && !commit() && open()}>
           {(o) => (
             <section
               class="absolute inset-0 z-10 flex flex-col border-t border-line bg-bg"

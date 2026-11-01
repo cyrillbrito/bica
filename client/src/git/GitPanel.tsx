@@ -4,13 +4,7 @@ import { For, Show, createSignal } from 'solid-js';
 
 import { copyText } from '../ui/clipboard';
 import { closeDrawer } from '../ui/layout';
-import type {
-  GitChange,
-  GitCommit,
-  GitStatus,
-  WorkspaceRef,
-} from '@bica/shared/protocol';
-import { timeAgo } from '../ui/time';
+import type { GitChange, GitStatus, WorkspaceRef } from '@bica/shared/protocol';
 import {
   commit,
   discard,
@@ -24,6 +18,7 @@ import { openHref, type View } from '../files/files';
 import ChangeList from '../files/ChangeList';
 import { keepOpenItem } from '../files/OpenFile';
 import CommitBox, { type CommitAction } from './CommitBox';
+import History from './History';
 import { Button, IconButton } from '../ui/Button';
 import { RollingNumber } from '../ui/RollingNumber';
 import { toast } from '../ui/Toast';
@@ -299,7 +294,7 @@ function Repo(props: {
   const SectionHeader = (p: {
     id: string;
     title: string;
-    count: number;
+    count?: number;
     // Lines added and removed across the section, rolling as they change.
     lines?: { added: number; removed: number };
     menu?: () => MenuEntry[];
@@ -464,44 +459,15 @@ function Repo(props: {
     );
   };
 
-  const History = (p: { commits: GitCommit[] }) => (
+  const Commits = () => (
     <section class="px-1">
-      <SectionHeader
-        id="recent"
-        title="Recent commits"
-        count={p.commits.length}
-      />
+      <SectionHeader id="recent" title="Commits" />
       <Show when={!closed().recent}>
-        <ul class="pb-2">
-          <For each={p.commits} keyed={(c) => c.hash}>
-            {(c) => (
-              <li
-                class="context-target flex h-7 items-center gap-2 rounded-md pr-2 pl-2.5 text-muted touch:h-11"
-                title={`${c().hash} · ${new Date(c().time).toLocaleString()}`}
-                {...contextMenu(() => [
-                  {
-                    label: 'Copy hash',
-                    icon: <CopyIcon />,
-                    onSelect: () => void copyText(c().hash),
-                  },
-                  {
-                    label: 'Copy message',
-                    icon: <CopyIcon />,
-                    onSelect: () => void copyText(c().subject),
-                  },
-                ])}
-              >
-                <span class="size-1.5 shrink-0 rounded-full bg-line-strong" />
-                <span class="min-w-0 flex-1 truncate text-fg/85">
-                  {c().subject}
-                </span>
-                <span class="shrink-0 text-meta tabular-nums">
-                  {timeAgo(c().time)}
-                </span>
-              </li>
-            )}
-          </For>
-        </ul>
+        <History
+          workspace={props.workspace}
+          repo={props.repo}
+          status={props.status}
+        />
       </Show>
     </section>
   );
@@ -554,7 +520,7 @@ function Repo(props: {
           </p>
         </Show>
         <Show when={props.status.recent.length}>
-          <History commits={props.status.recent} />
+          <Commits />
         </Show>
       </>
     );

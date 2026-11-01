@@ -28,12 +28,15 @@ import { DownloadIcon, PinIcon, PreviewIcon, WrapIcon } from '../ui/icons';
 import { Segmented, segmentClass } from '../ui/Segmented';
 import { stored } from '../ui/stored';
 
-// Side by side by default; remembered for the tab's lifetime.
+// Side by side by default; remembered for the tab's lifetime, and shared
+// with commit diffs (git/CommitView).
 const [split, setSplit] = createSignal(true);
+export { split };
 // Rendered by default; remembered for the tab's lifetime.
 const [preview, setPreview] = createSignal(true);
 // Off by default; remembered per device.
 const [wrap, setWrap] = stored('wrap', false);
+export { wrap };
 function toggleWrap() {
   setWrap(!wrap());
 }
@@ -142,24 +145,7 @@ export default function OpenFile(props: {
           </a>
         </Segmented>
         <Show when={o().view !== 'file'}>
-          <Segmented class="max-md:hidden">
-            <button
-              class={segmentClass}
-              data-on={split() ? '' : undefined}
-              aria-pressed={split() ? 'true' : 'false'}
-              onClick={() => setSplit(true)}
-            >
-              Split
-            </button>
-            <button
-              class={segmentClass}
-              data-on={split() ? undefined : ''}
-              aria-pressed={split() ? 'false' : 'true'}
-              onClick={() => setSplit(false)}
-            >
-              Unified
-            </button>
-          </Segmented>
+          <SplitSwitch />
         </Show>
         <Show when={canPreview()}>
           <IconButton
@@ -173,15 +159,7 @@ export default function OpenFile(props: {
           </IconButton>
         </Show>
         <Show when={!previewing()}>
-          <IconButton
-            size="md"
-            class="aria-pressed:bg-active aria-pressed:text-accent"
-            title={wrap() ? 'Scroll long lines' : 'Wrap long lines'}
-            aria-pressed={wrap() ? 'true' : 'false'}
-            onClick={toggleWrap}
-          >
-            <WrapIcon />
-          </IconButton>
+          <WrapButton />
         </Show>
         <IconButton
           size="md"
@@ -222,6 +200,44 @@ export default function OpenFile(props: {
         preview={preview()}
       />
     </div>
+  );
+}
+
+/** Split or unified, for any diff shown full size; unified on a phone. */
+export function SplitSwitch() {
+  return (
+    <Segmented class="max-md:hidden">
+      <button
+        class={segmentClass}
+        data-on={split() ? '' : undefined}
+        aria-pressed={split() ? 'true' : 'false'}
+        onClick={() => setSplit(true)}
+      >
+        Split
+      </button>
+      <button
+        class={segmentClass}
+        data-on={split() ? undefined : ''}
+        aria-pressed={split() ? 'false' : 'true'}
+        onClick={() => setSplit(false)}
+      >
+        Unified
+      </button>
+    </Segmented>
+  );
+}
+
+export function WrapButton() {
+  return (
+    <IconButton
+      size="md"
+      class="aria-pressed:bg-active aria-pressed:text-accent"
+      title={wrap() ? 'Scroll long lines' : 'Wrap long lines'}
+      aria-pressed={wrap() ? 'true' : 'false'}
+      onClick={toggleWrap}
+    >
+      <WrapIcon />
+    </IconButton>
   );
 }
 
