@@ -14,6 +14,7 @@
     "dev:site": "bun run --cwd site dev",
     "build": "bun run --cwd client build",
     "build:site": "bun run --cwd site build",
+    "deploy:site": "bun run --cwd site deploy",
     "build:bica": "bun run --cwd server build:bica",
     "start": "bun run --cwd server start",
     "test": "bun run --cwd server test",

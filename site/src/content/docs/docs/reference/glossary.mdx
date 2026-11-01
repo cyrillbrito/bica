@@ -1,0 +1,61 @@
+---
+title: 'Glossary'
+description: 'The words Bica uses, and what each one means.'
+sidebar:
+  order: 3
+---
+
+Bica uses one name for each idea, in the app and in these docs. Each term links to the page that explains it.
+
+| Term | What it means |
+| --- | --- |
+| [Account](/docs/setup/providers/#more-than-one-account-on-a-plan) | One sign-in to a provider. A plan can have several, which take turns as each nears its limits. |
+| [Active](/docs/basics/layout/) | The sidebar tab with what's in play: sessions that need you, are running, or changed in the last few minutes. |
+| [Archive](/docs/basics/sessions/#session-actions) | Hiding a finished session from the list, keeping everything. Undo, or a new prompt, brings it back. |
+| [Assistant mode](/docs/features/assistant-mode/) | A session that runs for months, keeping what lasts in memory files. |
+| [Board](/docs/features/hub/) | The hub's Threads list of the sessions it follows. |
+| [Chat](/docs/basics/projects/#chats) | A session with no project, in its own new folder under `~/.bica/chats`. |
+| [Child session](/docs/features/orchestration/) | A session another session started. Its parent hears each run it ends. |
+| [Command palette](/docs/basics/command-palette/) | The ⌘K search box for going anywhere and doing anything. |
+| [Compact](/docs/features/context/#compact-and-prune) | Having a model summarize the older part of a session, so the next prompt is smaller. |
+| [Context](/docs/features/context/) | What the model rereads on each turn: its instructions, the conversation, and tool output. |
+| [Context chip](/docs/features/context/) | The chip in a session's top bar that shows how full the context window is. |
+| [Context window](/docs/features/context/) | How much context a model can read at once. |
+| [Default model](/docs/setup/providers/#the-default-and-fast-models) | The model new sessions start with. |
+| [Detach](/docs/features/orchestration/) | Taking a child session or terminal from its parent, so it's yours alone. |
+| [Dictation](/docs/features/voice/#dictation-on-the-phone) | Recording speech on the phone and writing it into the composer. |
+| [Effort](/docs/basics/composer/#the-model-picker) | How hard a model thinks. Picked per session, next to the model. |
+| [Exa](/docs/setup/providers/#exa-turns-on-web-search) | The service behind the agent's web search and fetch, turned on with its key. |
+| [Fast model](/docs/setup/providers/#the-default-and-fast-models) | A small, cheap model that titles sessions and writes commit messages. |
+| [Fork](/docs/basics/sessions/#session-actions) | A new session with another session's history up to a chosen reply. |
+| [Hub](/docs/features/hub/) | The one session that coordinates the others and does no work itself. |
+| [Kept file](/docs/basics/files/) | A file listed in the sidebar with Keep open, until you unpin it. |
+| [Main folder](/docs/basics/projects/) | A project's own folder, as opposed to its worktrees. |
+| [Memory files](/docs/features/assistant-mode/) | Markdown files, starting from `MEMORY.md`, where a long-lived session keeps what lasts. |
+| [Needs you](/docs/basics/sessions/#status-shows-which-sessions-need-you) | Sessions waiting for an answer, unread, or failed. |
+| [Night run](/docs/features/night-runs/) | A session held for tonight, which runs alone and ends with a morning report. |
+| [Note](/docs/features/orchestration/) | A prompt from Bica itself, such as a child session's finished run. |
+| [Parent](/docs/features/orchestration/) | The session that started a child session and leads it. |
+| [Parked](/docs/basics/projects/#in-the-sidebar) | The sidebar section for workspaces with nothing open. |
+| [Project](/docs/basics/projects/) | A folder you added for agents to work in, usually a git repo, with its worktrees. |
+| [Project instructions](/docs/features/instructions/) | The `AGENTS.md` or `CLAUDE.md` files Bica gives every session. |
+| [Prompt cache](/docs/features/context/) | The provider's copy of the context so far, cheap to reread until it expires. |
+| [Provider](/docs/setup/providers/) | Where models come from, connected by a plan sign-in or an API key. |
+| [Prune](/docs/features/context/#compact-and-prune) | Shrinking old tool output to a short note, without a model call. The transcript keeps it. |
+| [Queue](/docs/basics/composer/) | Holding a prompt while a run works, so it starts the next run. ⌘Enter, or Queue under the send button's chevron. |
+| [Run](/docs/start/how-it-works/#sessions-keep-running) | The agent working from a prompt until it replies, stops, or fails. |
+| [Session](/docs/basics/sessions/) | One conversation with an agent, in one workspace. |
+| [Side panel](/docs/basics/layout/) | The column on the right, with the Files and Git tabs. |
+| [Sidebar](/docs/basics/layout/) | The column on the left, with the hub, projects, workspaces, and their sessions. |
+| [Skill](/docs/features/instructions/#skills) | A folder of instructions for one task, which the agent reads when it fits. |
+| [Stage on view](/docs/basics/git/) | A setting that stages a changed file once you've opened its diff. |
+| [Status](/docs/basics/sessions/#status-shows-which-sessions-need-you) | Where a session stands: Running, Retrying, Waiting for you, Unread, Failed, or Idle. |
+| [Steer](/docs/basics/composer/) | Sending while the agent works, so the prompt joins the current run after the step in progress. |
+| [Tailnet](/docs/start/phone/) | Your private Tailscale network, the safe way to reach Bica from other devices. |
+| [Terminal](/docs/basics/terminals/) | A shell in a workspace that you and the agents share. |
+| [Transcript](/docs/basics/sessions/#read-the-transcript) | What a session shows: prompts, replies, thinking, and tool calls. |
+| [Voice call](/docs/features/voice/) | Talking to a session out loud, with the call panel in the composer's place. |
+| [Watch](/docs/features/hub/) | The hub following a session it didn't start, hearing each run it ends. |
+| [Workspace](/docs/basics/projects/) | The folder a session or terminal works in: a project's main folder or one of its worktrees. |
+| [Workspace page](/docs/basics/files/#the-workspace-page) | A workspace's own page: its sessions, changes, and commits, or a file or diff full size. |
+| [Worktree](/docs/basics/projects/#one-worktree-per-feature) | A git worktree of a project: its own folder and branch, usually one per feature. |

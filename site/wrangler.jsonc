@@ -1,0 +1,11 @@
+// The website on Cloudflare Workers as static assets, see docs/website.md.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bica-site",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+  },
+  "routes": [{ "pattern": "bica.sh", "custom_domain": true }],
+}

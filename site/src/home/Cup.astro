@@ -1,0 +1,77 @@
+---
+// The home page's mascot: the cup from the logo, with a face. Awake it
+// steams and blinks; asleep it closes its eyes. Colors come from home.css.
+interface Props {
+  mood?: 'awake' | 'asleep';
+  size?: number;
+  class?: string;
+}
+const { mood = 'awake', size = 120, class: className } = Astro.props;
+const id = `cup-${mood}`;
+---
+
+<svg
+  class:list={['cup', `cup-${mood}`, className]}
+  width={size}
+  height={size}
+  viewBox="0 0 120 120"
+  fill="none"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <defs>
+    <clipPath id={`${id}-body`}>
+      <path d="M26 46H86L79 88Q78 95 71 95H41Q34 95 33 88Z" />
+    </clipPath>
+  </defs>
+
+  {
+    mood === 'awake' ? (
+      <g class="cup-steam" stroke-width="4.5">
+        <path d="M47 38c-4-5 4-8 0-14s4-8 0-12" />
+        <path d="M64 38c-4-5 4-8 0-14s4-8 0-12" />
+      </g>
+    ) : (
+      <g class="cup-zz" stroke-width="3.5">
+        <path d="M80 18h9l-9 10h9" />
+        <path d="M95 4h6l-6 7h6" />
+      </g>
+    )
+  }
+
+  <path class="cup-line" d="M86 56h4a11 11 0 0 1 0 22h-8" stroke-width="5.5" />
+  <path
+    class="cup-body"
+    d="M26 46H86L79 88Q78 95 71 95H41Q34 95 33 88Z"
+    stroke-width="5"
+  />
+  <rect
+    class="cup-crema"
+    x="20"
+    y="46"
+    width="72"
+    height="7"
+    clip-path={`url(#${id}-body)`}
+  />
+  <path class="cup-rim" d="M26 46H86" stroke-width="5" />
+
+  <g class="cup-face">
+    {
+      mood === 'awake' ? (
+        <g class="cup-eyes">
+          <ellipse cx="47" cy="68" rx="3.6" ry="4.4" />
+          <ellipse cx="65" cy="68" rx="3.6" ry="4.4" />
+        </g>
+      ) : (
+        <g class="cup-eyes-shut" stroke-width="3.5">
+          <path d="M43 68q4 3.5 8 0" />
+          <path d="M61 68q4 3.5 8 0" />
+        </g>
+      )
+    }
+    <path class="cup-mouth" d="M52 78q4 4 8 0" stroke-width="3.5" />
+  </g>
+
+  <path class="cup-line" d="M16 104H96" stroke-width="6" />
+</svg>

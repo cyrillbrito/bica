@@ -1,0 +1,23 @@
+# name          path                              device   theme
+# Regenerate with site/scripts/screens.sh; see docs/website.md.
+home            /?data=demo                       desktop  light
+session         /s/demo-shortcuts?data=demo       phone    light
+workspace       /p/bica?w=%2FUsers%2Faleksandra%2FRepos%2Fbica-shortcuts&data=demo  desktop  light
+workspace-diff  /p/bica?w=%2FUsers%2Faleksandra%2FRepos%2Fbica-shortcuts&d=src%2Fcomponents%2FSidebar.tsx&s=changes&data=demo  desktop  light
+hub             /hub?data=demo                    desktop  light
+child-session   /s/demo-terminals?data=demo       phone    light
+tonight         /s/demo-tonight?data=demo         phone    light
+session         /s/demo-shortcuts?data=demo       desktop  light
+sidebar         /s/demo-shortcuts?data=demo       phone    light  document.querySelector('[title^="Toggle sessions"]').click()
+side-panel      /s/demo-shortcuts?data=demo       phone    light  document.querySelector('[title^="Toggle files"]').click()
+palette         /s/demo-shortcuts?data=demo       desktop  light  document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',code:'KeyK',metaKey:true,bubbles:true}))
+settings        /settings?data=demo               desktop  light  document.querySelector('[title^="Toggle files"]').click()
+providers       /settings?data=demo               phone    light  document.querySelectorAll('main section')[1].scrollIntoView(); document.querySelector('[popovertarget=add-provider]').click()
+voice           /s/demo-handoff?data=demo         desktop  light
+running         /s/demo-terminals?data=demo       desktop  light
+project-menu    /?data=demo                       desktop  light  document.querySelector('[aria-label=Project]').click()
+model-picker    /?data=demo                       desktop  light  document.querySelector('[popovertarget^=model-picker]').click()
+send-menu       /s/demo-terminals?data=demo       desktop  light  (()=>{const el=document.querySelector('main textarea, main [contenteditable=true]'); el.focus(); document.execCommand('insertText', false, 'Also cover the restart case'); setTimeout(()=>document.querySelector('[title="More ways to send"]').click(), 300)})()
+assistant       /?data=demo                       desktop  light  document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',code:'KeyK',metaKey:true,bubbles:true})); setTimeout(()=>[...document.querySelectorAll('[role=option],button,li')].find(b=>b.textContent.trim().startsWith('New assistant session'))?.click(),300)
+hero            /s/demo-shortcuts?data=demo       desktop  light
+start-empty     /?data=empty                      desktop  light

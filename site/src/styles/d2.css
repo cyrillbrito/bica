@@ -1,0 +1,24 @@
+/* D2 diagrams (see d2-shared.mjs). On a wide screen a diagram shrinks to fit
+   the column. On a phone it stops at --d2-min, about 70% of its natural size,
+   and the box scrolls sideways instead, so its labels stay readable. */
+.sl-markdown-content .d2-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.sl-markdown-content .d2-scroll > svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* The diagram's own background: the page's shows through, in either theme.
+   !important beats the dark theme's rules, which d2-shared.mjs scopes to :root. */
+.sl-markdown-content .d2-scroll > svg > svg > rect:first-child {
+  fill: transparent !important;
+}
+
+@media (max-width: 50rem) {
+  .sl-markdown-content .d2-scroll > svg {
+    min-width: var(--d2-min);
+  }
+}

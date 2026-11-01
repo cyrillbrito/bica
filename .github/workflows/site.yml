@@ -1,0 +1,23 @@
+# Builds the website and deploys it to Cloudflare, see docs/website.md.
+name: site
+
+on:
+  push:
+    branches: [main]
+    paths: [site/**, client/src/**, bun.lock]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # Skipped until the repo has the CLOUDFLARE_ACCOUNT_ID variable, so a fork
+    # or a repo without Cloudflare set up doesn't fail on every push.
+    if: vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run deploy:site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

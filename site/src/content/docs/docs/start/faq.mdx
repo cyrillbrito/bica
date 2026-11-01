@@ -1,0 +1,46 @@
+---
+title: FAQ
+description: Short answers to what people ask before installing Bica, each with a link to the page that goes deeper.
+---
+
+## Before you install
+
+### How is it different from Claude Code, Codex, or Cursor?
+
+Those run in a terminal or an editor. Bica is a web page for running many agents side by side and reviewing their work, and its runs keep going when you close the tab. It runs its own agent on Pi Durable, an open-source agent engine, and doesn't drive Claude Code underneath. See [What is Bica](/docs/#how-it-differs-from-claude-code-or-cursor).
+
+### Which systems does it run on?
+
+macOS (Apple Silicon or Intel) and Linux (x64 or arm64). There is no Windows build. See [Install](/docs/start/install/).
+
+### Can I use my Claude or ChatGPT plan?
+
+Yes. Sign in with your plan in Settings → Providers, or add an API key. Plans are meant for the provider's own apps, so a provider may stop allowing this, while an API key is the official route. See [Providers and models](/docs/setup/providers/#connect-a-provider).
+
+### What does it cost?
+
+Bica itself costs nothing. You pay for the models, through a plan you already have or an API key billed per call. Each session shows what it would cost at API prices, even on a plan. See [Context and spend](/docs/features/context/).
+
+## Safety
+
+### Is it safe to leave running?
+
+Bica has no login, so it only listens on your own machine. Other devices reach it through Tailscale, a private network between your own devices. Never use `tailscale funnel`, which would put it on the public internet. See [Keep it private](/docs/start/phone/#keep-it-private).
+
+### Does the agent ask before running commands?
+
+No. There are no approval prompts and no sandbox: the agent runs commands and edits files as your user. It is told to leave git alone unless you ask and to check with you before anything destructive, but nothing enforces that. See [Tools run without asking](/docs/features/tools/#tools-run-without-asking).
+
+## Using it
+
+### Can I use it from my phone?
+
+Yes. Give Bica a private HTTPS address with `tailscale serve`, open it on the phone, and add it to the home screen. See [Use it from your phone](/docs/start/phone/).
+
+### Where is my data?
+
+On your machine, in `~/.bica` and in your repos. Only the calls to the model leave it. See [Where your data lives](/docs/start/how-it-works/#where-your-data-lives).
+
+### How do I update?
+
+Stop Bica, download the new binary over the old one, start it again, and reload the open tabs. Runs that were going continue. See [Update and uninstall](/docs/setup/update-uninstall/).

@@ -1,0 +1,62 @@
+---
+title: First run
+description: Start bica, open it in the browser, connect a model provider, add a project, and send a first prompt.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import start from '../../../../assets/screens/start-empty-desktop-light.png';
+
+Once `bica` is [installed](/docs/start/install/), it takes a few minutes to send your first prompt: start the server, sign in to a model provider, and pick the repo the agent should work in.
+
+<Steps>
+
+1. Start Bica in a terminal:
+
+   ```sh
+   bica
+   ```
+
+   It prints its address and a few keys, then keeps running:
+
+   ```txt
+     Bica 0.1.0 running
+
+     Local:  http://localhost:3141
+
+     a  open as app (Chrome, profile Personal)
+     o  open in browser
+     p  pick Chrome profile
+     q  quit
+   ```
+
+   If it says `Port 3141 is in use. Pick another with --port.`, start it with `bica --port 3150` and use that port instead.
+
+2. Press `o` to open Bica in your browser, or `a` to open it in its own Chrome window. You can also go to [http://localhost:3141](http://localhost:3141).
+
+   The start screen is a composer under a greeting that changes each visit, with a project menu below it:
+
+   <Image
+     src={start}
+     alt="Bica's start screen: the greeting What needs fixing?, the composer with Start a new session in it, and the No project menu below it"
+   />
+
+3. Connect a model provider. Open the Bica menu at the top of the sidebar, pick Settings, then press Add provider under Providers. Choose Sign in with a plan for a Claude or ChatGPT subscription and follow the sign-in page, or Add an API key and paste your key. [Providers and models](/docs/setup/providers/) covers signing in from another device.
+
+4. Add your repo. Open the project menu under the composer, which says No project, and pick Add project…. A folder browser opens on your machine, with git repos marked. Go to your repo's folder and press Add this folder.
+
+   The project is now picked, and a switch next to it says where the session works: Main folder, the repo as it is, or New worktree, a fresh branch and folder of its own. Leave it on Main folder for now.
+
+5. Type something small, such as _What does this project do?_, and press Enter.
+
+   The session appears in the sidebar under your project, and the reply streams in while the agent reads your code. A chime plays when it's done.
+
+</Steps>
+
+To ask something that isn't about a repo, pick New chat, no project in the project menu instead. [Projects and worktrees](/docs/basics/projects/) explains both choices, and [sessions](/docs/basics/sessions/) explains what you see in a session.
+
+## Stopping Bica
+
+Press `q` or Ctrl-C in its terminal. That closes its [terminals](/docs/basics/terminals/), and any run still going continues the next time you start `bica`. The [CLI reference](/docs/reference/cli/) lists every key and option.
+
+Bica has no login, so it only listens on your own machine. To use it from another device, follow [use it from your phone](/docs/start/phone/).

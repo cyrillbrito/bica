@@ -1,0 +1,51 @@
+---
+title: 'Instructions and skills'
+description: 'AGENTS.md files and skills: how to tell every agent how you work.'
+sidebar:
+  order: 4
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+Instructions tell the agent how you work: your conventions, the commands to run, what to avoid. You write them in plain `AGENTS.md` files, and Bica gives them to every session. Skills teach the agent a whole task, and it reads one only when the task comes up.
+
+## AGENTS.md files
+
+Bica reads these files into every session, in this order:
+
+1. `~/.bica/AGENTS.md`, your own rules for every project.
+2. The `AGENTS.md` or `CLAUDE.md` in each folder from the top of the disk down to the session's folder, so the closest one comes last.
+
+<FileTree>
+
+- ~/.bica/
+  - AGENTS.md your rules for every session
+  - skills/ your skills for every project
+- Repos/
+  - AGENTS.md read for every project under Repos/
+  - my-app/
+    - AGENTS.md this project's rules
+    - .agents/skills/ this project's skills
+
+</FileTree>
+
+Edits reach sessions that are already running, from their next turn. A file you already wrote for Claude Code or another agent works as it is.
+
+## Skills
+
+A skill is a folder with a `SKILL.md` file that explains how to do one kind of task, in the [Agent Skills](https://agentskills.io) format. The agent sees only each skill's name and description, and reads the whole skill when a task matches, so having many skills costs little.
+
+Bica looks for skills in the project's `.agents/skills`, `.claude/skills`, and `.bica/skills` folders, then in the same folders in your home. When two skills share a name, the project's wins. Skills written for Claude Code or Pi work as they are.
+
+## What Bica adds
+
+Around your instructions, Bica tells the agent what it needs to work in Bica:
+
+- What Bica is, and what this session is for.
+- How to use each of its [tools](/docs/features/tools/), such as keeping git read-only unless you ask.
+- Its role, such as a [night run](/docs/features/night-runs/)'s rules for finishing alone.
+- How to reply.
+
+Replies are short on purpose, because you likely run several sessions and skim each one. The first sentence is the answer or the outcome, most replies are a few lines, and the last line says what to do next.
+
+Sessions also start with the `MEMORY.md` file from their folder, if there is one. [Assistant mode](/docs/features/assistant-mode/) uses it to remember things across months.

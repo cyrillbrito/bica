@@ -1,3 +1,5 @@
 dist
 .astro
 public/d2
+dist-pdf
+.wrangler

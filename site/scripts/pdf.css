@@ -1,0 +1,234 @@
+/* Paper styles for scripts/pdf.ts, added to each built page while it prints,
+   and to the cover and contents. Margins are set by page.pdf(). */
+
+html {
+  font-size: 11pt;
+  --sl-content-width: 100%;
+  --sl-nav-height: 0px;
+  --sl-mobile-toc-height: 0px;
+}
+
+/* The site's chrome. */
+.header,
+header.header,
+nav.sidebar,
+#starlight__sidebar,
+.right-sidebar-container,
+.pagination-links,
+mobile-starlight-toc,
+#starlight__mobile-toc,
+.sl-markdown-content .tablist-wrapper,
+.sl-skip-link,
+.hero .actions,
+.content-panel footer,
+.expressive-code .copy {
+  display: none !important;
+}
+
+main,
+.page,
+.main-frame,
+.main-pane,
+.content-panel,
+.sl-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  border: 0 !important;
+}
+
+.content-panel + .content-panel {
+  padding-top: 0.5rem !important;
+}
+
+/* Nothing may hang past the content, or a near-full last sheet spills a
+   blank one. */
+body {
+  background: white !important;
+  margin: 0 !important;
+}
+.sl-markdown-content > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Screenshots: phone shots are tall, so cap the height and keep the ratio. */
+.sl-markdown-content img {
+  max-height: 115mm;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+}
+
+/* Every docs page starts on a new sheet; pdf.ts prints them one by one. */
+h1 {
+  font-size: 2rem !important;
+  margin-top: 0 !important;
+}
+
+.pdf-path {
+  font-family: var(--sl-font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0.25rem 0 0 !important;
+}
+
+/* The splash index: a plain title. Starlight crops the hero image to a
+   400px square, too small and dark for paper. */
+.hero {
+  display: block !important;
+  padding: 0 0 1rem !important;
+}
+.hero > img {
+  display: none !important;
+}
+p,
+li {
+  orphans: 3;
+  widows: 3;
+}
+
+.hero .stack,
+.hero .copy {
+  align-items: start !important;
+  text-align: start !important;
+}
+.hero .tagline {
+  font-size: 1.15rem !important;
+  color: #444 !important;
+}
+
+/* Keep diagrams, code, figures, and asides whole on one sheet. */
+.d2-scroll,
+.expressive-code,
+pre,
+figure,
+img,
+.starlight-aside,
+bica-demo,
+tr {
+  break-inside: avoid;
+}
+h2,
+h3,
+h4,
+.sl-heading-wrapper,
+.pdf-tab-label {
+  break-after: avoid;
+}
+
+/* Diagrams fit the text width and never scroll. */
+.sl-markdown-content .d2-scroll {
+  overflow: visible !important;
+}
+.sl-markdown-content .d2-scroll > svg {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: 210mm;
+}
+
+/* Long code lines wrap instead of running off the sheet. */
+.expressive-code pre {
+  overflow: visible !important;
+}
+.expressive-code .ec-line .code {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+}
+
+/* Tabs print every panel, each under its tab's name. */
+.sl-markdown-content [role='tabpanel'] {
+  display: block !important;
+  border-left: 2px solid #ddd;
+  padding-left: 0.75rem;
+  margin-top: 0.75rem;
+}
+.pdf-tab-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  margin: 0 0 0.25rem !important;
+}
+
+/* Cards and link cards: no hover chrome, just bordered boxes. */
+.card-grid {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+/* Cover and contents. */
+.pdf-front {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #17181c;
+  margin: 0;
+}
+.pdf-cover {
+  height: 240mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  break-after: page;
+}
+.pdf-cover img {
+  width: 28mm;
+  height: 28mm;
+}
+.pdf-cover h1 {
+  font-size: 44pt !important;
+  margin: 8mm 0 2mm !important;
+}
+.pdf-cover .sub {
+  font-size: 18pt;
+  color: #444;
+  margin: 0 0 14mm;
+}
+.pdf-cover .meta {
+  font-size: 10pt;
+  color: #666;
+  max-width: 120mm;
+  margin: 0 0 3mm;
+}
+.pdf-toc h2 {
+  font-size: 20pt;
+  margin: 0 0 6mm;
+}
+.pdf-toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 10.5pt;
+}
+.pdf-toc li {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+  padding: 1mm 0;
+  break-inside: avoid;
+}
+.pdf-toc li.group {
+  font-weight: 700;
+  margin-top: 4mm;
+  font-size: 11pt;
+  break-after: avoid;
+}
+.pdf-toc .t {
+  flex: none;
+}
+.pdf-toc .p {
+  flex: 1;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 8pt;
+  color: #888;
+  border-bottom: 1px dotted #bbb;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pdf-toc .n {
+  flex: none;
+  min-width: 8mm;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

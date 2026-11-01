@@ -1,0 +1,49 @@
+---
+title: 'Terminals'
+description: 'Shared shells that you and the agent both use.'
+sidebar:
+  order: 5
+---
+
+A terminal is a shell in a workspace, for commands and long-running processes such as dev servers. You and the agent share it: you can watch and stop a dev server the agent started, and the agent can read the output of one you started.
+
+## One shell for both of you
+
+The shell runs on your dev machine. You type into it from any browser tab, and the agent types into it with its terminal tools.
+
+```d2 title="One shell, used by you and by the agent"
+direction: down
+tabs: "You, in any tab\n(laptop, phone)" {class: browser}
+shell: "Shell in the workspace\nbun run dev" {class: focus}
+agent: Agent
+tabs <-> shell: keys, output
+shell <-> agent: terminal tools
+```
+
+Either of you can press Ctrl-C on what the other started and run something else. Several tabs can show the same terminal, and one that opens late still sees the output so far.
+
+## Open a terminal
+
+- Press ⌃` (Control and backtick) for a new terminal in the workspace you're in, or pick New terminal here in a workspace's menu in the sidebar.
+- The sidebar lists terminals above the workspace's sessions, with Running or the exit code.
+- A terminal opens full size in the centre. On a phone, a key bar adds Esc, Tab, ^C, and the arrow keys.
+- Its menu in the sidebar has Stop, Restart, and Close. Restart opens a fresh shell and runs its first command again, and Close ends the shell and whatever it runs.
+
+It's your normal login shell. When the command exits, the terminal keeps its output and exit code until you close it.
+
+{/* TODO(visual): a terminal running a dev server with output, desktop and the phone key bar. The test data shows terminals empty, so a screenshot needs a fixture with output. */}
+
+## Terminals the agent starts
+
+The agent uses terminals for dev servers, builds, and test runs, instead of running them in the background where you can't see them. It can wait for a command to finish or for a line such as a server's ready message, and it hears when a command it started ends, so a crashed dev server doesn't go unnoticed. [The agent's tools](/docs/features/tools/) lists them.
+
+A terminal the agent starts belongs to its session. A strip under its top bar names that session, and Detach there makes the terminal yours: the agent can no longer type into it unless you tell it to. Archiving the session asks which of its terminals to close.
+
+## Restarting Bica ends every shell
+
+Shells run inside Bica, so quitting or restarting `bica` ends them all, along with whatever they ran. Sessions survive a restart, but terminals don't.
+
+## Next
+
+- [Projects and worktrees](/docs/basics/projects/): the workspaces terminals belong to.
+- [Shortcuts](/docs/reference/shortcuts/): ⌃` and the other keys.

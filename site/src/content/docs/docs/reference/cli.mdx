@@ -1,0 +1,89 @@
+---
+title: 'CLI'
+description: 'The bica command: flags, keys, environment variables, ports, and the ~/.bica folder.'
+sidebar:
+  order: 1
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+`bica` starts Bica on your machine and serves the app at `http://localhost:3141`. It runs until you quit it. [First run](/docs/start/first-run/) walks through it the first time.
+
+## Flags
+
+```txt
+Usage: bica [--port <port>]
+```
+
+| Flag | What it does | Default |
+| --- | --- | --- |
+| `--port <port>` | Listens on another port. | `3141` |
+| `-v`, `--version` | Prints the version and exits. A build of your own prints `0.0.0-dev`. | |
+| `-h`, `--help` | Prints the usage and exits. | |
+
+There are no subcommands.
+
+## Keys while it runs
+
+In a terminal, `bica` prints its address and listens for single keys. Started without a terminal, as a background service, it only logs.
+
+| Key | What it does |
+| --- | --- |
+| `a` | Opens Bica as an app window in Chrome, in the profile `p` picked. Without Chrome, opens the default browser. |
+| `o` | Opens Bica in the default browser. |
+| `p` | Lists your Chrome profiles. Type a number to pick one. |
+| `q`, Ctrl-C, or Ctrl-D | Quits. Every terminal ends with it; agent runs pick up again on the next start. |
+| Enter, `h`, or `?` | Prints the keys again. |
+
+## Environment variables
+
+Set them in the shell that starts `bica`, such as `PI_FAST_MODEL=anthropic/claude-haiku-5-5 bica`. `bica` also reads a `.env` file in the folder you start it from.
+
+| Variable | What it does | Default |
+| --- | --- | --- |
+| `BICA_DATA_DIR` | The folder Bica keeps its data in. | `~/.bica/data` |
+| `PI_MODEL` | The model new sessions start with, as `provider/model`, until you pick one in Settings → Models. | `anthropic/claude-sonnet-5` |
+| `PI_FAST_MODEL` | The fast model, as `provider/model`, until you pick one in Settings → Models. | None |
+| `SHELL` | The shell each [terminal](/docs/basics/terminals/) runs. | `/bin/bash` |
+| `VISUAL`, `EDITOR` | The editor Open in editor starts. Only GUI editors such as VS Code or Sublime work. | |
+
+A model picked in Settings always wins over `PI_MODEL` and `PI_FAST_MODEL`. They pick a model, never a key: its provider still has to be connected in [Settings → Providers](/docs/setup/providers/). A value without a `/` stops `bica` at start.
+
+## Ports
+
+`bica` listens on port 3141, and only on your own machine, so other devices can't reach it directly. To use it from a phone, forward the port with Tailscale: see [Use it from your phone](/docs/start/phone/). If the port is taken, `bica` stops and asks for another with `--port`; it never moves to the next free one.
+
+## The data folder
+
+Bica keeps everything in `~/.bica`. Your own files sit at the top, and Bica's state sits in `data/`. `BICA_DATA_DIR` moves only `data/`.
+
+<FileTree>
+
+- ~/.bica/
+  - AGENTS.md your instructions for every session
+  - skills/ your skills for every session
+  - chats/ one folder per chat, a session with no project
+  - data/
+    - harness.sqlite every session: transcripts, queues, and spend
+    - projects.json the projects you added
+    - settings.json settings shared by every device
+    - auth.json keys and sign-ins, readable only by you
+    - accounts.json plan accounts and their order
+    - plan-usage.json plan limits for the usage meters
+    - attachments/ images sent with prompts
+    - chrome.json the Chrome profile the `p` key picked
+    - server.pid the running server, so a second one won't start
+
+</FileTree>
+
+- Your `AGENTS.md` and skills go into every session. See [Instructions](/docs/features/instructions/).
+- Your code isn't here. Projects, worktrees, and branches are plain git in their own folders.
+- Each browser keeps its own appearance settings, composer drafts, and a copy of what it last showed. Clearing it loses nothing that matters.
+- To remove it all, see [Update and uninstall](/docs/setup/update-uninstall/).
+
+Only one Bica can use a data folder at a time, since two would run the same sessions twice. A second one stops at start and says which process holds the folder. To run two, give the second its own `BICA_DATA_DIR` and `--port`.
+
+## Next
+
+- [Troubleshooting](/docs/reference/troubleshooting/): a busy port, a binary macOS won't open, and more.
+- [Update and uninstall](/docs/setup/update-uninstall/): replace the binary, or remove it and its data.

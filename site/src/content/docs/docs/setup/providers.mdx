@@ -1,0 +1,56 @@
+---
+title: 'Providers and models'
+description: 'Connect a provider with a plan or an API key, and pick the default and fast models.'
+sidebar:
+  order: 1
+---
+
+import { Image } from 'astro:assets';
+import providers from '../../../../assets/screens/providers-phone-light.png';
+
+A provider is where models come from, such as Anthropic or OpenAI. Bica needs at least one before a session can start. You connect them in Settings → Providers, then pick in Settings → Models which model does what.
+
+## Connect a provider
+
+Press Add provider and pick one of two ways:
+
+- Sign in with a plan uses a subscription such as Claude Max or ChatGPT Plus. A sign-in page opens. On the machine that runs `bica` it comes back by itself; from a phone or another computer, the provider gives you a code to copy or type instead.
+- Add an API key takes a key you paste, and you pay per request.
+
+<Image src={providers} style={{ maxWidth: '16rem' }} alt="Settings → Providers on a phone, with the Add provider menu open: Sign in with a plan, Add an API key, and More with Exa" />
+
+The list has every provider Bica's model library knows, from Anthropic, OpenAI, and Google to OpenRouter and GitHub Copilot.
+
+:::caution[Plans are meant for the provider's own apps]
+A plan sign-in uses your subscription the way the provider's own coding app does, and the provider may refuse that at any time. An API key always works.
+:::
+
+Bica only uses the keys and sign-ins listed here. It never reads them from environment variables or from another app's login.
+
+A ChatGPT plan can sign in two ways: Sign in with ChatGPT under OpenAI, or the older OpenAI Codex (legacy). [Voice](/docs/features/voice/) needs the legacy one.
+
+## More than one account on a plan
+
+Once a plan is signed in, Add provider offers it again as Another account, say a personal and a work Claude plan. The accounts take turns. Requests go to the one marked First until it passes 90% of a limit or loses its sign-in, then move to the next. Use first on a row changes the order.
+
+Accounts don't share a prompt cache, so a switch resends the conversation once. The foot of the sidebar shows each account's usage for the open session's model, and [night runs](/docs/features/night-runs/) check the same numbers before they start.
+
+## Exa turns on web search
+
+Exa isn't a model provider. Add its key under More in Add provider, and the agent's web search and fetch [tools](/docs/features/tools/) start working. Exa's free plan is enough.
+
+## The default and fast models
+
+Settings → Models picks two models:
+
+- New sessions is the model and effort every new session starts with. You can switch one session in its [model picker](/docs/basics/composer/).
+- Fast model is a small, cheap model that titles sessions and writes [commit messages](/docs/basics/git/). Without one, a title is the prompt's first words and you write commit messages yourself.
+
+If you set `PI_MODEL` or `PI_FAST_MODEL` before starting `bica`, they fill in until you pick in Settings. See [CLI](/docs/reference/cli/#environment-variables).
+
+The Model picker card below Models narrows which models the picker in each session offers. With none chosen, it offers them all.
+
+## Next
+
+- [Settings](/docs/setup/settings/): what the other cards are for.
+- [Prompting](/docs/basics/composer/#the-model-picker): pick a model and effort for one session.

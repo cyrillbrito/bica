@@ -4,7 +4,8 @@
   "ignorePatterns": [
     "file-routes.d.ts",
     ".agents/skills",
-    "docs/explorations/*.html"
+    "docs/explorations/*.html",
+    "site/src/content/**/*.mdx"
   ],
   "overrides": [
     {

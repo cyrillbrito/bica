@@ -1,0 +1,32 @@
+---
+title: 'Context and spend'
+description: 'The context chip, what a session costs, and Compact and Prune.'
+sidebar:
+  order: 5
+---
+
+The context is everything the model rereads on each turn: its instructions, the conversation, and the output of its tools. As a session grows, the model gets slower, more expensive, and more forgetful. Bica shows how full the context is and what it cost, and tells you when shrinking it is worth it.
+
+## The context chip
+
+A chip in the session's top bar shows how much of the context window is used. It turns yellow, then red, as the window fills or the session grows past the size where models start to get worse.
+
+{/* TODO(visual): the context chip in three states: green with a cache countdown, yellow, and red with a snowflake */}
+
+The model's provider keeps a copy of the context for a while, the prompt cache, and rereading it from there costs about a tenth of sending it fresh. While the session is idle, the chip counts down the cache's last minutes, and shows a snowflake once it has expired. Your next prompt then pays full price for the whole session. The countdown shows only for Anthropic's models, whose cache lifetime is known. Bica asks Anthropic to keep it for an hour instead of 5 minutes, so a break doesn't cost the whole session again, though writing to that cache costs more. Turn off Keep the cache for an hour in Settings → Models to go back.
+
+Click the chip for its menu: Compact, Prune, and the details. The details show what fills the window, the biggest prompts, replies, and tool results, and the spend per model. Spend is at API prices, even when you pay through a plan.
+
+## Compact and Prune
+
+Both make the next prompt smaller. The transcript still shows everything, and a line in it marks the change. That line has a fork button, which starts a new session from the shrunk context.
+
+|              | Compact                                                | Prune                                                   |
+| ------------ | ------------------------------------------------------ | ------------------------------------------------------- |
+| What it does | A model summarizes the older part of the session.      | Old tool output and images shrink to a short note.      |
+| Keeps        | The latest part as it is.                              | Your prompts, the replies, and the reasoning.           |
+| Best when    | The cache is still warm, ideally just before it expires. | The cache has expired, since the next prompt pays full price anyway. |
+
+You don't need to watch the chip for this. A line above the composer speaks up when one of them is worth it, and × hides it. It also warns you before Bica compacts on its own because the window is nearly full, so you can pick the moment yourself. Pruning can run while the agent works.
+
+[Assistant mode](/docs/features/assistant-mode/) sessions do this on their own while idle.

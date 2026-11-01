@@ -1,0 +1,75 @@
+---
+title: Update and uninstall
+description: Replace the bica binary to update, back up the ~/.bica folder, and what to delete to remove Bica.
+sidebar:
+  order: 3
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Bica has no built-in updater. You update it by replacing the `bica` file with a newer one, and you remove it by deleting that file and the `~/.bica` folder.
+
+## Update
+
+<Steps>
+
+1. Stop Bica: press `q` in its terminal.
+
+2. Download the new version over the old one:
+
+   <Tabs syncKey="os">
+     <TabItem label="macOS">
+       ```sh
+       url=https://github.com/cyrillbrito/bica/releases/latest/download
+       curl -fsSL $url/bica-darwin-arm64.tar.gz | tar -xz -C ~/.local/bin
+       ```
+     </TabItem>
+     <TabItem label="Linux">
+       ```sh
+       url=https://github.com/cyrillbrito/bica/releases/latest/download
+       curl -fsSL $url/bica-linux-x64.tar.gz | tar -xz -C ~/.local/bin
+       ```
+     </TabItem>
+   </Tabs>
+
+   Use the file for your machine, as in [Install](/docs/start/install/).
+
+3. Start it again with `bica`.
+
+4. Reload every open Bica tab and installed app, so each one gets the new version of the page.
+
+</Steps>
+
+Your sessions, projects, and sign-ins stay as they were, and runs that were going when you stopped Bica continue.
+
+## Back up
+
+Everything Bica keeps is in `~/.bica`: your sessions, projects, settings, and sign-ins in `~/.bica/data`, and your own `AGENTS.md`, skills, and chat folders next to it. To back it up, stop Bica and copy `~/.bica` somewhere safe. Your repos and their worktrees aren't in it; they stay where they are on your disk.
+
+If you set `BICA_DATA_DIR`, copy that folder too. [The data folder](/docs/reference/cli/#the-data-folder) lists every file.
+
+## Uninstall
+
+<Steps>
+
+1. Stop Bica, and delete the binary:
+
+   ```sh
+   rm ~/.local/bin/bica
+   ```
+
+2. If you set up [Tailscale](/docs/start/phone/), remove Bica's address:
+
+   ```sh
+   tailscale serve --https=3141 off
+   ```
+
+3. Delete the data, once you've saved anything you want from it, such as your `AGENTS.md`, your skills, or files the agents wrote in chats:
+
+   ```sh
+   rm -rf ~/.bica
+   ```
+
+</Steps>
+
+Worktrees that Bica made sit in folders next to their projects, and uninstalling leaves them alone. Remove the ones you no longer need from Bica first, or with `git worktree remove`.

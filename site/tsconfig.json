@@ -1,5 +1,14 @@
 {
+  // Demos type-check the client components they mount (src/demos/), and the
+  // scripts run on Bun.
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["bun"],
+    "paths": { "@client/*": ["../client/src/*"] }
+  },
+  "include": [".astro/types.d.ts", "../client/src/vite-env.d.ts", "**/*"],
   "exclude": ["dist"]
 }

@@ -1,0 +1,65 @@
+---
+title: How Bica works
+description: What runs where, why sessions keep going when you close the tab or restart, how every browser sees the same sessions, and where your data lives.
+---
+
+Bica is a server on your dev machine and a web app in your browser. The server does the work: it runs the agents, reads and writes your files, runs git and the shells, and keeps the data. The browser shows what the server sends, so your laptop and your phone see the same thing.
+
+```d2 title="Everything runs on your machine except the model"
+direction: down
+browser: "Browser\nlaptop, phone" {class: browser}
+machine: Your dev machine {
+  label.near: bottom-center
+  bica: bica {class: focus}
+  data: "~/.bica\nsessions, settings" {class: store}
+  repos: Your repos {class: files}
+  bica -> data
+  bica -> repos
+}
+providers: Model providers {class: external}
+browser <-> machine.bica
+machine.bica <-> providers
+```
+
+The agent's tools run on your machine, as your user, in the session's folder. Only the calls to the model leave it, and they go to the provider you signed in to with your plan or API key. Web search goes through [Exa](/docs/setup/providers/#exa-turns-on-web-search) if you add a key, and pull requests come from GitHub through the `gh` command.
+
+## Sessions keep running
+
+A session is one conversation with an agent, working in one folder. When you send a prompt, the agent works through a run: it asks the model, runs the tools the model asks for, and repeats until it replies. The [glossary](/docs/reference/glossary/) has the other words you'll meet.
+
+The run happens on the server, so closing the tab, putting the phone away, or losing signal doesn't stop it. Bica's agent engine, Pi Durable, saves every step before you see it. If Bica stops in the middle of a run, because you quit it, it crashed, or you updated it, the run continues from the last saved step the next time `bica` starts:
+
+- A reply the model was writing is asked for again.
+- A command, edit, or file write that was cut off doesn't run twice. The agent is told it was interrupted, sees the output so far, and decides what to do.
+- Queued prompts stay queued, and a question the agent asked still waits for your answer.
+
+Shells are the exception: quitting Bica ends its [terminals](/docs/basics/terminals/). Work that crashes Bica over and over is paused after a few tries: its session shows Failed, with a Retry button above the composer.
+
+## Every browser sees the same sessions
+
+Each tab keeps a live connection to the server, and only what's on screen streams to it. Open Bica on the laptop and the phone at once, and both show the same transcripts and queues as they change. Opening a session on one marks it read on the other.
+
+```d2 title="A prompt from the phone, and the reply streaming to every open tab"
+shape: sequence_diagram
+phone: Phone {class: browser}
+bica: bica {class: focus}
+laptop: Laptop {class: browser}
+
+phone -> bica: prompt
+bica -> bica: save, run the agent
+bica -> phone: reply, as it streams {style.stroke-dash: 3}
+bica -> laptop: reply, as it streams {style.stroke-dash: 3}
+```
+
+When a phone comes back from the background, Bica shows the last copy it had at once, then catches up with only what's new. A prompt sent just before the connection dropped is sent again, and it runs once.
+
+## Where your data lives
+
+Everything is in plain files on your dev machine. Nothing is kept in the cloud.
+
+- `~/.bica/data` holds your sessions and transcripts, the projects you added, your settings, and your keys and sign-ins.
+- `~/.bica` itself holds what you write for Bica: an `AGENTS.md` and skills for every session (see [instructions](/docs/features/instructions/)), and a folder for each [chat](/docs/basics/projects/).
+- Your code stays in your repos. Projects, worktrees, and branches are plain git, so a worktree you make in a terminal shows up in Bica too.
+- Each browser keeps only what belongs to that device, such as the theme and your unsent drafts, plus a copy of what it last showed.
+
+Only one Bica can use a data folder at a time, and a second one refuses to start. To keep the data somewhere else, see `BICA_DATA_DIR` in the [CLI reference](/docs/reference/cli/). To back it up or remove it, see [update and uninstall](/docs/setup/update-uninstall/).

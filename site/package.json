@@ -5,12 +5,27 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "typecheck": "bun check"
+    "typecheck": "bun check",
+    "pdf": "astro build && bun scripts/pdf.ts",
+    "links": "bun scripts/check-links.mjs",
+    "deploy": "astro build && bun scripts/check-links.mjs && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.8",
+    "@bica/shared": "workspace:*",
+    "@solidjs/vite-plugin": "^3.0.0-next.54",
+    "@solidjs/web": "^2.0.0-rc.20",
+    "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.4",
     "astro-d2": "^0.14.0",
-    "satteri": "0.11.6"
+    "satteri": "0.11.6",
+    "solid-js": "^2.0.0-rc.20",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "pdf-lib": "^1.17.1",
+    "playwright": "1.63.0",
+    "wrangler": "^4.156.0"
   }
 }

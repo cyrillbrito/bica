@@ -1,0 +1,34 @@
+---
+// A real client component with demo data, mounted in the browser (Solid 2
+// has no Astro renderer). `name` picks `src/demos/<name>.demo.tsx`.
+interface Props {
+  name: string;
+}
+const { name } = Astro.props;
+---
+
+<bica-demo data-name={name}></bica-demo>
+
+<style>
+  bica-demo {
+    display: block;
+    margin-block: 1.5rem;
+  }
+</style>
+
+<script>
+  const demos = import.meta.glob<{ default: (host: HTMLElement) => void }>(
+    './*.demo.tsx',
+  );
+
+  customElements.define(
+    'bica-demo',
+    class extends HTMLElement {
+      connectedCallback() {
+        const load = demos[`./${this.dataset.name}.demo.tsx`];
+        if (!load) throw new Error(`No demo named ${this.dataset.name}`);
+        load().then((demo) => demo.default(this));
+      }
+    },
+  );
+</script>

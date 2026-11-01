@@ -1,0 +1,112 @@
+---
+title: 'Troubleshooting'
+description: 'Common problems and how to fix them.'
+sidebar:
+  order: 4
+---
+
+Find the symptom, apply the fix, and follow the link if you need more.
+
+## Installing and starting
+
+### The shell says command not found
+
+The folder you put `bica` in isn't on your `PATH`. Open a new terminal, or add `~/.local/bin` to your `PATH` as [Install](/docs/start/install/) shows.
+
+### macOS says bica cannot be opened
+
+A browser download is quarantined, and Bica isn't notarized by Apple. Run `xattr -d com.apple.quarantine ~/.local/bin/bica`, or download with `curl` as [Install](/docs/start/install/) does.
+
+### Linux says cannot execute binary file
+
+You downloaded the build for the other processor. `uname -m` prints `x86_64` for `bica-linux-x64` and `aarch64` for `bica-linux-arm64`.
+
+### It says Port 3141 is in use
+
+Another program has the port. Start on another one with `bica --port 3150` and open that port instead. `lsof -i :3141` shows what holds it.
+
+### It says Another Bica server uses the data folder
+
+A Bica is already running on `~/.bica/data`, and the message gives its process id. Use that one, or quit it first. To run two on purpose, see [the data folder](/docs/reference/cli/#the-data-folder).
+
+### Bica stops at start with Invalid format
+
+`PI_MODEL` or `PI_FAST_MODEL` is set without a provider, such as `sonnet`. Use `provider/model`, such as `anthropic/claude-sonnet-5`, or unset it and pick the model in Settings → Models.
+
+### Bica stops with can't be read, fix or remove it
+
+A file in the data folder is damaged, and the message names it. Fix its JSON, or move it aside to start it fresh. Moving `auth.json` aside signs you out of every provider.
+
+### The page doesn't load
+
+Check that `bica` is still running and that the port in the address matches. From another device, the machine's IP address never works, because Bica listens only on your own machine. Use Tailscale, below.
+
+## Reaching it from another device
+
+### The phone can't reach the Tailscale address
+
+- Both devices are on the same tailnet, and Tailscale is on on the phone.
+- `tailscale serve status` on the dev machine lists a forward to the port `bica` uses.
+- HTTPS certificates are turned on for the tailnet.
+
+See [Use it from your phone](/docs/start/phone/).
+
+### The app won't install, or the microphone doesn't work
+
+Both need a secure address: `localhost` on the dev machine, or the Tailscale HTTPS address everywhere else.
+
+## Providers and models
+
+### A plan sign-in fails or never finishes
+
+From a phone or another computer, the provider gives you a code to copy back; if it offers no other way, sign in on the machine that runs `bica`. The provider may also refuse plan sign-ins from Bica, and an API key always works. See [Providers and models](/docs/setup/providers/).
+
+### Settings says the default model's provider isn't connected
+
+Connect that provider under Providers, or pick a default model under Models from one you have.
+
+### Titles are the prompt's first words, and commit messages aren't written
+
+No fast model is set. Pick one in Settings → Models.
+
+### The agent can't search the web
+
+Web search and fetch need an Exa key, added in Settings → Providers.
+
+### Voice calls or dictation don't work
+
+They need the OpenAI Codex (legacy) sign-in and a secure address for the microphone. See [What you need](/docs/features/voice/#what-you-need).
+
+## Sessions
+
+### The agent is doing something you don't want
+
+Press Esc twice in the composer, or use Stop. Discard in the Git tab undoes its file changes. See [Tools run without asking](/docs/features/tools/#tools-run-without-asking).
+
+### A session is Failed
+
+Read the error in the transcript, which gives the provider's reason. Fix the cause, such as a sign-in or a limit, then send a prompt like _continue_. Retrying needs nothing from you: Bica tries again after a countdown.
+
+If a red strip above the composer says Paused after crashing Bica again and again, a step kept crashing the server: Retry runs it again, and Stop ends it. If it says its code is gone from Bica, the tool it was running no longer exists, and Stop ends it.
+
+### A night run didn't start
+
+It starts only while `bica` runs, within 5 hours after the start time, and while the plan has more than 20% of its week left. Run now sends it anyway. See [Night runs](/docs/features/night-runs/#what-happens-overnight).
+
+## Git and terminals
+
+### No pull request badges show
+
+Install [`gh`](https://cli.github.com) and run `gh auth login` on the dev machine. Only your own pull requests get a badge. See [Pull request badges](/docs/basics/git/#pull-request-badges).
+
+### Push or pull fails asking for a password
+
+Bica runs git without a terminal, so git can't ask for a password. Use an SSH remote, or a credential helper such as `gh auth setup-git`. Pull is fast-forward only: when the branches have diverged, merge or rebase in a [terminal](/docs/basics/terminals/).
+
+### Open in editor does nothing
+
+Set `VISUAL` or `EDITOR` in the shell that starts `bica`, such as `export EDITOR=code`, and restart it. Only GUI editors work.
+
+### Terminals are gone after a restart
+
+Quitting `bica` ends every shell. Open a new one with ⌃\`, or ask the agent to start its dev server again.

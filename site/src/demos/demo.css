@@ -1,0 +1,20 @@
+/* The app's own stylesheet, compiled for a demo's shadow root. */
+@import '@client/App.css';
+@source '../../../client/src';
+
+/* App.css pins color-scheme on :root, which becomes :host here; the page's
+   theme switch sets it on <html>, so inherit that instead. */
+:host {
+  color-scheme: inherit;
+}
+.bica-demo {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  -webkit-font-smoothing: antialiased;
+  /* Framed like a piece of the app, apart from the page around it. */
+  padding: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+}

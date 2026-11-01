@@ -1,99 +1,274 @@
 ---
-import { Image } from 'astro:assets';
-import shot from '../assets/bica-demo.png';
+import Cup from '../home/Cup.astro';
+import Shot from '../home/Shot.astro';
+import '../home/home.css';
 
-const features = [
-  ['Many sessions at once', 'Watch them stream, steer or queue prompts while the agent works, and join late without losing a word.'],
-  ['A worktree per feature', 'Parallel agents never collide. Each feature gets its own branch and folder.'],
-  ['Review in full screen', 'Read the agent\'s work in full-size diffs.'],
-  ['From your phone', 'The server runs on your dev machine. The UI runs in any browser, anywhere.'],
+import heroLight from '../assets/home/hero-light.png';
+import heroDark from '../assets/home/hero-dark.png';
+import heroPhoneLight from '../assets/home/hero-phone-light.png';
+import heroPhoneDark from '../assets/home/hero-phone-dark.png';
+import sidebarLight from '../assets/home/sidebar-light.png';
+import sidebarDark from '../assets/home/sidebar-dark.png';
+import reviewLight from '../assets/home/review-light.png';
+import reviewDark from '../assets/home/review-dark.png';
+import phoneLight from '../assets/home/phone-light.png';
+import phoneDark from '../assets/home/phone-dark.png';
+
+const repo = 'https://github.com/cyrillbrito/bica';
+const download = `${repo}/releases/latest/download`;
+// The same phrases the app's working line picks from (client/src/sessions/Working.tsx).
+const phrases = [
+  'Pulling a shot',
+  'Grinding the beans',
+  'Blooming the grounds',
+  'Tamping',
+  'Steaming the milk',
+  'Frothing',
 ];
 ---
+
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Bica is a web UI for coding agents. It runs on your dev machine, and you use it from any browser, on a laptop or a phone."
+    />
+    <meta name="theme-color" content="#fcfaf6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1c20" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" />
-    <title>Bica: a fast web UI for coding agents</title>
+    <link rel="preload" href="/fonts/Libron-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/fonts/AtkinsonHyperlegibleNext-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <title>Bica: a web UI for coding agents</title>
+    <script is:inline>
+      // Starlight's key, so the home page and the docs share one theme.
+      (() => {
+        const saved = localStorage.getItem('starlight-theme');
+        const dark = saved
+          ? saved === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
-    <header>
-      <a class="brand" href="/"><img src="/favicon.svg" alt="" width="24" height="24" /> Bica</a>
+    <header class="top wrap">
+      <a class="brand" href="/">
+        <img src="/favicon.svg" alt="" width="28" height="28" />
+        Bica
+      </a>
       <nav>
         <a href="/docs/">Docs</a>
-        <a href="https://github.com/cyrillbrito/bica">GitHub</a>
+        <a href={repo}>GitHub</a>
+        <button class="theme" type="button" aria-label="Switch between light and dark">
+          <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"></path>
+          </svg>
+          <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path>
+          </svg>
+        </button>
       </nav>
     </header>
 
     <main>
-      <section class="hero">
-        <p class="eyebrow">Vai, Bica!</p>
-        <h1>A strong, short shot<br />of agent work.</h1>
+      <section class="hero wrap">
+        <h1>Coding agents on your machine, in any browser.</h1>
         <p class="lede">
-          Bica is a fast web UI for coding agents. It runs on your machine, works
-          from any browser, and keeps a dozen sessions going while you review.
+          Bica is a web UI for coding agents. It runs on the computer that holds your code,
+          and you open it on a laptop or a phone to start agents, steer them while they work,
+          and review what they changed.
         </p>
-        <div class="cta">
-          <a class="btn primary" href="/docs/">Read the docs</a>
-          <a class="btn" href="/docs/how-a-prompt-travels/">See how it works</a>
+        <div class="actions">
+          <a class="btn primary" href="/docs/start/install/">Install</a>
+          <a class="btn outline" href="/docs/">Read the docs</a>
+        </div>
+        <p class="fine">
+          For macOS and Linux. Pay for the model with a Claude or ChatGPT plan you already have,
+          or an API key.
+        </p>
+      </section>
+
+      <div class="stage wrap">
+        <div class="perch">
+          <p class="working" aria-hidden="true">
+            <span class="phrases" data-phrases={JSON.stringify(phrases)}>{phrases[0]}</span>
+          </p>
+          <Cup size={104} />
+        </div>
+        <Shot
+          class="frame hero-shot desktop-only"
+          light={heroLight}
+          dark={heroDark}
+          alt="Bica with the sidebar of sessions, an agent at work in the middle, and the Git tab on the right"
+          loading="eager"
+        />
+        <Shot
+          class="frame phone-frame phone-only"
+          light={heroPhoneLight}
+          dark={heroPhoneDark}
+          alt="A running session on the phone, with the agent's tool calls and the composer"
+          loading="eager"
+        />
+      </div>
+
+      <section class="feature split wrap">
+        <Shot
+          class="frame sidebar-shot"
+          light={sidebarLight}
+          dark={sidebarDark}
+          alt="The sidebar: sessions grouped under their project and branch, each with its status"
+        />
+        <div class="copy">
+          <div>
+            <h2>Many sessions at once</h2>
+            <p>
+              Give each task its own agent and keep them all in the sidebar. The ring next to
+              each one says whether it is working, waiting on you, done, or failed. Type into a
+              running session to steer it, or queue your next prompt for when it finishes.
+            </p>
+          </div>
+          <div>
+            <h2>A worktree per feature</h2>
+            <p>
+              A feature can get its own git worktree, so agents working side by side never
+              edit the same files. Its sessions sit under the branch, next to its pull request.
+            </p>
+          </div>
         </div>
       </section>
 
-      <figure class="shot">
-        <Image src={shot} alt="Bica with a session, its transcript, and the Git tab" widths={[720, 1440]} sizes="(max-width: 1100px) 100vw, 1100px" />
-      </figure>
+      <section class="feature wide wrap">
+        <div class="copy">
+          <h2>Review in full-size diffs</h2>
+          <p>
+            Read what the agent changed in a split diff as wide as the page, then commit from the
+            Git tab. Leave the message empty and one is written
+            for you.
+          </p>
+        </div>
+        <Shot
+          class="frame"
+          light={reviewLight}
+          dark={reviewDark}
+          alt="A split diff of Sidebar.tsx next to the Git tab with four changed files"
+        />
+      </section>
 
-      <section class="features">
-        {features.map(([title, body]) => (
-          <article>
-            <h2>{title}</h2>
-            <p>{body}</p>
-          </article>
-        ))}
+      <section class="feature split phone wrap">
+        <div class="copy">
+          <div>
+            <h2>Carry on from your phone</h2>
+            <p>
+              The agents run on your dev machine, so closing the browser stops nothing. Open Bica on your phone over Tailscale and the session is where you left
+              it, still streaming.
+            </p>
+            <p><a class="link" href="/docs/start/phone/">Set up the phone</a></p>
+          </div>
+        </div>
+        <div class="phones">
+          <Shot
+            class="frame phone-frame back"
+            light={phoneLight}
+            dark={phoneDark}
+            alt="The sidebar on the phone, with every session and its status"
+          />
+          <Shot
+            class="frame phone-frame front desktop-only"
+            light={heroPhoneLight}
+            dark={heroPhoneDark}
+            alt="A running session on the phone, with the agent's tool calls and the composer"
+          />
+        </div>
+      </section>
+
+      <section class="grounds" id="install">
+        <div class="wrap install">
+          <div class="copy">
+            <h2>Install</h2>
+            <p>
+              Bica is one file, <code>bica</code>. It needs <code>git</code>, and no Bun, Node,
+              or Docker. Download it, run it, and open the address it prints.
+            </p>
+            <p>
+              <a class="link" href="/docs/start/install/">Full install steps</a>, with Intel
+              Macs, arm64 Linux, and checksums.
+            </p>
+          </div>
+          <div class="term">
+            <div class="term-bar">
+              <div class="os" role="group" aria-label="System">
+                <button type="button" aria-pressed="true" data-file="bica-darwin-arm64">macOS</button>
+                <button type="button" aria-pressed="false" data-file="bica-linux-x64">Linux</button>
+              </div>
+              <button class="copy-btn" type="button">Copy</button>
+            </div>
+            <pre><code><span class="cmd">mkdir -p ~/.local/bin</span>
+<span class="cmd">curl -fsSL {download}/<span class="file">bica-darwin-arm64</span>.tar.gz \
+  | tar -xz -C ~/.local/bin</span>
+<span class="cmd">bica</span>
+<span class="out">  Bica 0.1.0 running
+
+  Local:  http://localhost:3141</span></code></pre>
+          </div>
+        </div>
       </section>
     </main>
 
-    <footer>Named after the Lisbon espresso.</footer>
+    <footer class="wrap">
+      <Cup mood="asleep" size={56} />
+      <p>Bica is what Lisbon calls an espresso.</p>
+      <nav>
+        <a href="/docs/">Docs</a>
+        <a href={repo}>GitHub</a>
+      </nav>
+    </footer>
+
+    <script>
+      const root = document.documentElement;
+      document.querySelector('.theme')?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('starlight-theme', next);
+      });
+
+      const term = document.querySelector('.term');
+      const file = term?.querySelector('.file');
+      term?.querySelectorAll<HTMLButtonElement>('.os button').forEach((button, _, all) => {
+        button.addEventListener('click', () => {
+          all.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+          if (file) file.textContent = button.dataset.file ?? '';
+        });
+      });
+      const copy = term?.querySelector<HTMLButtonElement>('.copy-btn');
+      copy?.addEventListener('click', async () => {
+        const lines = [...term!.querySelectorAll('.cmd')].map((el) => el.textContent);
+        await navigator.clipboard.writeText(lines.join('\n') + '\n');
+        copy.textContent = 'Copied';
+        setTimeout(() => (copy.textContent = 'Copy'), 1500);
+      });
+
+      // The hero's working line rolls through the app's phrases, as a run would.
+      const phrases = document.querySelector<HTMLElement>('.phrases');
+      const list: string[] = JSON.parse(phrases?.dataset.phrases ?? '[]');
+      if (phrases && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        let i = 0;
+        setInterval(() => {
+          i = (i + 1) % list.length;
+          phrases.classList.remove('roll');
+          void phrases.offsetWidth;
+          phrases.textContent = list[i]!;
+          phrases.classList.add('roll');
+        }, 2800);
+      }
+    </script>
   </body>
 </html>
-
-<style is:global>
-  :root {
-    --bg: #14110f;
-    --fg: #f3ece4;
-    --muted: #a99d91;
-    --crema: #d99a5b;
-    --line: #2c2622;
-    color-scheme: dark;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: radial-gradient(ellipse 80% 50% at 50% -10%, #3a2618 0%, var(--bg) 70%);
-    color: var(--fg);
-    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, sans-serif;
-  }
-  a { color: inherit; text-decoration: none; }
-</style>
-
-<style>
-  header, main, footer { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-  header { display: flex; justify-content: space-between; align-items: center; height: 72px; }
-  .brand { display: flex; gap: 10px; align-items: center; font-weight: 600; }
-  nav { display: flex; gap: 24px; color: var(--muted); }
-  nav a:hover { color: var(--fg); }
-  .hero { padding: 72px 0 48px; max-width: 720px; }
-  .eyebrow { color: var(--crema); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; margin: 0; }
-  h1 { font: 600 clamp(40px, 7vw, 68px)/1.04 Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; margin: 16px 0 20px; }
-  .lede { color: var(--muted); font-size: 19px; margin: 0; }
-  .cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
-  .btn { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); }
-  .btn:hover { border-color: var(--muted); }
-  .btn.primary { background: var(--crema); color: #1b120b; border-color: var(--crema); font-weight: 600; }
-  .shot { margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 40px 120px -20px #000c; }
-  .shot img { display: block; width: 100%; height: auto; }
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; padding: 72px 0; }
-  .features h2 { font-size: 17px; margin: 0 0 6px; }
-  .features p { color: var(--muted); margin: 0; }
-  footer { color: var(--muted); padding-bottom: 48px; font-size: 14px; }
-</style>

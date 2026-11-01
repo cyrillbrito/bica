@@ -1,34 +1,84 @@
 ---
-title: Bica docs
-description: How Bica works, from the composer to the agent and back.
+title: What is Bica
+description: Bica runs coding agents on your own machine and gives you one web page to watch, steer, and review them, from a laptop or a phone.
+template: splash
+hero:
+  title: Bica
+  tagline: Run coding agents on your own machine, and watch, steer, and review them from any browser, on the laptop or the phone.
+  image:
+    file: ../../../assets/screens/hero-desktop-light.png
+    alt: Bica with the sidebar of sessions, a session's transcript, and the Git tab with the changes ready to commit
+  actions:
+    - text: Install
+      link: /docs/start/install/
+      icon: right-arrow
+    - text: How Bica works
+      link: /docs/start/how-it-works/
+      variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Bica is a fast web UI for coding agents. The server runs on your dev machine, and the UI works from any browser.
+Bica runs coding agents on the machine that holds your code and gives you one web page to work with them. You give an agent a task, watch it work, steer it while it runs, and review what it changed.
+
+Each agent works in a session, and you can run many sessions at once. A feature can get its own git worktree, so agents working in parallel don't touch the same files. You read their changes in full-size diffs and commit them from the Git tab. Closing the browser stops nothing: the agents keep working, and a run that was cut off by a restart picks up where it stopped.
+
+```d2 title="Your browsers talk to bica on your machine, and bica talks to the model providers"
+direction: down
+browser: "Your browsers\nlaptop, phone" {class: browser}
+bica: "bica\non your dev machine" {class: focus}
+code: "Your repos" {class: files}
+providers: Model providers {class: external}
+browser -> bica
+bica -> code
+bica -> providers
+```
+
+Bica is one program, `bica`. Your code, your sessions, and your sign-ins stay on your machine, and only the calls to the model leave it. You pay for the model with a Claude or ChatGPT plan you already have, or with an API key.
+
+## How it differs from Claude Code or Cursor
+
+Claude Code and Codex run in a terminal, and Cursor is an editor with an agent inside. Bica is a web page for running several agents side by side and reviewing their work. You still open your editor for heavy editing.
+
+Bica runs its own agent and doesn't drive Claude Code underneath. It reads the `AGENTS.md` or `CLAUDE.md` files and the skills you already have. Since the agents run on your machine and not in the page, you can start a task on the laptop and follow it from your phone.
+
+:::caution[Early and personal]
+One developer builds Bica for his own daily work, so expect rough edges. It has no login: it listens only on your own machine, and other devices reach it through a private network such as Tailscale.
+:::
+
+## Where to go next
+
+Read Start here from the top: install Bica, send a first prompt, and get a picture of how it works. Then pick the pages you need. The [FAQ](/docs/start/faq/) answers the usual first questions in a line or two each.
 
 <CardGrid>
-  <Card title="Many sessions" icon="list-format">
-    Stream, steer, and queue prompts across a dozen agents at once.
-  </Card>
-  <Card title="Worktrees" icon="seti:git">
-    Each feature gets its own branch and folder.
-  </Card>
-  <Card title="Review" icon="document">
-    Full-screen diffs of the agent's work.
-  </Card>
-  <Card title="Remote first" icon="phone">
-    Use it from your phone over Tailscale.
-  </Card>
+  <LinkCard
+    title="Install"
+    href="/docs/start/install/"
+    description="Download bica for macOS or Linux and check that it runs."
+  />
+  <LinkCard
+    title="How Bica works"
+    href="/docs/start/how-it-works/"
+    description="What runs where, why runs survive a restart, and where your data lives."
+  />
+  <LinkCard
+    title="Sessions"
+    href="/docs/basics/sessions/"
+    description="Start agents, prompt them while they work, and read what they did."
+  />
+  <LinkCard
+    title="Projects and worktrees"
+    href="/docs/basics/projects/"
+    description="Add your repos and give each feature its own worktree."
+  />
+  <LinkCard
+    title="Parents and child sessions"
+    href="/docs/features/orchestration/"
+    description="Sessions that start and watch other sessions."
+  />
+  <LinkCard
+    title="Providers and models"
+    href="/docs/setup/providers/"
+    description="Sign in with a plan or an API key, and pick your models."
+  />
 </CardGrid>
-
-<LinkCard
-  title="Architecture"
-  href="/docs/architecture/"
-  description="The parts, and where data lives."
-/>
-<LinkCard
-  title="How a prompt travels"
-  href="/docs/how-a-prompt-travels/"
-  description="Step through one prompt, end to end."
-/>

@@ -1,0 +1,98 @@
+---
+title: Install
+description: Download the bica binary for macOS or Linux, put it on your PATH, and check that it runs.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Bica is one file, `bica`, with everything it needs inside. You download it from GitHub and put it on your `PATH`. It doesn't need Bun, Node, or Docker.
+
+You need macOS (Apple Silicon or Intel) or Linux (x64 or arm64), `git`, and a way to pay for a model: a Claude or ChatGPT plan, or an API key. There is no Windows build.
+
+<Steps>
+
+1. Download `bica` into `~/.local/bin`:
+
+   <Tabs syncKey="os">
+     <TabItem label="macOS">
+       ```sh
+       mkdir -p ~/.local/bin
+       url=https://github.com/cyrillbrito/bica/releases/latest/download
+       curl -fsSL $url/bica-darwin-arm64.tar.gz | tar -xz -C ~/.local/bin
+       ```
+
+       On an Intel Mac, use `bica-darwin-x64.tar.gz`.
+     </TabItem>
+     <TabItem label="Linux">
+       ```sh
+       mkdir -p ~/.local/bin
+       url=https://github.com/cyrillbrito/bica/releases/latest/download
+       curl -fsSL $url/bica-linux-x64.tar.gz | tar -xz -C ~/.local/bin
+       ```
+
+       On an arm64 machine, use `bica-linux-arm64.tar.gz`.
+     </TabItem>
+   </Tabs>
+
+2. Put `~/.local/bin` on your `PATH`, if it isn't already:
+
+   <Tabs syncKey="os">
+     <TabItem label="macOS">
+       ```sh
+       echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+       source ~/.zshrc
+       ```
+     </TabItem>
+     <TabItem label="Linux">
+       ```sh
+       echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+       source ~/.bashrc
+       ```
+
+       If your shell is zsh, use `~/.zshrc` instead.
+     </TabItem>
+   </Tabs>
+
+3. Check that it runs:
+
+   ```sh
+   bica --version
+   ```
+
+   It prints the version number, such as `0.1.0`.
+
+</Steps>
+
+Next, [start it and send a first prompt](/docs/start/first-run/).
+
+## If the check fails
+
+If the shell says `command not found`, the folder isn't on your `PATH` yet. Open a new terminal, or run the `source` line from step 2 again.
+
+If macOS says bica cannot be opened, the file came from a browser download. macOS blocks those because Bica isn't notarized by Apple, while the `curl` download above isn't affected. Remove the block with:
+
+```sh
+xattr -d com.apple.quarantine ~/.local/bin/bica
+```
+
+## Check the download
+
+Each release has a `SHA256SUMS` file. Put it in the same folder as the `.tar.gz` you downloaded and run `shasum -a 256 -c SHA256SUMS --ignore-missing` on macOS, or `sha256sum -c SHA256SUMS --ignore-missing` on Linux. It prints `OK` next to your file's name when the file is intact.
+
+## Build it yourself
+
+With [Bun](https://bun.sh) 1.4.3 or newer, you can build the same binary from the repo:
+
+```sh
+git clone https://github.com/cyrillbrito/bica.git
+cd bica
+bun install
+bun run build:bica
+cp dist/bica/bica ~/.local/bin/
+```
+
+A build of your own prints `0.0.0-dev` for `bica --version`.
+
+## Optional extras
+
+You don't need any of these to start. Google Chrome lets `bica` open Bica in its own app window. The [GitHub CLI](https://cli.github.com) (`gh`), signed in, shows each branch's pull request in the sidebar. [Tailscale](https://tailscale.com) lets you [use Bica from your phone](/docs/start/phone/).
