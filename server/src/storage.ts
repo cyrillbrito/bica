@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -14,6 +14,34 @@ export const BICA_HOME = join(homedir(), '.bica');
 export function dataPath(...parts: string[]) {
   mkdirSync(DATA_DIR, { recursive: true });
   return join(DATA_DIR, ...parts);
+}
+
+/**
+ * Stops a second server on the same `.data`. Pi Durable has no lock across
+ * processes and keeps its next ID in memory, so two servers writing one
+ * store corrupt it: it then fails at every start.
+ */
+export function claimDataDir() {
+  const path = dataPath('server.pid');
+  let pid = 0;
+  try {
+    pid = Number(readFileSync(path, 'utf8'));
+  } catch {}
+  if (pid && pid !== process.pid && alive(pid))
+    throw new Error(
+      `Another Bica server (pid ${pid}) uses ${DATA_DIR}. Stop it, or set BICA_DATA_DIR to another folder.`,
+    );
+  writeFileSync(path, String(process.pid));
+}
+
+function alive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // Another user's process.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
 }
 
 export interface DataFile<T> {

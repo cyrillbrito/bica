@@ -35,6 +35,8 @@ Data lives in the repo's `.data/` ([architecture.md](./architecture.md#where-dat
 
 `bun run build:bica` compiles the same production server into one file, `dist/bica/bica`, that runs from any folder with no repo or `node_modules`. The client and codemode's worker and wasm are embedded. `bica` listens on `localhost:3141` (`--port` picks another) and keeps its data in `~/.bica/data`, or in `BICA_DATA_DIR`, so it never shares the repo's `.data/`.
 
+One server owns a data folder at a time. Two would corrupt Pi Durable's store, which has no lock of its own, so the server writes its PID to `server.pid` there and refuses to start while that process lives.
+
 In a terminal it prints its address and a few keys, the way Vite does:
 
 - `a` opens Bica as a Chrome app window (`--app`) in your own Chrome profile, so links open there too. Block extensions on Bica's address once in `chrome://extensions/sites`. Without Chrome it opens the default browser.

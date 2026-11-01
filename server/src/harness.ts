@@ -10,7 +10,7 @@ import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite
 import { accountsReady, models } from './models/registry';
 import { settings } from './settings';
 import { timeTools } from './tools/tool-time';
-import { dataPath } from './storage';
+import { claimDataDir, dataPath } from './storage';
 
 export const context = BACKGROUND_CONTEXT;
 
@@ -32,6 +32,14 @@ async function open(): Promise<Harness> {
   if (!defaults)
     throw new Error('Install the extensions before opening the harness');
   await accountsReady.catch(() => {});
+  // Here, not in serve(): modules open the harness as they load, and a
+  // second process must stop before it resumes anyone's runs.
+  try {
+    claimDataDir();
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exit(1);
+  }
   const harness = await Harness.open(
     await openNodeSqliteStorage(dataPath('harness.sqlite')),
     {
