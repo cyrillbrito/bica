@@ -49,6 +49,12 @@ const SCROLLBAR_CSS = `
 [data-code]::-webkit-scrollbar { display: none; }
 `;
 
+type Place = { top: number; left: number };
+// Where each file and diff was left, for the tab's lifetime.
+const leftAt = new Map<string, Place>();
+// What the user does to scroll, as opposed to the content changing size.
+const INPUT = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+
 /**
  * One file or one diff, rendered by Pierre. Re-reads whenever `version`
  * changes; the old render stays on screen until the new one is ready.
@@ -75,6 +81,15 @@ export default function CodeView(props: {
   let spacer!: HTMLDivElement;
   let instance: Instance | undefined;
   let kind: 'file' | 'diff' | undefined;
+  // What is shown, and the place to return to, held while it renders and
+  // highlights until the user scrolls themselves.
+  let shown = '';
+  let held: Place | undefined;
+  const release = () => (held = undefined);
+  const remember = () => {
+    if (shown && !held)
+      leftAt.set(shown, { top: scroller.scrollTop, left: bar.scrollLeft });
+  };
   const [note, setNote] = createSignal('');
   const [rendered, setRendered] = createSignal<
     { kind: PreviewKind; text: string } | undefined
@@ -99,6 +114,10 @@ export default function CodeView(props: {
     const max = Math.max(0, ...codes().map(range));
     bar.hidden = max <= 0;
     spacer.style.width = `${bar.clientWidth + max}px`;
+    if (held) {
+      bar.scrollLeft = held.left;
+      scroller.scrollTop = held.top;
+    }
     // The bar holds the position: Pierre reuses its scrollers across files.
     follow(bar.scrollLeft);
   };
@@ -118,6 +137,7 @@ export default function CodeView(props: {
     if (echo.get(el) === el.scrollLeft) return void echo.delete(el);
     echo.delete(el);
     follow(el.scrollLeft, el);
+    remember();
   };
   const watched = new WeakSet<ShadowRoot>();
   // Also runs after highlighting lands, which can change line widths.
@@ -143,11 +163,17 @@ export default function CodeView(props: {
     host?.replaceChildren();
     if (bar) bar.hidden = true;
   };
+  // Made on first use: the content's growth re-applies a held place.
+  let resize: ResizeObserver | undefined;
+  const observe = (el: HTMLElement) =>
+    (resize ??= new ResizeObserver(measure)).observe(el);
   onSettled(() => {
-    const resize = new ResizeObserver(measure);
-    resize.observe(scroller);
+    observe(scroller);
+    observe(host!);
+    for (const type of INPUT)
+      scroller.addEventListener(type, release, { passive: true });
     return () => {
-      resize.disconnect();
+      resize?.disconnect();
       drop();
       showMedia([]);
     };
@@ -168,13 +194,12 @@ export default function CodeView(props: {
             ? readBlobs(ref, path, blobs, view === 'changes', oldPath, repo)
             : readDiff(ref, path, view === 'staged', oldPath, repo),
       ]);
-      return { diffs, data, path, view, oldPath };
+      return { diffs, data, path, view, oldPath, ref };
     },
     { name: 'codeViewData' },
   );
 
   // A re-read of the same file (an agent editing it) keeps the position.
-  let shown = '';
   createEffect(
     () => ({
       k: loaded(),
@@ -187,11 +212,13 @@ export default function CodeView(props: {
         setRendered(undefined);
         const overflow = wrap ? ('wrap' as const) : ('scroll' as const);
         const { diffs, data } = k;
-        if (shown !== `${k.view}:${k.path}`) {
-          bar.scrollLeft = 0;
-          scroller.scrollTop = 0;
+        const place = [k.ref.projectId, k.ref.cwd, k.view, k.path].join('\n');
+        if (shown !== place) {
+          shown = place;
+          held = leftAt.get(place) ?? { top: 0, left: 0 };
+          bar.scrollLeft = held.left;
+          scroller.scrollTop = held.top;
         }
-        shown = `${k.view}:${k.path}`;
         const want = k.view === 'file' ? 'file' : 'diff';
         if (kind !== want) drop();
         kind = want;
@@ -289,6 +316,7 @@ export default function CodeView(props: {
     <div
       ref={(el) => (scroller = el)}
       class="relative min-h-0 flex-1 overflow-auto overscroll-contain"
+      onScroll={remember}
     >
       <div ref={(el) => (host = el)} class="code-view" />
       <div
@@ -299,9 +327,14 @@ export default function CodeView(props: {
       >
         <div ref={(el) => (spacer = el)} class="h-px" />
       </div>
+      {/* In the view's own scroller, so its place is kept too; a page
+          fills the view and scrolls inside its frame. */}
       <Show when={rendered()}>
         {(r) => (
-          <div class="absolute inset-0 overflow-auto">
+          <div
+            ref={observe}
+            class={r().kind === 'html' ? 'absolute inset-0' : undefined}
+          >
             <FilePreview kind={r().kind} text={r().text} path={props.path} />
           </div>
         )}

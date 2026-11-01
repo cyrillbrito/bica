@@ -12,6 +12,10 @@ export type TreeStatus = GitStatusEntry['status'];
 // width spaces in front, which keeps the ids unique and the icons right.
 const UNIQUE = '\u200b';
 
+// Where each tree was left, for the tab's lifetime: its open folders and
+// its scroll.
+const leftAt = new Map<string, { expanded: string[]; top: number }>();
+
 // "a/b/c.ts" → ["a/", "a/b/"].
 function folders(path: string) {
   return path
@@ -37,6 +41,9 @@ export default function FileTree(props: {
   // Every row shown, for lists inside a scrolling panel. Otherwise the tree
   // fills its parent, scrolls, reveals only the open file and has search.
   fit?: boolean;
+  // Names the tree, such as its workspace: opening it again restores its
+  // open folders and scroll.
+  remember?: string;
 }) {
   // Read once here: Pierre and the effects below read it outside any owner, and
   // a parent may pass an expression the compiler wraps in a fresh memo per read.
@@ -49,6 +56,40 @@ export default function FileTree(props: {
   let stop: (() => void) | undefined;
   let flat = false;
   let shown = '';
+  let key: string | undefined;
+  let top = 0;
+  const scrollerOf = (t: Tree) =>
+    t
+      .getFileTreeContainer()
+      ?.shadowRoot?.querySelector<HTMLElement>(
+        '[data-file-tree-virtualized-scroll]',
+      );
+  const onScroll = (e: Event) => {
+    const el = e.target as HTMLElement;
+    if (el.matches?.('[data-file-tree-virtualized-scroll]')) top = el.scrollTop;
+  };
+  const save = (t: Tree) => {
+    if (!key) return;
+    const open = [...new Set(shown.split('\n').flatMap(folders))].filter((f) =>
+      (t.getItem(f) as { isExpanded?: () => boolean })?.isExpanded?.(),
+    );
+    leftAt.set(key, { expanded: open, top });
+  };
+  // The folders to open: the remembered ones, and the open file's.
+  const recall = () => {
+    key = flat || props.fit ? undefined : props.remember;
+    const saved = key ? leftAt.get(key) : undefined;
+    top = saved?.top ?? 0;
+    return saved && [...new Set([...saved.expanded, ...expanded()])];
+  };
+  // After Pierre lays the rows out, or there is nothing to scroll yet.
+  const scrollBack = (t: Tree) => {
+    const at = top;
+    requestAnimationFrame(() => {
+      const el = scrollerOf(t);
+      if (el) el.scrollTop = at;
+    });
+  };
 
   let ids = new Map<string, string>();
   let real = new Map<string, string>();
@@ -115,11 +156,12 @@ export default function FileTree(props: {
       flat = !!props.flat;
       shown = props.paths.join('\n');
       index(props.paths);
+      const remembered = recall();
       const t = new m.FileTree({
         paths: props.paths.map(out),
         gitStatus: status(),
         initialSelectedPaths: selected() ? [out(selected()!)] : [],
-        initialExpandedPaths: expanded(),
+        initialExpandedPaths: remembered ?? expanded(),
         flattenEmptyDirectories: true,
         search: !props.fit,
         stickyFolders: !props.fit,
@@ -155,11 +197,18 @@ export default function FileTree(props: {
       t.render({ containerWrapper: host! });
       stop = t.subscribe(() => fit(t));
       fit(t);
+      t.getFileTreeContainer()?.shadowRoot?.addEventListener(
+        'scroll',
+        onScroll,
+        { capture: true, passive: true },
+      );
+      if (remembered) scrollBack(t);
       tree = t;
       return t;
     }));
 
   const destroy = () => {
+    if (tree) save(tree);
     stop?.();
     tree?.cleanUp();
     host?.replaceChildren();
@@ -176,20 +225,30 @@ export default function FileTree(props: {
       void untrack(create);
     },
   );
+  // The panel keeps one tree across workspaces: a new one swaps in the
+  // folders it was left with.
   createEffect(
-    () => props.paths,
-    (paths) => {
-      const key = paths.join('\n');
-      if (!tree || key === shown) return;
-      shown = key;
-      index(paths);
+    () => ({ paths: props.paths, remember: props.remember, fit: props.fit }),
+    ({ paths, remember, fit }) => {
+      const joined = paths.join('\n');
+      const moved = !flat && !fit && remember !== key;
+      if (!tree || (joined === shown && !moved)) return;
       const t = tree;
-      untrack(() =>
+      if (moved) save(t);
+      shown = joined;
+      index(paths);
+      untrack(() => {
+        const remembered = moved ? recall() : undefined;
         t.resetPaths(
           paths.map(out),
-          props.fit ? { initialExpandedPaths: expanded(t) } : undefined,
-        ),
-      );
+          fit
+            ? { initialExpandedPaths: expanded(t) }
+            : moved
+              ? { initialExpandedPaths: remembered ?? expanded() }
+              : undefined,
+        );
+        if (moved) scrollBack(t);
+      });
     },
   );
   // Also redraws the decorations, which Pierre can't watch.

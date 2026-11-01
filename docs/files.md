@@ -23,7 +23,7 @@ There are no tabs. Opening something replaces what was there, and what's open li
 
 ## File lists
 
-The Files tab shows the whole tree with git colors and a name search. Every file list, in Files and in Git, works the same way: ⌘ click and shift click select several files, and the menu acts on all of them. Changed files show as a tree or a flat list.
+The Files tab shows the whole tree with git colors and a name search. It keeps each workspace's open folders and scroll, and each file and diff keeps its scroll, for the tab's lifetime, so moving between sessions, files, and workspaces comes back to the same view. Every file list, in Files and in Git, works the same way: ⌘ click and shift click select several files, and the menu acts on all of them. Changed files show as a tree or a flat list.
 
 ## Staying live
 

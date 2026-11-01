@@ -25,6 +25,7 @@ function FilesTab(props: { workspace: WorkspaceRef; open: Open | undefined }) {
   return (
     <FileTree
       paths={files()}
+      remember={`${props.workspace.projectId}\n${props.workspace.cwd}`}
       status={treeStatus(status())}
       selected={props.open?.view === 'file' ? props.open.path : undefined}
       onOpen={(path) => {

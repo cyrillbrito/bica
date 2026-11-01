@@ -260,13 +260,8 @@ export default function Session(props: RouteProps<'/s/:id'>) {
       },
     ];
   };
-  // A session opens at its newest message, also when switching to another.
-  const stick = createStickToBottom();
-  createEffect(
-    () => props.params.id,
-    () => stick.follow(),
-    { name: 'followOnSwitch' },
-  );
+  // A session opens where it was left, or at its newest message.
+  const stick = createStickToBottom(() => props.params.id!);
   let composer: ComposerApi | undefined;
   // The title, top bar, and composer come from the list, which is already
   // here. The parts that need the transcript appear when it lands, each in

@@ -47,7 +47,7 @@ export default function HubChat(props: { id: string }) {
     },
     { name: 'hubSeen' },
   );
-  const stick = createStickToBottom();
+  const stick = createStickToBottom(() => props.id);
   let composer: ComposerApi | undefined;
 
   return (
