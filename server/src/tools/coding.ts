@@ -1,4 +1,6 @@
 import { isAbsolute, relative, resolve } from 'node:path';
+import type { JsonValue } from '@earendil-works/chord';
+import type { TSchema } from '@earendil-works/pi-ai';
 import { defineExtension } from '@earendil-works/pi-durable';
 import type { ToolRegistration } from '@earendil-works/pi-durable';
 import {
@@ -16,12 +18,15 @@ function inside(cwd: string, path: string) {
 }
 
 /** The hub writes only its own memory files (docs/hub.md). */
-function ownFolder(tool: ToolRegistration): ToolRegistration {
+function ownFolder<P extends TSchema, D extends JsonValue>(
+  tool: ToolRegistration<P, D>,
+): ToolRegistration<P, D> {
   return {
     ...tool,
     description: `${tool.description} Only inside your own folder.`,
     execute: (args, api, context) => {
       const cwd = api.env?.cwd;
+      // Only given to write and edit, whose schemas require a path.
       if (!cwd || !inside(cwd, (args as { path: string }).path))
         throw new Error(
           `You can only change files inside your folder, ${cwd}. Hand other changes to a session.`,
@@ -31,30 +36,17 @@ function ownFolder(tool: ToolRegistration): ToolRegistration {
   };
 }
 
-// Durable's tools are typed by their own schemas; extensions take any.
-function any(tool: unknown) {
-  return tool as ToolRegistration;
-}
 function read() {
-  return any(createReadTool({ images: bunImages }));
+  return createReadTool({ images: bunImages });
 }
 
 // Only the hub agent selects it (server/src/hub/agent.ts).
 export const HubFileTools = defineExtension({
   name: 'hub-file-tools',
-  tools: [
-    read(),
-    ownFolder(any(createWriteTool())),
-    ownFolder(any(createEditTool())),
-  ],
+  tools: [read(), ownFolder(createWriteTool()), ownFolder(createEditTool())],
 });
 
 export const CodingTools = defineExtension({
   name: 'coding-tools',
-  tools: [
-    read(),
-    any(createWriteTool()),
-    any(createEditTool()),
-    any(createBashTool()),
-  ],
+  tools: [read(), createWriteTool(), createEditTool(), createBashTool()],
 });

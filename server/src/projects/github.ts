@@ -66,6 +66,7 @@ async function load(path: string) {
     headRefName: string;
     headRefOid: string;
   }[];
+  const STATES = { OPEN: 'open', CLOSED: 'closed', MERGED: 'merged' } as const;
   const byBranch = new Map<string, PullRequest>();
   // Newest first, so a reused branch name shows its latest PR.
   for (const pr of list)
@@ -75,10 +76,7 @@ async function load(path: string) {
         title: pr.title,
         url: pr.url,
         head: pr.headRefOid,
-        state:
-          pr.state === 'OPEN' && pr.isDraft
-            ? 'draft'
-            : (pr.state.toLowerCase() as PullRequest['state']),
+        state: pr.state === 'OPEN' && pr.isDraft ? 'draft' : STATES[pr.state],
       });
   return byBranch;
 }

@@ -1,6 +1,5 @@
 import { Type } from '@earendil-works/pi-ai';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
-import type { ToolRegistration } from '@earendil-works/pi-durable';
 import type { TerminalInfo } from '@bica/shared/protocol';
 import { sessionWorkspace } from '../sessions/store';
 import { tell } from '../sessions/notes';
@@ -258,15 +257,10 @@ const terminalStop = defineTool({
 // The hub reads its child sessions' terminals but types into none (docs/hub.md).
 export const HubTerminalTools = defineExtension({
   name: 'hub-terminal-tools',
-  tools: [terminalRead] as unknown as ToolRegistration[],
+  tools: [terminalRead],
 });
 
 export const TerminalTools = defineExtension({
   name: 'terminal-tools',
-  tools: [
-    terminalStart,
-    terminalRead,
-    terminalSend,
-    terminalStop,
-  ] as unknown as ToolRegistration[],
+  tools: [terminalStart, terminalRead, terminalSend, terminalStop],
 });

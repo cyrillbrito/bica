@@ -1,6 +1,5 @@
 import { Type } from '@earendil-works/pi-ai';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
-import type { ToolRegistration } from '@earendil-works/pi-durable';
 
 // Exa does both jobs: search, and fetching a page as clean text.
 // https://exa.ai/docs/reference/search · https://exa.ai/docs/reference/get-contents
@@ -213,6 +212,6 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
 
   return defineExtension({
     name: 'web',
-    tools: [webSearch, webFetch] as unknown as ToolRegistration[],
+    tools: [webSearch, webFetch],
   });
 }

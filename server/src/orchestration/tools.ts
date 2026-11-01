@@ -426,7 +426,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     sessionArchive,
     ...(hub ? [sessionWatch] : []),
     list,
-  ] as unknown as ToolRegistration[];
+  ];
 }
 
 export const SessionTools = defineExtension({

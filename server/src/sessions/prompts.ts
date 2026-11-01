@@ -177,7 +177,7 @@ export async function push(id: string, submissionId: number) {
   const taken = await unqueue(id, submissionId);
   if (!taken) return false;
   await taken.conversation.submit(
-    { type: 'input', content: taken.item.content as never, whenBusy: 'steer' },
+    { type: 'input', content: taken.item.content, whenBusy: 'steer' },
     context,
   );
   steered(taken.conversation.id);
@@ -197,7 +197,7 @@ export async function stop(id: string) {
 
 function toPrompt(content: QueuedInput['content']) {
   if (typeof content === 'string') return { prompt: content, images: [] };
-  const { text, images } = promptOf(content as Parameters<typeof promptOf>[0]);
+  const { text, images } = promptOf(content);
   return { prompt: text, images };
 }
 
