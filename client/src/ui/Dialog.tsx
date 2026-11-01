@@ -30,7 +30,7 @@ export function Dialog(props: {
       }}
       aria-labelledby={id}
       class={[
-        'flex flex-col overflow-hidden border border-line bg-panel text-fg shadow-sheet backdrop:bg-black/40 not-open:hidden',
+        'flex flex-col overflow-hidden border border-line bg-panel text-fg shadow-sheet backdrop:bg-backdrop not-open:hidden',
         // Phone: a sheet from the bottom, reachable with the thumb.
         'mx-0 mt-auto mb-0 max-h-[85dvh] w-full max-w-none rounded-t-sheet max-md:sheet',
         'md:pop md:m-auto md:max-h-[min(44rem,85dvh)] md:w-[32rem] md:rounded-card',

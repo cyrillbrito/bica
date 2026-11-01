@@ -179,7 +179,7 @@ export default function App() {
           <Show when={drawer()}>
             <button
               class={[
-                'fixed inset-0 z-20 cursor-default bg-black/40',
+                'fixed inset-0 z-20 cursor-default bg-backdrop',
                 drawer() === 'sidebar' ? 'md:hidden' : 'xl:hidden',
               ]}
               aria-label="Close panel"

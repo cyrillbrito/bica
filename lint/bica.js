@@ -80,6 +80,37 @@ const radiusTokens = defineRule({
   },
 });
 
+// Colors are trimmed too (client/src/App.css @theme): Tailwind's palette does
+// nothing there, and a raw value skips the tokens and their dark mode.
+const COLOR_UTILITY =
+  '(?:bg|text|border(?:-[trblxyse])?|fill|stroke|ring|ring-offset|outline|decoration|divide|caret|accent|shadow|from|via|to|placeholder)';
+const COLOR = new RegExp(
+  `(?:^|[\\s:'"\`])(${COLOR_UTILITY}-(?:(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d{2,3}|white|black|\\[(?:#|rgba?\\(|hsla?\\(|oklch\\(|color:)[^\\]]*\\])(?:\\/\\d+)?)(?=$|[\\s'"\`])`,
+  'g',
+);
+
+function checkColor(context, node, value) {
+  if (typeof value !== 'string') return;
+  for (const m of value.matchAll(COLOR)) {
+    context.report({ node, messageId: 'color', data: { cls: m[1] } });
+  }
+}
+
+const colorTokens = defineRule({
+  meta: {
+    messages: {
+      color:
+        '`{{cls}}` is not a color token. Use one from App.css @theme (bg, panel, surface, well, fg, muted, accent, the status colors…), or add one there.',
+    },
+  },
+  create(context) {
+    return {
+      Literal: (node) => checkColor(context, node, node.value),
+      TemplateElement: (node) => checkColor(context, node, node.value.cooked),
+    };
+  },
+});
+
 // The server runs git only from server/src/git/commands.ts, so every git
 // command reads in one place, typed. Tests set up their repos with raw git.
 const gitCommands = defineRule({
@@ -173,6 +204,7 @@ export default definePlugin({
   rules: {
     'type-tokens': typeTokens,
     'radius-tokens': radiusTokens,
+    'color-tokens': colorTokens,
     'top-level-functions': topLevelFunctions,
     'git-commands': gitCommands,
   },

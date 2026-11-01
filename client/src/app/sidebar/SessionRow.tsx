@@ -72,7 +72,7 @@ export default function SessionRow(props: {
               </span>
               <Show when={!props.archived && s().parent}>
                 <span
-                  class="text-accent-ink [&_svg]:size-3.5"
+                  class="text-muted [&_svg]:size-3.5"
                   title="Its parent session is in charge"
                 >
                   <ParentIcon />

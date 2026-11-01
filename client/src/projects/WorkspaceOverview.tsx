@@ -252,7 +252,7 @@ export default function WorkspaceOverview(props: {
           </section>
         </Show>
 
-        <section class="appear flex flex-col rounded-tray bg-panel p-1">
+        <section class="appear flex flex-col rounded-tray bg-well p-1">
           <div class="@container flex flex-col overflow-hidden rounded-sheet border border-line bg-surface">
             <header class="flex items-center gap-3 px-4 pt-3.5 pb-3">
               <ProgressRing

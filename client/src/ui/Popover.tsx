@@ -44,7 +44,7 @@ export function Popover(props: {
       onToggle={(e) => props.onToggle?.(e.newState === 'open')}
       class={[
         'm-0 flex-col overflow-hidden bg-panel p-1 text-fg shadow-menu open:flex max-md:sheet max-md:shadow-sheet md:pop',
-        'inset-x-0 top-auto bottom-0 w-full max-w-none rounded-t-tray pb-[env(safe-area-inset-bottom)] backdrop:bg-black/40',
+        'inset-x-0 top-auto bottom-0 w-full max-w-none rounded-t-tray pb-[env(safe-area-inset-bottom)] backdrop:bg-backdrop',
         'md:inset-auto md:rounded-tray md:pb-1 md:backdrop:bg-transparent md:[position-anchor:var(--anchor)] md:[position-try-fallbacks:flip-block]',
         PLACE[props.place ?? 'bottom-start'],
         WIDTH[props.width ?? 'md'],

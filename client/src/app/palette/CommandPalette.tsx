@@ -116,7 +116,7 @@ export default function CommandPalette() {
     <dialog
       ref={(el) => (dialog = el)}
       class={[
-        'm-auto mt-[12dvh] flex max-h-[min(34rem,76dvh)] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-card border border-line bg-panel text-fg shadow-sheet backdrop:bg-black/40 not-open:hidden',
+        'm-auto mt-[12dvh] flex max-h-[min(34rem,76dvh)] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-card border border-line bg-panel text-fg shadow-sheet backdrop:bg-backdrop not-open:hidden',
         // Phone: the whole screen, so the list gets all the room the keyboard leaves.
         'max-md:m-0 max-md:h-dvh max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pt-[env(safe-area-inset-top)]',
       ]}

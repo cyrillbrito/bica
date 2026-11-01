@@ -4,19 +4,63 @@ import type { SessionStatus } from '@bica/shared/protocol';
 import { age, elapsed, formatDuration } from '../ui/time';
 import { Tag, type Tone } from '../ui/Tag';
 
-// Shape and color both carry the status.
+/**
+ * One family, after Linear's issue status icons: every state is the same
+ * ring, and shape as well as color tells them apart. The spin is progress, so
+ * it stays under reduced motion; the waiting halo is decoration.
+ */
+function shape(status: SessionStatus) {
+  const ring = (extra?: { fill?: boolean; arc?: boolean }) => (
+    <circle
+      cx="5"
+      cy="5"
+      r="4.25"
+      stroke="currentColor"
+      stroke-width="1.5"
+      fill={extra?.fill ? 'currentColor' : 'none'}
+      pathLength={extra?.arc ? 1 : undefined}
+      stroke-dasharray={extra?.arc ? '0.7 0.3' : undefined}
+    />
+  );
+  switch (status) {
+    case 'running':
+    case 'retrying':
+      return ring({ arc: true });
+    case 'done':
+      return ring({ fill: true });
+    // A dot in the ring tells it from idle when the halo is off.
+    case 'waiting':
+      return (
+        <>
+          {ring()}
+          <circle cx="5" cy="5" r="1.5" fill="currentColor" />
+        </>
+      );
+    case 'error':
+      return (
+        <>
+          {ring()}
+          <path
+            d="M3.6 3.6l2.8 2.8m0-2.8l-2.8 2.8"
+            stroke="currentColor"
+            stroke-width="1.25"
+            stroke-linecap="round"
+          />
+        </>
+      );
+    default:
+      return ring();
+  }
+}
+
 const look: Record<SessionStatus, string> = {
-  running:
-    'rounded-full border-2 border-running border-r-transparent animate-spin',
-  retrying:
-    'rounded-full border-2 border-warn border-r-transparent animate-spin',
-  error: 'bg-danger [clip-path:polygon(50%_0,100%_100%,0_100%)]',
-  // A ring that breathes: the session holds until you answer; done is the
-  // filled dot.
-  waiting:
-    'rounded-full border-[2.5px] border-accent motion-safe:animate-breathe',
-  done: 'rounded-full bg-accent',
-  idle: 'rounded-full border border-muted opacity-60',
+  running: 'text-running animate-spin',
+  retrying: 'text-warn animate-spin',
+  error: 'text-danger',
+  // The session holds until you answer.
+  waiting: 'rounded-full text-accent motion-safe:animate-breathe',
+  done: 'text-accent',
+  idle: 'text-muted opacity-60',
 };
 
 /**
@@ -58,12 +102,15 @@ export default function StatusDot(props: { status: SessionStatus }) {
           const pop = seen && status !== 'idle';
           seen = true;
           return (
-            <span
+            <svg
+              viewBox="0 0 10 10"
               class={['size-2.5', look[status], pop && 'swap-in']}
               role="img"
               aria-label={STATUS[status].label}
-              title={STATUS[status].label}
-            />
+            >
+              <title>{STATUS[status].label}</title>
+              {shape(status)}
+            </svg>
           );
         }}
       </For>

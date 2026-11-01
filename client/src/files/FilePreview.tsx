@@ -33,7 +33,7 @@ export default function FilePreview(props: {
           srcdoc={props.text}
           sandbox="allow-scripts allow-popups allow-forms"
           title={props.path}
-          class="block h-full w-full bg-white"
+          class="block h-full w-full bg-paper"
         />
       </Match>
       <Match when={props.kind === 'mermaid'}>

@@ -151,7 +151,7 @@ export default function AskCard(props: {
       role="group"
       aria-label={props.open ? 'The agent asks' : 'Asked'}
       class={[
-        'appear overflow-hidden rounded-tray bg-panel p-1 motion-safe:transition-[height] motion-safe:duration-300 motion-safe:ease-out',
+        'appear overflow-hidden rounded-tray bg-well p-1 motion-safe:transition-[height] motion-safe:duration-300 motion-safe:ease-out',
         props.open && sending() && 'cursor-progress',
       ]}
     >
@@ -172,7 +172,7 @@ export default function AskCard(props: {
             · {count()} {count() === 1 ? 'question' : 'questions'}
           </span>
         </div>
-        <div class="flex flex-col gap-5 rounded-sheet border border-line bg-surface p-3 shadow-raised md:p-4">
+        <div class="flex flex-col gap-5 rounded-sheet border border-line bg-surface p-3 md:p-4">
           <For each={props.questions} keyed={false}>
             {(q, i) => (
               <fieldset
@@ -255,7 +255,7 @@ export default function AskCard(props: {
               : 'Skip any you don’t want to answer.'}
           </span>
           <Button
-            variant="primary"
+            variant="soft"
             disabled={!ready() && !sending()}
             loading={sending()}
             aria-keyshortcuts={MAC ? 'Meta+Enter' : 'Control+Enter'}
@@ -263,7 +263,7 @@ export default function AskCard(props: {
             onClick={send}
           >
             {skipped() && count() > 1 ? `Send, skip ${skipped()}` : 'Send'}
-            <Kbd class="bg-bg/15 text-bg/70">{MAC ? '⌘↵' : 'Ctrl↵'}</Kbd>
+            <Kbd class="bg-bg/60">{MAC ? '⌘↵' : 'Ctrl↵'}</Kbd>
           </Button>
         </div>
       </Show>

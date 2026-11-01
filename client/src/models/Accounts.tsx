@@ -175,7 +175,7 @@ function Tile(props: { id: string; name: string; on: boolean }) {
   return (
     <span
       class={[
-        'grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-panel font-semibold',
+        'grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-well font-semibold',
         !props.on && 'text-muted',
       ]}
       aria-hidden="true"
@@ -378,7 +378,7 @@ function Panel(props: {
       : undefined;
 
   return (
-    <div class="ml-11 flex flex-col gap-3 rounded-card border border-line bg-panel p-3 appear max-sm:ml-0">
+    <div class="ml-11 flex flex-col gap-3 rounded-card border border-line bg-well p-3 appear max-sm:ml-0">
       <Show when={props.account.extra}>
         <p class="text-meta">
           Sign in with the other account. If the page opens on one already here,

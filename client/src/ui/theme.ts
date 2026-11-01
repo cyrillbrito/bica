@@ -3,7 +3,7 @@ import { storageKey, stored } from './stored';
 export type Theme = 'system' | 'light' | 'dark';
 
 const KEY = 'theme';
-const BG = { light: '#fbfbfa', dark: '#1c1c20' };
+const BG = { light: '#fcfaf6', dark: '#1c1c20' };
 
 const [theme, save] = stored<Theme>(KEY, 'system', ['system', 'light', 'dark']);
 export { theme };

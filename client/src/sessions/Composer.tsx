@@ -434,7 +434,7 @@ export default function Composer(props: {
     // and warnings sit on it, above the box. It reaches 4px past the card,
     // so the card stays where it was. It only shows with something on it:
     // everything that turns up there enters with `appear`.
-    <div class="-m-1 flex flex-col rounded-tray p-1 transition-colors duration-200 has-[[data-tray]_.appear]:bg-panel">
+    <div class="-m-1 flex flex-col rounded-tray p-1 transition-colors duration-200 has-[[data-tray]_.appear]:bg-well">
       <div data-tray class="flex flex-col px-1">
         {props.top}
       </div>
@@ -456,7 +456,7 @@ export default function Composer(props: {
                     src={image().data ? imageUrl(image()) : image().preview}
                     alt=""
                     class={[
-                      'size-14 rounded-lg border border-line bg-panel object-cover transition-opacity duration-200',
+                      'size-14 rounded-lg border border-line bg-well object-cover transition-opacity duration-200',
                       !image().data && 'opacity-50',
                     ]}
                   />

@@ -18,7 +18,7 @@ export default function Document(props: ParentProps) {
         <meta
           name="theme-color"
           media="(prefers-color-scheme: light)"
-          content="#fbfbfa"
+          content="#fcfaf6"
         />
         <meta
           name="theme-color"

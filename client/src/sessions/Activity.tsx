@@ -58,7 +58,7 @@ export default function Activity(props: { activity: ActivityData }) {
     </div>
   );
   return (
-    <div class="rounded-card border border-line bg-panel/50 p-1">
+    <div class="rounded-card border border-line bg-well p-1">
       <Show when={grouped()} fallback={list}>
         <details class="group/act expand" open={open}>
           <Header activity={props.activity} seen={seen()} />

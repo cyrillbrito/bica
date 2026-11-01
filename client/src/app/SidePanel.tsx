@@ -85,7 +85,7 @@ export default function SidePanel() {
       class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-line bg-panel xl:border-l"
       aria-label="Workspace"
     >
-      <header class="flex h-12 shrink-0 items-center gap-1 border-b border-line px-2 touch:h-14">
+      <header class="flex h-12 shrink-0 items-center gap-1 px-2 touch:h-14">
         {/* Arrow keys move between the tabs, and only the picked one is in
             the Tab order, as the ARIA tabs pattern has it. */}
         <div

@@ -82,7 +82,7 @@ function level(w: PlanWindow) {
   return { reset, percent, tone };
 }
 
-const FILL = { danger: 'bg-danger', warn: 'bg-warn', ok: 'bg-accent' };
+const FILL = { danger: 'bg-danger', warn: 'bg-warn', ok: 'bg-muted' };
 const TEXT = {
   danger: 'text-danger-ink',
   warn: 'text-warn-ink',

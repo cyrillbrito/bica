@@ -10,7 +10,7 @@ export function Logo(props: { size?: number; class?: string }) {
     >
       <path
         d="M16 0C28 0 32 4 32 16S28 32 16 32 0 28 0 16 4 0 16 0Z"
-        fill="#2f5bd3"
+        fill="#6c4122"
       />
       <g
         transform="translate(0.8 0.3)"

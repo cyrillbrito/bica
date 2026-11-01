@@ -302,7 +302,7 @@ export default function MessageRow(props: {
                   <Chevron class="group-open/row:rotate-90" />
                   <div class="h-px flex-1 bg-line" />
                 </summary>
-                <div class="mt-3 rounded-card border border-line bg-panel/50 px-4 py-3">
+                <div class="mt-3 rounded-card border border-line bg-well px-4 py-3">
                   <Markdown text={c().summary} />
                 </div>
               </details>

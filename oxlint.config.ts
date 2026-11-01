@@ -13,6 +13,7 @@ export default defineConfig({
     'solid/reactivity': ['warn', { customReactiveFunctions: ['subscribe'] }],
     'bica/type-tokens': 'error',
     'bica/radius-tokens': 'error',
+    'bica/color-tokens': 'error',
     'bica/top-level-functions': 'error',
   },
   overrides: [

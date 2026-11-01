@@ -21,7 +21,7 @@ export function Card(props: {
   class?: string;
 }) {
   return (
-    <section class={['flex flex-col rounded-tray bg-panel p-1', props.class]}>
+    <section class={['flex flex-col rounded-tray bg-well p-1', props.class]}>
       <header class="flex min-h-11 items-center gap-3 px-3 py-2">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <h2 class="font-semibold">{props.title}</h2>

@@ -27,6 +27,7 @@ import { Switch } from '../ui/Switch';
 import { Tag, type Tone } from '../ui/Tag';
 import TextArea from '../ui/TextArea';
 import { ThinkingLoader } from '../ui/ThinkingLoader';
+import StatusDot, { STATUS } from '../sessions/StatusDot';
 import Working from '../sessions/Working';
 import { toast } from '../ui/Toast';
 import { Trend } from '../ui/Trend';
@@ -57,7 +58,6 @@ const COLORS: [string, string][] = [
   ['muted', 'bg-muted'],
   ['fg', 'bg-fg'],
   ['accent', 'bg-accent'],
-  ['brand', 'bg-brand'],
   ['running', 'bg-running'],
   ['warn', 'bg-warn'],
   ['danger', 'bg-danger'],
@@ -336,6 +336,16 @@ function Labels() {
     <Section title="Tags, strips, alerts">
       <Row>
         <For each={TONES}>{(t) => <Tag tone={t}>{t}</Tag>}</For>
+      </Row>
+      <Row>
+        <For each={Object.keys(STATUS) as (keyof typeof STATUS)[]}>
+          {(s) => (
+            <span class="flex items-center gap-1.5 text-meta text-muted">
+              <StatusDot status={s} />
+              {s}
+            </span>
+          )}
+        </For>
       </Row>
       <div class="rounded-tray bg-panel p-1">
         <Strip

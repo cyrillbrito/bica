@@ -386,7 +386,7 @@ export default function Sidebar() {
             title="The hub: one session that coordinates the others"
             onClick={closeDrawer}
           >
-            <span class="text-accent">
+            <span class="text-muted">
               <HubIcon />
             </span>
             <span class="flex-1 truncate font-semibold">Hub</span>

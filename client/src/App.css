@@ -75,28 +75,52 @@
 }
 
 @theme {
-  --color-bg: light-dark(#fbfbfa, #1c1c20);
-  --color-panel: light-dark(#f4f4f2, #232327);
+  /* Colors: only these exist, since Tailwind's palette is removed and the
+     `bica/color-tokens` lint rule fails on it and on raw values (see
+     docs/UI.md, Color). Light colors are picked in OKLCH: warm greys on hue
+     80 with a trace of chroma, and status colors that share a lightness and
+     differ in hue. Written as hex, since the terminal reads them back
+     through a canvas. The OKLCH value is in each comment. */
+  --color-*: initial;
+
+  /* Layers. The canvas is where you read; chrome recedes a step darker;
+     raised things are white; wells sink a step into whatever holds them. */
+  --color-bg: light-dark(#fcfaf6, #1c1c20); /* 0.986 0.006 85 */
+  /* Solid, for what must hide what's behind it: the sidebar, the side
+     panel, toolbars, and the tray of a floating menu or dialog. */
+  --color-panel: light-dark(#f5f2ed, #232327); /* 0.962 0.007 81 */
   --color-surface: light-dark(#ffffff, #2a2a2f);
-  --color-hover: light-dark(#0000000a, #ffffff0d);
-  --color-active: light-dark(#00000012, #ffffff17);
-  --color-line: light-dark(#0000001a, #ffffff14);
-  --color-line-strong: light-dark(#00000033, #ffffff33);
-  --color-fg: light-dark(#1c1c1e, #e4e4e8);
-  --color-muted: light-dark(#6e6e73, #96969f);
-  --color-accent: light-dark(#c2410c, #fb923c);
-  --color-brand: light-dark(#2f5bd3, #7ea1f5);
-  --color-running: light-dark(#16a34a, #4ade80);
-  --color-warn: light-dark(#ca8a04, #facc15);
-  --color-danger: light-dark(#dc2626, #f87171);
-  --color-merged: light-dark(#8250df, #a78bfa);
+  /* A wash, so it reads as one step in on any layer: code blocks, inline
+     code, table heads, the trays of cards and questions in the page. */
+  --color-well: light-dark(#201c1809, #ffffff08);
+  /* Behind a dialog or the command palette. */
+  --color-backdrop: light-dark(#201c1866, #00000080);
+  /* A page that brings its own colors, like an HTML preview. */
+  --color-paper: #ffffff;
+
+  /* Washes of `fg`, so fills and lines stay warm over any grey. */
+  --color-hover: light-dark(#201c180b, #ffffff0d);
+  --color-active: light-dark(#201c1814, #ffffff17);
+  --color-line: light-dark(#201c181c, #ffffff14);
+  --color-line-strong: light-dark(#201c1836, #ffffff33);
+  --color-fg: light-dark(#201c18, #e4e4e8); /* 0.23 0.01 67 */
+  --color-muted: light-dark(#6e6860, #96969f); /* 0.52 0.014 75 */
+  --color-accent: light-dark(#ba5702, #fb923c); /* 0.57 0.15 50 */
+  --color-running: light-dark(#25984d, #4ade80); /* 0.6 0.15 150 */
+  --color-warn: light-dark(#cb9317, #facc15); /* 0.7 0.14 80 */
+  --color-danger: light-dark(#d03833, #f87171); /* 0.57 0.19 27 */
+  --color-merged: light-dark(#8451c9, #a78bfa); /* 0.55 0.18 300 */
   /* Small colored text on a tint of its color (a tag, a running clock):
      darker in light mode, so 12px text keeps AA contrast. */
-  --color-accent-ink: light-dark(#9a3412, #fb923c);
-  --color-running-ink: light-dark(#166534, #4ade80);
-  --color-warn-ink: light-dark(#854d0e, #facc15);
-  --color-danger-ink: light-dark(#b91c1c, #f87171);
-  --color-merged-ink: light-dark(#6d28d9, #a78bfa);
+  --color-accent-ink: light-dark(#904100, #fb923c); /* 0.47 0.125 50 */
+  --color-running-ink: light-dark(#196632, #4ade80); /* 0.45 0.11 150 */
+  --color-warn-ink: light-dark(#785214, #facc15); /* 0.47 0.09 75 */
+  --color-danger-ink: light-dark(#a92321, #f87171); /* 0.48 0.17 27 */
+  --color-merged-ink: light-dark(#6938a7, #a78bfa); /* 0.46 0.17 300 */
+  /* Diff lines: blue and orange instead of green and red, which many
+     colorblind people can't tell apart (GitHub's colorblind palette). */
+  --color-added: light-dark(#0969da, #58a6ff);
+  --color-removed: light-dark(#bc4c00, #f0883e);
   /* The raised thumb of a segmented control, on an `active` tray: white in
      light, a lighter veil in dark so it always reads above the tray. */
   --color-thumb: light-dark(#ffffff, #ffffff1a);
@@ -318,6 +342,26 @@
   :root {
     color-scheme: light dark;
   }
+  /* Scrollbars that stay visible (a mouse, or macOS set to always show
+     them) get a thin thumb and no track, so a panel doesn't grow a grey
+     gutter. Chrome and Firefox read the standard properties; Safari the
+     ::-webkit ones. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--color-fg) 20%, transparent)
+      transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    background-color: color-mix(in oklab, var(--color-fg) 20%, transparent);
+  }
   /* A forced theme from Settings (ui/theme.ts). */
   :root[data-theme='light'] {
     color-scheme: light;
@@ -332,7 +376,7 @@
   }
   /* The theme's near black would sit like a hole in the dark page. */
   diffs-container {
-    --diffs-dark-bg: #1c1c20;
+    --diffs-dark-bg: var(--color-bg);
   }
 
   body {
@@ -752,10 +796,10 @@
       @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
     }
     & :not(pre) > code {
-      @apply rounded-sm bg-active px-1 py-px font-mono text-[0.85em];
+      @apply rounded-sm bg-well px-1 py-px font-mono text-[0.85em];
     }
     & pre {
-      @apply overflow-x-auto overscroll-x-contain rounded-card border border-line bg-panel px-3.5 py-3 font-mono text-code [scrollbar-width:thin];
+      @apply overflow-x-auto overscroll-x-contain rounded-card border border-line bg-well px-3.5 py-3 font-mono text-code [scrollbar-width:thin];
     }
     & :is(ul, ol) {
       @apply flex flex-col gap-1 pl-5;
@@ -789,7 +833,7 @@
       @apply border border-line px-2.5 py-1.5;
     }
     & th {
-      @apply bg-panel text-left font-semibold;
+      @apply bg-well text-left font-semibold;
     }
     & img {
       @apply max-w-full rounded-card;
@@ -822,11 +866,9 @@
   --diffs-font-family: var(--font-mono);
   --diffs-font-size: var(--text-code);
   --diffs-line-height: var(--text-code--line-height);
-  /* Blue/orange instead of green/red, which many colorblind people can't
-     tell apart: GitHub's colorblind palette. Overrides, since the Shiki theme sets the
-     plain variables. */
-  --diffs-addition-color-override: light-dark(#0969da, #58a6ff);
-  --diffs-deletion-color-override: light-dark(#bc4c00, #f0883e);
+  /* Overrides, since the Shiki theme sets the plain variables. */
+  --diffs-addition-color-override: var(--color-added);
+  --diffs-deletion-color-override: var(--color-removed);
   /* CodeView hides Pierre's scrollbars for its own .code-scrollbar. */
   --diffs-scrollbar-gutter-override: 0px;
 }

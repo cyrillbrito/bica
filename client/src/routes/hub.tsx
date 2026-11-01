@@ -71,7 +71,7 @@ export default function Hub() {
           </IconButton>
         }
       >
-        <span class="text-accent">
+        <span class="text-muted">
           <HubIcon />
         </span>
         <h1 class="font-semibold">Hub</h1>

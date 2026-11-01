@@ -329,7 +329,7 @@ export default function CodeView(props: {
                     <img
                       src={m.url}
                       alt={props.path}
-                      class="max-w-full rounded-card border border-line bg-panel"
+                      class="max-w-full rounded-card border border-line bg-well"
                     />
                   </Match>
                   <Match when={m.mimeType.startsWith('video/')}>

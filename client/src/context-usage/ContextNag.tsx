@@ -148,10 +148,10 @@ export default function ContextNag(props: {
   const compact = () => void compactSession(props.id).catch(fail);
   const prune = () => void pruneSession(props.id).catch(fail);
 
-  const CompactButton = (p: { primary: boolean }) => (
+  const CompactButton = () => (
     <Button
       size="sm"
-      variant={p.primary ? 'primary' : 'outline'}
+      variant="outline"
       loading={compacting()}
       disabled={!!compactUnavailable(props.id, props.usage)}
       title={
@@ -181,12 +181,12 @@ export default function ContextNag(props: {
             <span class="flex shrink-0 items-center gap-1">
               <Show when={h().kind === 'cold'}>
                 <Show when={h().compact}>
-                  <CompactButton primary={!h().clean} />
+                  <CompactButton />
                 </Show>
                 <Show when={h().clean}>
                   <Button
                     size="sm"
-                    variant="primary"
+                    variant="outline"
                     disabled={!!pruneUnavailable(props.id, props.usage)}
                     title={
                       pruneUnavailable(props.id, props.usage) ?? PRUNE_HINT
@@ -201,7 +201,7 @@ export default function ContextNag(props: {
                 </Show>
               </Show>
               <Show when={h().kind !== 'cold'}>
-                <CompactButton primary />
+                <CompactButton />
               </Show>
               <IconButton size="sm" title="Not now" onClick={dismiss}>
                 <CloseIcon />
