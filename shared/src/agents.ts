@@ -29,8 +29,8 @@ export function isAgent(value: unknown): value is AgentId {
 
 // Long-lived sessions, which housekeeping prunes and compacts while they sit
 // idle (server/src/sessions/housekeeping.ts): assistant mode
-// (docs/assistant-mode.md) and the hub (docs/hub.md). Their instructions say
-// so, in `long_lived`.
+// (docs/assistant-mode.md) and the hub (docs/hub.md). It also gives them the
+// `long_lived` prompt section (server/src/agents/extensions.ts).
 export function isLongLived(agent: AgentId) {
   return agent === 'assistant' || agent === 'hub';
 }

@@ -5,6 +5,7 @@ import {
   type Extension,
   type PromptInput,
 } from '@earendil-works/pi-durable';
+import { isLongLived } from '@bica/shared/agents';
 import { AskTool } from '../tools/ask';
 import { Codemode } from '../tools/codemode';
 import { CodingTools, HubFileTools } from '../tools/coding';
@@ -18,6 +19,7 @@ import { HubTerminalTools, TerminalTools } from '../terminals/tools';
 import { coding } from './coding';
 import {
   HEAD_SECTIONS,
+  LONG_LIVED,
   TAIL_SECTIONS,
   type Agent,
   type SectionInput,
@@ -34,6 +36,9 @@ async function renderSection(
 ) {
   if (key === 'skills')
     return agent.skills ? skillsSection(input.cwd) : undefined;
+  // From isLongLived, so the prompt and housekeeping can't disagree.
+  if (key === 'long_lived')
+    return isLongLived(agent.id) ? LONG_LIVED : undefined;
   const render = agent.sections[key];
   return typeof render === 'function' ? render(input) : render;
 }

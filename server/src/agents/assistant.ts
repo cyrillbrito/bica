@@ -1,5 +1,5 @@
 import { AGENTS } from '@bica/shared/agents';
-import { HANDOFFS, LONG_LIVED, type Agent } from './common';
+import { HANDOFFS, type Agent } from './common';
 import { coding } from './coding';
 
 // Assistant mode (docs/assistant-mode.md): one project, for months. It helps
@@ -14,7 +14,6 @@ export const assistant: Agent = {
   sections: {
     ...coding.sections,
     handoffs: HANDOFFS,
-    long_lived: LONG_LIVED,
     role: ROLE,
   },
 };

@@ -23,6 +23,7 @@ import {
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
 import { VOICE_TITLE, nameSession, promptTitle, retitle } from './names';
+import { setAgent } from './meta';
 import { submit } from './prompts';
 import {
   SessionDoc,
@@ -141,7 +142,7 @@ export async function createSession({
 
 /**
  * A session started by another session's agent: a normal, ownerless coding
- * session in the parent's folder, another workspace of any project, or a new
+ * session, or a night one from a night run, in the parent's folder, another workspace of any project, or a new
  * worktree of that project. It takes the parent's model, except from a hub,
  * whose fast model is picked for routing, not for the work. `effort`
  * overrides the effort; a level the model lacks is clamped.
@@ -193,6 +194,9 @@ export async function spawnSession(
     worktree,
     detached,
     tonight,
+    // Nobody answers a night run's children either, and the next run waits
+    // for them (night-runs/night.ts).
+    agent: agentIdOf(meta) === 'night' ? 'night' : undefined,
   });
 }
 
@@ -238,6 +242,10 @@ export async function fork(id: string, at?: number) {
     },
     context,
   );
+  // A running Night session counts as tonight's run (night-runs/night.ts),
+  // and the user's fork isn't one.
+  if (agentIdOf(await sessionMeta(conversation.id)) === 'night')
+    await setAgent(String(forked.id), 'coding');
   await sessions.refresh();
   return String(forked.id);
 }

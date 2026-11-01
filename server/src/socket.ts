@@ -116,13 +116,12 @@ type Handlers = {
 
 // The browser is our own typed client, so args arrive as protocol.ts says.
 const calls: Handlers = {
-  'session.create': async (args) =>
-    createSession({
-      ...args,
-      prompt: args.prompt.trim(),
-      // Only the hub's own page makes a hub (openHub).
-      agent: args.agent === 'assistant' ? 'assistant' : 'coding',
-    }),
+  'session.create': async (args) => {
+    // The hub and night runs set their own agents (openHub, createSession).
+    if (args.agent && args.agent !== 'coding' && args.agent !== 'assistant')
+      throw new Error('A new session runs as Coding or Assistant');
+    return createSession({ ...args, prompt: args.prompt.trim() });
+  },
   'session.tonight': async ({ id, action, prompt }) => {
     if (action === 'cancel') return cancelTonight(id);
     if (action === 'save') await saveTonight(id, prompt ?? '');

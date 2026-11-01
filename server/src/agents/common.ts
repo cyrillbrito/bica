@@ -84,7 +84,10 @@ export interface Agent {
   // Lists the skills found for its folder (skills.ts).
   skills: boolean;
   // Its instructions, by prompt section. A key it leaves out isn't rendered.
-  sections: Partial<Record<Exclude<SectionKey, 'skills'>, Section>>;
+  // Not `skills` or `long_lived`: the `skills` flag and isLongLived give those.
+  sections: Partial<
+    Record<Exclude<SectionKey, 'skills' | 'long_lived'>, Section>
+  >;
 }
 
 // The opening of every prompt, around the agent's own first lines. Pi

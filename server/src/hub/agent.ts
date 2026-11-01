@@ -2,7 +2,6 @@ import { AGENTS } from '@bica/shared/agents';
 import {
   BASE_SECTIONS,
   HANDOFFS,
-  LONG_LIVED,
   shortReplies,
   preamble,
   type Agent,
@@ -62,7 +61,6 @@ export const hub: Agent = {
     preamble: preamble(PREAMBLE),
     projects: (s) => s.projects,
     handoffs: HANDOFFS,
-    long_lived: LONG_LIVED,
     role: ROLE,
     replies: shortReplies(...TALK),
   },
