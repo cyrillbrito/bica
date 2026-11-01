@@ -266,7 +266,7 @@
     }
   }
 
-  /* A filter chip or a comment arriving: fades and grows in a little. */
+  /* A filter chip arriving: fades and grows in a little. */
   --animate-chip-in: chip-in 200ms var(--ease-out) backwards;
 
   @keyframes chip-in {

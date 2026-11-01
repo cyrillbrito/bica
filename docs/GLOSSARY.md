@@ -172,8 +172,6 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Kept file**: A file listed in the sidebar with Keep open, until you unpin it. _Avoid_: pinned file
 
-**Review comment**: A comment on lines of a diff for the agent, as on a GitHub pull request, sent as one prompt with the others. _Avoid_: diff comment, line comment
-
 ## Terminals
 
 [terminals.md](./terminals.md)

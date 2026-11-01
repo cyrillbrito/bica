@@ -10,7 +10,7 @@ Bica is built first for its author's own daily work: a complete development tool
 
 - Agent sessions are the core, but not the whole tool.
 - Each feature gets its own worktree, so parallel agents never collide.
-- Review happens in full-screen diffs, not a cramped side panel, and review comments go back to the agent.
+- Review happens in full-screen diffs, not a cramped side panel.
 - Git covers commit, push, pull requests, and removing merged worktrees.
 - Files can be opened, searched, and quickly edited.
 
@@ -23,7 +23,7 @@ There is no time to prove every idea here, so borrow from people who already bui
 - Remote first. The server runs on the dev machine, and the UI works in any browser and installs as an app on the phone.
 - Fast and polished. Interactions feel instant, output streams, and nothing jumps. Design quality counts as a feature.
 - Many sessions at once. You can watch them stream, steer or queue prompts while the agent works, and reconnect or join late without losing anything.
-- Reviewing the agent's work in full-size files and diffs, with comments that go back to the agent.
+- Reviewing the agent's work in full-size files and diffs.
 
 ## Out of scope
 
@@ -60,7 +60,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 
 ## Next
 
-- Review comments past the prototype in [files.md](docs/files.md), and quick edits in Pierre's edit mode.
+- Quick edits in Pierre's edit mode.
 - Opening pull requests, and comparing a worktree against its branch base.
 - Installing as an app on the phone.
 - A file watcher instead of polling.
@@ -95,7 +95,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [voice.md](docs/voice.md): voice calls, handoffs, hold music, and dictation.
 - [projects.md](docs/projects.md): projects, worktrees, chats, pull requests, the sidebar.
 - [layout.md](docs/layout.md): the sidebar, the centre, and the side panel on each screen size, and the side panel's tabs. Read before adding a side panel tab.
-- [files.md](docs/files.md): the workspace page, file and diff views, review comments, file lists.
+- [files.md](docs/files.md): the workspace page, file and diff views, file lists.
 - [git.md](docs/git.md): the Git tab and commit messages.
 - [command-palette.md](docs/command-palette.md): ⌘K and every keyboard shortcut. Read before adding a shortcut.
 - [terminals.md](docs/terminals.md): shared shells and the agent's terminal tools.

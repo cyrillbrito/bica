@@ -44,7 +44,7 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `agents/` (server): Coding and Assistant, the shared prompt sections, the registry that lists every agent, and `extensions.ts`, which installs the extensions behind the names agents pick into Pi Durable's registry at startup ([agents.md](./agents.md), [system-prompt.md](./system-prompt.md)). `tools/` holds the agent's general tools, and `harness.ts` opens Pi Durable ([tools.md](./tools.md)).
 - `models/`: models, keys, sign-ins, and plan accounts ([models.md](./models.md)).
 - `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)).
-- `files/` and `git/`: file and diff views, kept files, and review comments; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)).
+- `files/` and `git/`: file and diff views and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)).
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).
 - `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
 

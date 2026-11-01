@@ -21,7 +21,6 @@ import {
 } from './files';
 import { repos, stage, useGitStatus, useLiveGitStatus } from '../git/git';
 import CodeView from './CodeView';
-import ReviewBar from './ReviewBar';
 import type { MenuEntry } from '../ui/ContextMenu';
 import { IconButton } from '../ui/Button';
 import { previewKind } from './FilePreview';
@@ -111,7 +110,7 @@ export default function OpenFile(props: {
   const canPreview = () => o().view === 'file' && !!previewKind(o().path);
   const previewing = () => canPreview() && preview();
   return (
-    <div class="relative flex min-h-0 flex-1 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col">
       <header class="flex h-10 shrink-0 items-center gap-2 border-b border-line px-3">
         <span class="min-w-0 flex-1 truncate font-mono text-meta">
           <Show when={change()?.oldPath}>
@@ -224,9 +223,7 @@ export default function OpenFile(props: {
         split={split()}
         wrap={wrap()}
         preview={preview()}
-        comment
       />
-      <ReviewBar workspace={ref()} />
     </div>
   );
 }

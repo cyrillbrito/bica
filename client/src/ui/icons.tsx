@@ -38,8 +38,6 @@ import Keyboard from 'lucide/dist/esm/icons/keyboard.mjs';
 import Lightbulb from 'lucide/dist/esm/icons/lightbulb.mjs';
 import List from 'lucide/dist/esm/icons/list.mjs';
 import ListFilter from 'lucide/dist/esm/icons/list-filter.mjs';
-import MessageSquareText from 'lucide/dist/esm/icons/message-square-text.mjs';
-import Send from 'lucide/dist/esm/icons/send.mjs';
 import Upload from 'lucide/dist/esm/icons/upload.mjs';
 import GitCommitHorizontal from 'lucide/dist/esm/icons/git-commit-horizontal.mjs';
 import ListChecks from 'lucide/dist/esm/icons/list-checks.mjs';
@@ -237,9 +235,7 @@ export const SunIcon = icon(Sun);
 export const MoonIcon = icon(Moon);
 export const SystemThemeIcon = icon(Monitor);
 
-// Review: filtering changes, line comments, sending them, dropping files.
+// Review: filtering changes, dropping files.
 export const FilterIcon = icon(ListFilter);
-export const CommentIcon = icon(MessageSquareText);
-export const SendIcon = icon(Send);
 export const UploadIcon = icon(Upload);
 export const CommitIcon = icon(GitCommitHorizontal);

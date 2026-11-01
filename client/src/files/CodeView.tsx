@@ -6,19 +6,13 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  getOwner,
   onSettled,
-  runWithOwner,
   untrack,
 } from 'solid-js';
 
-import { render } from '@solidjs/web';
-
 import type { GitChange, WorkspaceRef } from '@bica/shared/protocol';
-import { comments, startComment } from './review';
 import { readBlobs, readDiff, type Side } from '../git/git';
 import { readFile, type View } from './files';
-import CommentCard from './CommentCard';
 import { LINE_NUMBERS_MIN_PX, THEME, parseDiffOptions } from './DiffBlock';
 import FilePreview, { previewKind, type PreviewKind } from './FilePreview';
 import { errorText } from '../ui/errors';
@@ -74,8 +68,6 @@ export default function CodeView(props: {
   wrap: boolean;
   // Markdown, HTML, and Mermaid files show rendered instead of as code.
   preview: boolean;
-  // Prototype: a + in the gutter of diffs adds a comment for the agent.
-  comment?: boolean;
 }) {
   let host: HTMLDivElement | undefined;
   let scroller!: HTMLDivElement;
@@ -145,69 +137,6 @@ export default function CodeView(props: {
     measure();
   };
 
-  // The texts on screen, for the code a comment quotes.
-  let sides = { deletions: [] as string[], additions: [] as string[] };
-  // Comment cards live in Pierre's annotation slots, each its own Solid root.
-  const cards = new Map<string, { el: HTMLElement; dispose: () => void }>();
-  // Pierre asks for cards from inside effects, which have no owner of their own.
-  const owner = getOwner();
-  const card = (id: string) => {
-    let c = cards.get(id);
-    if (!c) {
-      const el = document.createElement('div');
-      const dispose = runWithOwner(owner, () =>
-        render(() => <CommentCard id={id} />, el),
-      );
-      c = { el, dispose };
-      cards.set(id, c);
-    }
-    return c.el;
-  };
-  const mine = createMemo(
-    () =>
-      props.comment && props.view !== 'file'
-        ? comments().filter(
-            (c) =>
-              c.cwd === props.workspace.cwd &&
-              c.path === props.path &&
-              c.view === props.view,
-          )
-        : [],
-    { name: 'codeViewComments' },
-  );
-  // Only when the set of comments changes; edits re-render inside the card.
-  const placed = createMemo(
-    () =>
-      mine().map((c) => ({
-        side: c.side,
-        lineNumber: c.end,
-        metadata: { id: c.id },
-      })),
-    {
-      name: 'codeViewAnnotations',
-      equals: (a, b) =>
-        a.length === b.length &&
-        a.every(
-          (x, i) =>
-            x.metadata.id === b[i]!.metadata.id &&
-            x.side === b[i]!.side &&
-            x.lineNumber === b[i]!.lineNumber,
-        ),
-    },
-  );
-  createEffect(placed, (annotations) => {
-    const live = new Set(annotations.map((a) => a.metadata.id));
-    for (const [id, c] of cards)
-      if (!live.has(id)) {
-        c.dispose();
-        cards.delete(id);
-      }
-    if (kind !== 'diff' || !instance) return;
-    const diff = instance as InstanceType<Diffs['FileDiff']>;
-    diff.setLineAnnotations(annotations);
-    diff.rerender();
-  });
-
   const drop = () => {
     instance?.cleanUp();
     instance = undefined;
@@ -221,8 +150,6 @@ export default function CodeView(props: {
       resize.disconnect();
       drop();
       showMedia([]);
-      for (const c of cards.values()) c.dispose();
-      cards.clear();
     };
   });
 
@@ -287,11 +214,6 @@ export default function CodeView(props: {
           }
           const oldText = data.old.text ?? '';
           const newText = data.new.text ?? '';
-          sides = {
-            deletions: oldText.split('\n'),
-            additions: newText.split('\n'),
-          };
-          const commenting = !!props.comment;
           // Whitespace is left out of the diff (parseDiffOptions).
           const trimmed = (t: string) =>
             t
@@ -320,29 +242,6 @@ export default function CodeView(props: {
             overflow,
             unsafeCSS: SCROLLBAR_CSS,
             onPostRender,
-            enableGutterUtility: commenting,
-            onGutterUtilityClick: (range: {
-              start: number;
-              end: number;
-              side?: 'additions' | 'deletions';
-              endSide?: 'additions' | 'deletions';
-            }) => {
-              const side = range.endSide ?? range.side ?? 'additions';
-              const [a, b] = [range.start, range.end].sort((x, y) => x - y);
-              startComment({
-                cwd: props.workspace.cwd,
-                path: k.path,
-                view: k.view,
-                side,
-                start: a!,
-                end: b!,
-                code: sides[side].slice(a! - 1, b!),
-              });
-            },
-            renderAnnotation: (a: { metadata?: unknown }) => {
-              const id = (a.metadata as { id?: string } | undefined)?.id;
-              return id ? card(id) : undefined;
-            },
           };
           const diff = (instance ??= new diffs.FileDiff(
             options,
@@ -353,7 +252,6 @@ export default function CodeView(props: {
             newFile: { name: k.path, contents: newText },
             containerWrapper: host!,
             forceRender: true,
-            lineAnnotations: untrack(placed),
           });
         } else {
           if (data.text === null) {

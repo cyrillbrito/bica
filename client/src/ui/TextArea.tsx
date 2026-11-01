@@ -6,8 +6,7 @@ import { fieldFrame } from './Input';
 /**
  * A text box that grows with what's typed (`field-sizing: content`); cap it
  * with `max-h-*` and pad it in `class`. `framed` draws the field's own
- * frame; without it, it sits bare inside a box that has one (a comment card,
- * the commit box).
+ * frame; without it, it sits bare inside a box that has one (the commit box).
  */
 export default function TextArea(
   props: JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & { framed?: boolean },

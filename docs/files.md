@@ -8,10 +8,6 @@ The files stay on the dev machine. The browser asks the server for them and neve
 
 With nothing open, the workspace page shows a composer for a new session here, then the workspace's sessions, then the workspace as a card: a ring with a segment per changed file, filled once staged, the pull request, the branch, and what to push or pull. Below it are the changed files with their lines added and removed, a filter, and the latest commits. A click opens a file's diff.
 
-## Review comments (prototype)
-
-In a diff, the + next to a line adds a comment for the agent, and dragging covers several lines. Comments collect in a bar at the bottom, and Send passes them as one prompt to the open session, or to the newest session in the workspace. A reload drops them.
-
 ## Opening a file
 
 There are no tabs. Opening something replaces what was there, and what's open lives in the URL, so reload, back, and links all work.

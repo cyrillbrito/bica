@@ -124,7 +124,7 @@ The utilities in `App.css`:
 - `fold`: a part unfolding in place (grid rows from 0fr), with one child. Set `data-open`, and `inert` while closed. Closing is instant.
 - `animate-grow`: a bar growing up from its base on first view (the days of a sparkline).
 - `rise-in`: rows of a summary arriving one after another on first view. Set `--i` to the row's place.
-- `animate-chip-in`: a filter chip or a comment arriving, fading and growing in a little.
+- `animate-chip-in`: a filter chip arriving, fading and growing in a little.
 - `animate-breathe`: a halo swelling around a dot that waits on you (a session asking a question). It is `motion-safe` only, since the ring shape already says it.
 - The queue glide: a prompt the agent takes slides from its queue line into the transcript (`sessions/queue-glide.ts`).
 - `animate-ray`: the rays of the `Spinner`, lit one after another, so it turns without rotating.

@@ -304,7 +304,7 @@ export function testAnswer<C extends Call>(
   }
   const live = dataset(m).conversations;
   const talk = a.id ? live?.views.get(a.id) : undefined;
-  // Answered, so whatever waits on a send (the review bar) moves on.
+  // Answered, so whatever waits on a send moves on.
   if (call === 'session.submit') {
     talk?.submit?.((args as { prompt: string }).prompt);
     if (!talk?.submit)
