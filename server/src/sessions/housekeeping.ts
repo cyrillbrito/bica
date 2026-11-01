@@ -6,8 +6,8 @@ import {
 import {
   BLOATED,
   LONG_LIVED_COMPACT_AT,
-  MIN_PRUNE,
   contextUsage,
+  pruneBlocked,
 } from '@bica/shared/context-usage';
 import { isLongLived } from '@bica/shared/agents';
 import { context, getHarness } from '../harness';
@@ -88,6 +88,6 @@ async function housekeep(id: string, unread: boolean) {
     await compact(id, SUMMARY_RULES);
     // The save is bookkeeping, not news: a read session stays read.
     if (!unread) await markSeen(id);
-  } else if (idle >= usage.cache.ttl && usage.prunable >= MIN_PRUNE)
+  } else if (idle >= usage.cache.ttl && !pruneBlocked(usage))
     await pruneContext(id);
 }

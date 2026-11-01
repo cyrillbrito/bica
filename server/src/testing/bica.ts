@@ -94,6 +94,37 @@ export async function startBica({ root }: { root?: string } = {}) {
       ]);
       return { started, release: () => release(undefined) };
     },
+    /**
+     * Adds provider `id` with the fake model's ids, signed in with a key as
+     * Settings would save one, so `account.signOut` signs out of it.
+     * `reply` queues its answers.
+     */
+    async provider(id: string) {
+      const other = fauxProvider({
+        provider: id,
+        models: faux.models.map((m) => ({ id: m.id })),
+      });
+      models.setProvider({
+        ...other.provider,
+        auth: {
+          apiKey: {
+            name: id,
+            resolve: async ({ credential }) =>
+              credential?.key
+                ? { auth: { apiKey: credential.key } }
+                : undefined,
+          },
+        },
+      });
+      const { credentials } = await import('../models/credentials');
+      await credentials.modify(id, async () => ({
+        type: 'api_key',
+        key: 'test-key',
+      }));
+      return {
+        reply: (...steps: FauxResponseStep[]) => other.appendResponses(steps),
+      };
+    },
     /** Opens a tab: a socket as the browser's, from Bica's own page. */
     async connect(options: { origin?: string } = {}) {
       const tab = await connect(port, options);

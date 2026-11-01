@@ -326,16 +326,18 @@ const calls: Handlers = {
 };
 
 // A request re-sent after a reconnect (its reply was lost) gets the first
-// run's answer instead of acting twice. Reads simply run again: cheap, and
-// their replies can be big. Keystrokes are too many to remember.
-const READS = new Set<Call>([
+// run's answer instead of acting twice. Only in memory: after a restart,
+// only prompts and new sessions are kept from running twice, by the id they
+// pass to Pi Durable. These calls just run again, since running one twice
+// does what running it once does: reads, cheap and with big replies, and a
+// resize to a given size.
+const REPEATABLE = new Set<Call>([
   'fs.dirs',
   'file.read',
   'file.link',
   'path.find',
   'git.diff',
   'git.suggest',
-  'terminal.input',
   'terminal.resize',
 ]);
 const answered = new Map<string, Promise<unknown>>();
@@ -343,7 +345,7 @@ const answered = new Map<string, Promise<unknown>>();
 function run(id: string, call: Call, args: unknown) {
   const handler = calls[call] as (args: unknown) => Promise<unknown>;
   if (!handler) throw new Error(`Unknown call ${call}`);
-  if (READS.has(call)) return handler(args);
+  if (REPEATABLE.has(call)) return handler(args);
   let result = answered.get(id);
   if (!result) {
     result = handler(args);

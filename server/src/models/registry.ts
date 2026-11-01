@@ -53,8 +53,36 @@ function key(ref: ModelRef) {
   return `${ref.provider}/${ref.modelId}`;
 }
 
-/** A model the providers' keys reach, and an effort it supports. */
-export function checkChoice({
+/**
+ * The model, if a key or sign-in in Settings reaches it now. pi-ai's
+ * `getModel` knows every model, signed in or not, so only this tells.
+ */
+export async function reachable(ref: ModelRef) {
+  return (await models.getAvailable()).find(
+    (m) => m.provider === ref.provider && m.id === ref.modelId,
+  );
+}
+
+/** A model the keys reach, and an effort it supports. */
+export async function checkChoice(choice: ModelChoice) {
+  await checkRef(choice.model);
+  return knownChoice(choice);
+}
+
+/** A chat model the keys reach. */
+export async function checkRef(ref: ModelRef) {
+  if (!(await reachable(knownRef(ref))))
+    throw new Error(
+      `No sign-in reaches ${key(ref)}: connect its provider in Settings → Providers`,
+    );
+  return ref;
+}
+
+/**
+ * A model pi-ai knows, signed in or not, and an effort it supports: for a
+ * saved setting, which stays visible after its provider signs out.
+ */
+export function knownChoice({
   model,
   thinkingLevel,
 }: ModelChoice): ModelChoice {
@@ -68,8 +96,7 @@ export function checkChoice({
   };
 }
 
-/** A chat model the keys reach. */
-export function checkRef(ref: ModelRef) {
+function knownRef(ref: ModelRef) {
   if (!models.getModel(ref.provider, ref.modelId))
     throw new Error(`Unknown model ${key(ref)}`);
   return ref;

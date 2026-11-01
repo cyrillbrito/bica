@@ -17,7 +17,13 @@ import {
   type ContextUsage,
 } from '@bica/shared/context-usage';
 import { PRUNE_HINT } from '@bica/shared/prune';
-import { pruneSession, compactSession, isPruning } from '../sessions/sessions';
+import {
+  pruneSession,
+  compactSession,
+  isCompacting,
+  isPruning,
+  pruneUnavailable,
+} from '../sessions/sessions';
 import { cheer } from '../ui/sound';
 import { tick } from '../ui/time';
 import type { Message } from '@bica/shared/transcript';
@@ -67,9 +73,7 @@ export default function ContextNag(props: {
 }) {
   // The map isn't reactive; the signal says it changed.
   const [dismissals, setDismissals] = createSignal(0, { name: 'nagDismiss' });
-  const [compacting, setCompacting] = createSignal(false, {
-    name: 'nagCompacting',
-  });
+  const compacting = () => isCompacting(props.id, props.usage);
   const pruning = () => isPruning(props.id);
 
   // Only what lands while watching: not what was already there on open.
@@ -139,12 +143,7 @@ export default function ContextNag(props: {
     setDismissals((n) => n + 1);
   };
 
-  const compact = () => {
-    setCompacting(true);
-    void compactSession(props.id)
-      .catch(fail)
-      .finally(() => setCompacting(false));
-  };
+  const compact = () => void compactSession(props.id).catch(fail);
   const prune = () => void pruneSession(props.id).catch(fail);
 
   const CompactButton = (p: { primary: boolean }) => (
@@ -184,8 +183,10 @@ export default function ContextNag(props: {
                   <Button
                     size="sm"
                     variant="primary"
-                    disabled={compacting()}
-                    title={PRUNE_HINT}
+                    disabled={!!pruneUnavailable(props.id, props.usage)}
+                    title={
+                      pruneUnavailable(props.id, props.usage) ?? PRUNE_HINT
+                    }
                     onClick={prune}
                   >
                     <PruneIcon />

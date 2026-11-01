@@ -10,7 +10,7 @@ import {
   formatTokens,
   type ContextUsage,
 } from '@bica/shared/context-usage';
-import { compactSession } from '../sessions/sessions';
+import { compactSession, isCompacting } from '../sessions/sessions';
 import { tick } from '../ui/time';
 import ContextField, { percent } from './ContextField';
 import { Breakdown } from '../ui/Breakdown';
@@ -264,7 +264,6 @@ function Stat(props: { label: string; value: string; tone?: 'warn' }) {
 }
 
 function Compact(props: { id: string; usage: ContextUsage }) {
-  const [busy, setBusy] = createSignal(false, { name: 'compactBusy' });
   const [error, setError] = createSignal('', { name: 'compactError' });
   let focus!: HTMLInputElement;
   return (
@@ -274,15 +273,12 @@ function Compact(props: { id: string; usage: ContextUsage }) {
         class="flex gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
-          setBusy(true);
           setError('');
           try {
             await compactSession(props.id, focus.value);
             focus.value = '';
           } catch (err) {
             setError(errorText(err));
-          } finally {
-            setBusy(false);
           }
         }}
       >
@@ -294,7 +290,7 @@ function Compact(props: { id: string; usage: ContextUsage }) {
         <Button
           type="submit"
           variant="outline"
-          loading={busy() || props.usage.compacting}
+          loading={isCompacting(props.id, props.usage)}
         >
           Compact
         </Button>

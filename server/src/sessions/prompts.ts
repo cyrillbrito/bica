@@ -3,17 +3,17 @@ import {
   type ConversationId,
   InboxDoc,
   type InboxItem,
-  LiveDoc,
 } from '@earendil-works/pi-durable';
 
+import { contextUsage, pruneBlocked } from '@bica/shared/context-usage';
 import { promptBlocks, promptOf } from '@bica/shared/images';
 import { PruneEntry, pruneEdits, prunedTokens } from '@bica/shared/prune';
 import type { ModelChoice, PromptImage } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
 import { getAgent } from '../agents/registry';
 import { loadMemory, projectList } from '../agents/common';
-import { defaultChoice } from '../models/models';
-import { checkChoice, models } from '../models/registry';
+import { defaultChoice, getCatalog } from '../models/models';
+import { checkChoice, models, reachable } from '../models/registry';
 import { readSession } from './read';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
@@ -114,14 +114,15 @@ export async function keepCopies(id: ConversationId) {
 }
 
 /**
- * Moves a session off a model no provider reaches any more, such as one from
- * a removed provider, so the prompt isn't left unanswered with `no_model`.
- * The same model through another provider comes first, then the default.
+ * Moves a session off a model no sign-in reaches any more, such as one from
+ * a provider signed out of, so the prompt doesn't fail on it. The same model
+ * through another provider comes first, then the default; with neither, the
+ * prompt is refused with what to sign in to.
  */
 export async function keepModel(id: ConversationId) {
   const agent = await (await getHarness()).snapshot(AgentDoc, id, context);
   const ref = agent?.model;
-  if (ref && models.getModel(ref.provider, ref.modelId)) return;
+  if (ref && (await reachable(ref))) return;
   const twin =
     ref && (await models.getAvailable()).find((m) => m.id === ref.modelId);
   const choice = twin
@@ -132,7 +133,7 @@ export async function keepModel(id: ConversationId) {
     : await defaultChoice();
   await (
     await getConversation(String(id))
-  ).configure(checkChoice(choice), context);
+  ).configure(await checkChoice(choice), context);
 }
 
 export type QueuedInput = Extract<InboxItem, { content: unknown }>;
@@ -212,7 +213,9 @@ export function input(prompt: string, images: PromptImage[]) {
 
 /** Switches the model or effort; the next request uses it. */
 export async function configure(id: string, choice: ModelChoice) {
-  await (await getConversation(id)).configure(checkChoice(choice), context);
+  await (
+    await getConversation(id)
+  ).configure(await checkChoice(choice), context);
 }
 
 /** Summarizes older context now; the summary lands at the next boundary. */
@@ -229,13 +232,11 @@ export async function compact(id: string, instructions?: string) {
  */
 export async function pruneContext(id: string) {
   const conversation = await getConversation(id);
-  const harness = await getHarness();
-  // A summary in the works would hide the entries the edits target.
-  if (
-    (await harness.snapshot(LiveDoc, conversation.id, context))?.compactions
-      ?.length
-  )
-    throw new Error('Wait for the compaction to finish, then prune');
+  const watch = await conversation.watch(context);
+  const usage = contextUsage(watch.value, await getCatalog());
+  void watch.stop();
+  const blocked = pruneBlocked(usage);
+  if (blocked) throw new Error(blocked);
   const view = await conversation.context(context);
   const edits = pruneEdits(view);
   if (!edits.length) return 0;

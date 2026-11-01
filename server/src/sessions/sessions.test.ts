@@ -242,3 +242,31 @@ test("Prune takes old prompts' images out of what the model reads, and keeps the
   expect(first).not.toContain('"type":"image"');
   expect(first).toContain('[image file: ');
 });
+
+test('a session on a provider you signed out of moves to the same model through another', async () => {
+  // A second provider of the same model, signed in with a key.
+  const other = await bica.provider('other');
+  const tab = await bica.connect();
+  const { projectId } = await bica.project(tab);
+  other.reply(fauxAssistantMessage('from the other provider'));
+  const { id } = await tab.request('session.create', {
+    projectId,
+    prompt: 'first',
+    requestId: crypto.randomUUID(),
+    choice: {
+      model: { provider: 'other', modelId: 'faux-1' },
+      thinkingLevel: 'off',
+    },
+  });
+  const conversation = tab.watch('conversation', { id });
+  await conversation.until((c) => shows(c, 'from the other provider'));
+
+  await tab.request('account.signOut', { id: 'other' });
+  bica.reply(fauxAssistantMessage('after the sign-out'));
+  await tab.request('session.submit', {
+    id,
+    prompt: 'second',
+    requestId: crypto.randomUUID(),
+  });
+  await conversation.until((c) => shows(c, 'after the sign-out'));
+});

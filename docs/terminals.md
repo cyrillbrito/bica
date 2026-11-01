@@ -7,6 +7,7 @@ Terminals are shells in a workspace, for commands and long-running processes suc
 - A terminal belongs to a workspace ([projects.md](./projects.md)), not a session. The sidebar lists it above the workspace's sessions.
 - It is a normal login shell. It can type a first command for you, such as `bun run dev`, and anyone can Ctrl-C it and run something else. Restart opens a fresh shell and types the first command again.
 - When the shell exits, the terminal keeps its output and exit code until you close it.
+- Stop, Restart, and closing all end the shell the same way, like `docker stop`. Everything it started, on its tty or not, gets SIGTERM, so a dev server shuts down cleanly. Once they are gone the shell gets SIGHUP, as closing a terminal window sends, since an interactive shell ignores SIGTERM. Whatever still runs after a few seconds gets SIGKILL.
 - It opens full size in the centre. On a phone, a key bar adds Esc, Tab, Ctrl-C, and arrows.
 - Any number of tabs can show the same terminal and join late. They draw it with [ghostty-web](https://github.com/coder/ghostty-web), Ghostty compiled to WebAssembly.
 - Restarting Bica ends every shell.
@@ -20,7 +21,7 @@ Agents get four tools, shaped after Codex's and Claude Code's background shells:
 - `terminal_start` opens a shell, maybe with a first command. Starting the same name again restarts it in place, so a restarted dev server leaves no dead terminal behind.
 - `terminal_read` returns the latest output and whether a command is running. It can wait up to 30 minutes first, so agents wait for a test run or a build here instead of `sleep` in bash. The wait ends early when the command ends, however it ends (Ctrl-C from anyone, a crash, a restart, or a close), when a given text such as a server's ready line shows up, or when a message arrives for the agent, yours included.
 - `terminal_send` types into it, optionally pressing Ctrl-C first.
-- `terminal_stop` closes it.
+- `terminal_stop` closes it, the same way Stop does.
 
 With `notify`, the agent gets a note when the command finishes, even if it is idle by then. A dev server rarely finishes, so its note usually means it crashed. A stop on purpose sends none: `terminal_send` with its Ctrl-C, a restart, or a close. Agents are told to use terminals instead of `&`, to check for a running one first, and to stop what they started.
 
@@ -40,3 +41,4 @@ The [hub](./hub.md) gets only `terminal_read`, to read any terminal without typi
 
 - Zed's [tasks](https://zed.dev/docs/tasks): rerunning a task reuses its terminal, and `hide: on_success` closes it when it succeeds.
 - Conductor's [run script](https://docs.conductor.build/core/scripts) kills the old run before starting the new one.
+- [`docker stop`](https://docs.docker.com/reference/cli/docker/container/stop/) and foreman: SIGTERM, a grace period, then SIGKILL.

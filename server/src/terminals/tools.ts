@@ -11,6 +11,7 @@ import {
   removeTerminal,
   restartTerminal,
   settle,
+  STOP_GRACE_MS,
   tail,
   terminalInfo,
   terminalsIn,
@@ -231,8 +232,7 @@ const terminalSend = defineTool({
 
 const terminalStop = defineTool({
   name: 'terminal_stop',
-  description:
-    'Close a terminal when you are done with it: its shell and whatever runs in it end (SIGTERM, then SIGKILL after 3 seconds), and it leaves the sidebar. Returns its last lines. To restart what runs in it, use terminal_start with its name instead; to stop only the command, terminal_send with `interrupt`.',
+  description: `Close a terminal when you are done with it, and it leaves the sidebar. Everything it started gets SIGTERM to shut down cleanly, the shell gets SIGHUP once they are gone, and whatever still runs after ${STOP_GRACE_MS / 1000} seconds gets SIGKILL. Returns its last lines. To restart what runs in it, use terminal_start with its name instead; to stop only the command, terminal_send with \`interrupt\`.`,
   parameters: Type.Object({
     id: Type.String({ description: 'The terminal id' }),
     user_asked: USER_ASKED,

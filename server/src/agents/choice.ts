@@ -1,6 +1,6 @@
 import type { ModelChoice } from '@bica/shared/protocol';
 import { defaultChoice } from '../models/models';
-import { checkChoice, models } from '../models/registry';
+import { checkChoice, knownChoice, reachable } from '../models/registry';
 import type { Agent } from './common';
 
 const LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
@@ -26,21 +26,12 @@ export async function agentChoice(
     model: agent.model,
     thinkingLevel: agent.effort ?? 'medium',
   };
-  if (preferred || own) {
-    const available = await models.getAvailable();
-    for (const c of [preferred, own])
-      if (
-        c &&
-        available.some(
-          (m) => m.provider === c.model.provider && m.id === c.model.modelId,
-        )
-      )
-        return checkChoice(atLeast(agent, c));
-  }
+  for (const c of [preferred, own])
+    if (c && (await reachable(c.model))) return checkChoice(atLeast(agent, c));
   const base = await defaultChoice();
   // Unchecked unless the agent sets its effort: an unknown saved model shows
   // in Settings instead of failing here.
   return agent.effort
-    ? checkChoice(atLeast(agent, { ...base, thinkingLevel: agent.effort }))
+    ? knownChoice(atLeast(agent, { ...base, thinkingLevel: agent.effort }))
     : atLeast(agent, base);
 }

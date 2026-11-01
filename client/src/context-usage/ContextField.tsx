@@ -10,13 +10,19 @@ import {
 import { PRUNE_HINT } from '@bica/shared/prune';
 import type { ContextBreakdown, Part } from '@bica/shared/context-breakdown';
 import {
-  MIN_PRUNE,
   formatTokens,
   level,
   nearAutoCompact,
   type ContextUsage,
 } from '@bica/shared/context-usage';
-import { pruneSession, compactSession } from '../sessions/sessions';
+import {
+  pruneSession,
+  compactSession,
+  isCompacting,
+  isPruning,
+  pruneUnavailable,
+} from '../sessions/sessions';
+import { toast } from '../ui/Toast';
 import { buttonClass } from '../ui/Button';
 import Chevron from '../ui/Chevron';
 import { PruneIcon, CompactIcon, DrawnCheckIcon } from '../ui/icons';
@@ -125,13 +131,8 @@ export default function ContextField(props: {
   const [open, setOpen] = createSignal<Kind | null>(null, {
     name: 'contextOpen',
   });
-  const [pruning, setPruning] = createSignal(false, {
-    name: 'contextPruning',
-  });
-  const [compactAsked, setCompactAsked] = createSignal(false, {
-    name: 'contextCompactAsked',
-  });
-  const compacting = () => u().compacting || compactAsked();
+  const pruning = () => isPruning(props.id);
+  const compacting = () => isCompacting(props.id, u());
   // What just finished while watching, for a moment: the check and the line.
   const [done, setDone] = createSignal<
     { what: 'compact' | 'clean'; saved: number } | undefined
@@ -149,7 +150,6 @@ export default function ContextField(props: {
     ({ now, used }, prev) => {
       if (now) {
         if (!prev?.now) before = used;
-        setCompactAsked(false);
       } else if (prev?.now) finish('compact', Math.max(0, before - used));
     },
     { name: 'contextCompactDone' },
@@ -209,23 +209,15 @@ export default function ContextField(props: {
     return { text: `Auto-compacts at ${formatTokens(at)}` };
   };
 
-  const compact = () => {
-    setCompactAsked(true);
-    void compactSession(props.id).finally(() => setCompactAsked(false));
-  };
+  const compact = () =>
+    void compactSession(props.id).catch((e) => toast.error(e));
   const prune = () => {
     const saved = u().prunable;
-    setPruning(true);
     void pruneSession(props.id)
       .then(() => finish('clean', saved))
-      .finally(() => setPruning(false));
+      .catch((e) => toast.error(e));
   };
-  const cleanBlocked = () =>
-    u().running
-      ? 'Wait for the agent to finish'
-      : u().prunable < MIN_PRUNE
-        ? 'Nothing old to prune'
-        : undefined;
+  const cleanBlocked = () => pruneUnavailable(props.id, u());
 
   return (
     <section class="flex flex-col" aria-label="Context window">

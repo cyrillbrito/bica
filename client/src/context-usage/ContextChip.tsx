@@ -7,7 +7,6 @@ import {
   BLOATED,
   EXPIRING,
   LONG_LIVED_COMPACT_AT,
-  MIN_PRUNE,
   bloat,
   cacheLeft,
   formatClock,
@@ -22,7 +21,9 @@ import { toast } from '../ui/Toast';
 import {
   pruneSession,
   compactSession,
+  isCompacting,
   isPruning,
+  pruneUnavailable,
   setAgent,
 } from '../sessions/sessions';
 import { AGENTS, isLongLived, type AgentId } from '@bica/shared/agents';
@@ -80,22 +81,18 @@ export default function ContextChip(props: {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     openContextMenu(r.right - 200, r.bottom + 4, [
       {
-        label: usage().compacting ? 'Compacting…' : 'Compact',
+        label: isCompacting(props.id, usage()) ? 'Compacting…' : 'Compact',
         hint: 'A model summarizes the older part of the session, so the next prompt sends far less. The transcript keeps everything.',
         icon: <CompactIcon />,
-        disabled: usage().compacting && 'Already compacting',
-        onSelect: () => void compactSession(props.id),
+        disabled: isCompacting(props.id, usage()) && 'Already compacting',
+        onSelect: () =>
+          void compactSession(props.id).catch((e) => toast.error(e)),
       },
       {
         label: isPruning(props.id) ? 'Pruning…' : 'Prune',
         hint: PRUNE_HINT,
         icon: <PruneIcon />,
-        disabled: isPruning(props.id)
-          ? 'Already pruning'
-          : usage().compacting
-            ? 'Once compaction finishes'
-            : usage().prunable < MIN_PRUNE &&
-              'No long output past the last few steps',
+        disabled: pruneUnavailable(props.id, usage()),
         onSelect: () =>
           void pruneSession(props.id).catch((e) => toast.error(e)),
       },

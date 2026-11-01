@@ -27,7 +27,7 @@ The Files tab shows the whole tree with git colors and a name search. Every file
 
 ## Staying live
 
-There is no file watcher. While someone looks at a workspace, the server checks git status and the file list and sends only real changes. An open diff refreshes when its file changes.
+There is no file watcher. While someone looks at a workspace, the server checks git status and the file list every so often, and right after each of an agent's tool calls there, and sends only real changes. An open diff refreshes when its file changes.
 
 ## Loading diffs
 

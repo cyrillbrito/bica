@@ -31,7 +31,7 @@ Everything else, such as the session list, git, and files, the server re-reads w
 - Each piece of live data has one source: its topic. Nothing is loaded one way and patched another.
 - Changes are numbered, and a gap means subscribing again.
 - Phones kill sockets in the background, so the browser reconnects, subscribes again to what's on screen, and resends unanswered requests.
-- Every request has a unique id, so a command resent after a reconnect runs only once, even across a server restart.
+- Every request has a unique id, so a command resent after a reconnect runs only once. The server remembers the answers in memory for a while, so across a server restart only sending a prompt and creating a session are sure to run once: they pass their own id to Pi Durable, which keeps it. Reads, and the few commands that do the same when run twice, just run again.
 - The browser renders from state, never from "something happened" events.
 - Only what's on screen streams.
 

@@ -324,36 +324,93 @@ export function resizeTerminal(id: string, cols: number, rows: number) {
   t.pty?.terminal?.resize(Math.min(cols, 500), Math.min(rows, 200));
 }
 
-// Every process on the pty's tty, not just the shell's process group: an
-// interactive shell puts each `cmd &` job in a group of its own.
-function signal(p: Bun.Subprocess, name: NodeJS.Signals, tty: string | null) {
-  if (tty) Bun.spawnSync(['pkill', `-${name.slice(3)}`, '-t', tty]);
+// How long a stop lets the terminal's processes end on their own, as
+// `docker stop` and foreman do, before it kills them.
+export const STOP_GRACE_MS = 5000;
+const STOP_POLL_MS = 50;
+
+function kill(pid: number, name: NodeJS.Signals) {
   try {
-    process.kill(-p.pid, name);
+    process.kill(pid, name);
   } catch {
-    p.kill(name);
+    // Already gone.
   }
 }
 
-function ttyOf(pid: number) {
-  const ps = Bun.spawnSync(['ps', '-o', 'tty=', '-p', String(pid)]);
-  const tty = ps.stdout.toString().trim();
-  return /^[\w/]+$/.test(tty) && !tty.startsWith('?') ? tty : null;
+/** Live processes, each with its parent: `-A` for all of them, or a tty's. */
+function processes(select: string[]) {
+  const ps = Bun.spawnSync(['ps', ...select, '-o', 'pid=,ppid=,stat=,tty=']);
+  const out = new Map<number, { ppid: number; tty: string }>();
+  for (const line of ps.stdout.toString().split('\n')) {
+    const [pid, ppid, stat, tty] = line.trim().split(/\s+/);
+    if (pid && !stat?.startsWith('Z'))
+      out.set(Number(pid), { ppid: Number(ppid), tty: tty ?? '' });
+  }
+  return out;
 }
 
 /**
- * SIGHUP, as closing a terminal window sends, then SIGKILL if it won't go.
- * An interactive shell ignores SIGTERM.
+ * Ends the shell and everything it started, gently first. Every process on
+ * its tty, since an interactive shell puts each job in a group of its own,
+ * plus its descendants that left the tty. They get SIGTERM, the signal
+ * servers clean up on (SIGHUP means reload to some), and the shell, which
+ * ignores SIGTERM, gets SIGHUP once they are gone, as closing a terminal
+ * window sends. Whatever is left at the deadline gets SIGKILL.
  */
 export async function stopTerminal(id: string) {
   const t = get(id);
-  const p = t.pty;
-  if (!p) return;
-  const tty = ttyOf(p.pid);
-  signal(p, 'SIGHUP', tty);
-  const timeout = setTimeout(() => signal(p, 'SIGKILL', tty), 3000);
+  const shell = t.pty;
+  if (!shell) return;
+  const deadline = Date.now() + STOP_GRACE_MS;
+  const all = processes(['-A']);
+  const shown = all.get(shell.pid)?.tty ?? '';
+  // `?` or `??`: no tty.
+  const tty = /^[\w/]+$/.test(shown) ? shown : null;
+  // Everything started from the shell, whether still on its tty or not.
+  const left = new Set<number>();
+  const add = (pid: number) => {
+    if (left.has(pid) || pid === shell.pid) return;
+    left.add(pid);
+    for (const [child, p] of all) if (p.ppid === pid) add(child);
+  };
+  for (const [pid, p] of all)
+    if (p.ppid === shell.pid || (tty && p.tty === tty)) add(pid);
+  const asked = new Set<number>();
+  const ask = (pid: number) => {
+    if (asked.has(pid)) return;
+    asked.add(pid);
+    kill(pid, 'SIGTERM');
+    // A job stopped with Ctrl-Z only gets the signal once it runs.
+    kill(pid, 'SIGCONT');
+  };
+  // An interactive shell ignores it; a program `exec` put in its place won't.
+  kill(shell.pid, 'SIGTERM');
+  for (const pid of left) ask(pid);
+  while (left.size && Date.now() < deadline) {
+    await Bun.sleep(STOP_POLL_MS);
+    const now = processes([
+      '-p',
+      [...left].join(','),
+      // Gone with the shell, and ps refuses an unknown one.
+      ...(tty && t.pty === shell ? ['-t', tty] : []),
+    ]);
+    for (const pid of left) if (!now.has(pid)) left.delete(pid);
+    for (const [pid, p] of now) {
+      if (pid === shell.pid) continue;
+      left.add(pid);
+      // The next command of `a; b`. Children a command starts while it
+      // cleans up are waited for, not asked to stop.
+      if (p.ppid === shell.pid) ask(pid);
+    }
+  }
+  for (const pid of left) kill(pid, 'SIGKILL');
+  kill(shell.pid, 'SIGHUP');
+  const force = setTimeout(
+    () => kill(shell.pid, 'SIGKILL'),
+    Math.max(0, deadline - Date.now()),
+  );
   await t.exited.promise;
-  clearTimeout(timeout);
+  clearTimeout(force);
 }
 
 /**

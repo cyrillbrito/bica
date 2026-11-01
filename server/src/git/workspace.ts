@@ -9,6 +9,7 @@ import type {
 } from '@bica/shared/protocol';
 import { live, type Live } from '../live';
 import { getProject } from '../projects/projects';
+import { onToolRan } from '../tools/tool-ran';
 import * as git from './commands';
 
 const MAX_FILE = 2 * 1024 * 1024;
@@ -100,6 +101,12 @@ async function poke(cwd: string) {
     fileLists.get(cwd)?.refresh(),
   ]);
 }
+
+// An agent's edit shows as soon as its tool call ends.
+onToolRan((dir) => {
+  for (const cwd of new Set([...statuses.keys(), ...fileLists.keys()]))
+    if (dir === cwd || dir.startsWith(cwd + sep)) void poke(cwd);
+});
 
 export async function watchStatus(
   ref: WorkspaceRef,

@@ -92,7 +92,7 @@ export async function createSession({
   else if (cwd && !project.workspaces.some((w) => w.path === cwd))
     throw new Error(`${cwd} is not a workspace of ${project.name}`);
   const { model, thinkingLevel } = choice
-    ? checkChoice(atLeast(agent, choice))
+    ? await checkChoice(atLeast(agent, choice))
     : await agentChoice(agent);
   const extensions = selection(agent);
   const harness = await getHarness();
@@ -182,7 +182,7 @@ export async function spawnSession(
       : undefined;
   if (effort) {
     const base = choice ?? (await agentChoice(getAgent('coding')));
-    choice = checkChoice({ ...base, thinkingLevel: effort });
+    choice = await checkChoice({ ...base, thinkingLevel: effort });
   }
   return createSession({
     projectId,

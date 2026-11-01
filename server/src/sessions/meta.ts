@@ -93,7 +93,7 @@ export async function removeWorktree(
     if (risk) return risk;
   }
   await retireSessions(cwd, w.branch, w.pr);
-  for (const t of terminalsIn(cwd)) await removeTerminal(t.id);
+  await Promise.all(terminalsIn(cwd).map((t) => removeTerminal(t.id)));
   await removeGitWorktree(projectId, cwd);
   return null;
 }
@@ -155,8 +155,11 @@ export async function archive(
   });
   if (!archived) return null;
   // The dev servers and shells it leads go with it; detached ones stay.
-  for (const t of allTerminals())
-    if (t.parent === id) await removeTerminal(t.id);
+  await Promise.all(
+    allTerminals()
+      .filter((t) => t.parent === id)
+      .map((t) => removeTerminal(t.id)),
+  );
   await releaseChildren([id]);
   return emptiedWorktree(id);
 }

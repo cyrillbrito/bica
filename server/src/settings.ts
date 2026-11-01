@@ -9,7 +9,7 @@ import type {
 } from '@bica/shared/protocol';
 import { env } from './env';
 import { live } from './live';
-import { checkChoice, checkRef } from './models/registry';
+import { checkChoice, checkRef, knownChoice } from './models/registry';
 import { jsonFile } from './storage';
 
 // Bica's settings, the same on every device (docs/models.md for the model
@@ -31,7 +31,7 @@ export function settings(): Settings {
   };
   let checked = choice;
   try {
-    checked = checkChoice(choice);
+    checked = knownChoice(choice);
   } catch {
     // An unknown saved model stays visible; picking another fixes it.
   }
@@ -62,12 +62,12 @@ export const watchSettings = feed.watch;
 
 /** Checks and saves a change from the Settings page. */
 export async function updateSettings(change: SettingsChange) {
-  await file.update((next) => {
+  await file.update(async (next) => {
     if (change.model || change.thinkingLevel) {
       const current = settings();
       Object.assign(
         next,
-        checkChoice({
+        await checkChoice({
           model: change.model ?? current.model,
           thinkingLevel: change.thinkingLevel ?? current.thinkingLevel,
         }),
@@ -75,7 +75,7 @@ export async function updateSettings(change: SettingsChange) {
     }
     if (change.enabled) next.enabled = [...new Set(change.enabled)];
     if (change.fastModel !== undefined)
-      next.fastModel = change.fastModel && checkRef(change.fastModel);
+      next.fastModel = change.fastModel && (await checkRef(change.fastModel));
     if (change.longCache !== undefined) next.longCache = !!change.longCache;
     if (change.stageOnView !== undefined)
       next.stageOnView = !!change.stageOnView;
@@ -89,7 +89,7 @@ export async function updateSettings(change: SettingsChange) {
       next.hubFolder = path || null;
     }
     if (change.hubModel !== undefined)
-      next.hubModel = change.hubModel && checkChoice(change.hubModel);
+      next.hubModel = change.hubModel && (await checkChoice(change.hubModel));
     if (change.nightStart !== undefined) {
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(change.nightStart))
         throw new Error('Pick a time like 01:00');

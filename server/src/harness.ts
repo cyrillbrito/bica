@@ -9,6 +9,7 @@ import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite
 
 import { accountsReady, models } from './models/registry';
 import { settings } from './settings';
+import { announceRuns } from './tools/tool-ran';
 import { timeTools } from './tools/tool-time';
 import { claimDataDir, dataPath } from './storage';
 
@@ -24,7 +25,8 @@ let harness: Promise<Harness> | undefined;
  * its own. Before the harness opens: it resumes runs that need their tools.
  */
 export function install(all: Iterable<Extension>, byDefault: Extension[]) {
-  for (const extension of all) registry.install(timeTools(extension));
+  for (const extension of all)
+    registry.install(announceRuns(timeTools(extension)));
   defaults = byDefault;
 }
 

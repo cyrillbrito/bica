@@ -199,6 +199,16 @@ export function cacheLeft(u: ContextUsage, now: number) {
   return u.cache ? u.cache.at + u.cache.ttl - now : undefined;
 }
 
+/**
+ * Why Prune can't run now, if it can't. A running agent doesn't block it: the
+ * edits land at its next step. A compaction does, since its summary would
+ * hide the entries the edits target. The server refuses on this rule too.
+ */
+export function pruneBlocked(u: Pick<ContextUsage, 'compacting' | 'prunable'>) {
+  if (u.compacting) return 'Wait for the compaction to finish';
+  if (u.prunable < MIN_PRUNE) return 'No long output past the last few steps';
+}
+
 /** Close enough to Pi Durable's auto-compaction to say it is coming. */
 export function nearAutoCompact(u: ContextUsage) {
   return !!u.compactAt && u.used >= u.compactAt * 0.85;

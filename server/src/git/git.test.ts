@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test';
+import { afterAll, beforeAll, expect, setDefaultTimeout, test } from 'bun:test';
 import {
   fauxAssistantMessage,
   fauxToolCall,
@@ -8,6 +8,11 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { shows, startBica, type Bica } from '../testing/bica';
+
+// Each test runs a few dozen git processes and waits for the status poll to
+// see files written outside Bica. That takes a second or two alone, and
+// several times as long while the other test files run alongside.
+setDefaultTimeout(15_000);
 
 let bica: Bica;
 beforeAll(async () => {

@@ -1,5 +1,6 @@
 import { createMemo, createSignal } from 'solid-js';
 import type { AgentId } from '@bica/shared/agents';
+import { pruneBlocked, type ContextUsage } from '@bica/shared/context-usage';
 import type {
   ModelChoice,
   PromptImage,
@@ -180,31 +181,50 @@ export function retrySession(id: string) {
   return request('session.retry', { id });
 }
 
-export function compactSession(id: string, instructions?: string) {
-  return request('session.compact', { id, instructions });
-}
-
-const [pruning, setPruning] = createSignal<ReadonlySet<string>>(new Set(), {
-  name: 'pruning',
+// Prunes and compactions asked for in this tab whose request hasn't returned,
+// as `prune:<id>` and `compact:<id>`, so every button shows the same state.
+const [asked, setAsked] = createSignal<ReadonlySet<string>>(new Set(), {
+  name: 'contextAsked',
 });
 
-/** Pruning asked for here that hasn't landed yet. */
-export function isPruning(id: string) {
-  return pruning().has(id);
-}
-
-export async function pruneSession(id: string) {
-  if (isPruning(id)) return;
-  setPruning((s) => new Set(s).add(id));
+async function once(key: string, work: () => Promise<unknown>) {
+  if (asked().has(key)) return;
+  setAsked((s) => new Set(s).add(key));
   try {
-    await request('session.cleanup', { id });
+    await work();
   } finally {
-    setPruning((s) => {
+    setAsked((s) => {
       const next = new Set(s);
-      next.delete(id);
+      next.delete(key);
       return next;
     });
   }
+}
+
+/** Pruning asked for here that hasn't landed yet. */
+export function isPruning(id: string) {
+  return asked().has(`prune:${id}`);
+}
+
+/** A compaction running, or asked for here and not started yet. */
+export function isCompacting(id: string, usage: ContextUsage) {
+  return usage.compacting || asked().has(`compact:${id}`);
+}
+
+/** Why Prune can't run now (pruneBlocked), counting what this tab asked for. */
+export function pruneUnavailable(id: string, usage: ContextUsage) {
+  if (isPruning(id)) return 'Already pruning';
+  return pruneBlocked({ ...usage, compacting: isCompacting(id, usage) });
+}
+
+export function compactSession(id: string, instructions?: string) {
+  return once(`compact:${id}`, () =>
+    request('session.compact', { id, instructions }),
+  );
+}
+
+export function pruneSession(id: string) {
+  return once(`prune:${id}`, () => request('session.cleanup', { id }));
 }
 
 export function setAgent(id: string, agent: AgentId) {
