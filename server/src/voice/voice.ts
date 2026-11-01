@@ -257,7 +257,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       Date.now() - turns.you.heard < USER_QUIET_MS &&
       socket.readyState === WebSocket.OPEN
     )
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await Bun.sleep(250);
   };
   const finish = async (delegation: string, text: string) => {
     await userDone();

@@ -35,6 +35,7 @@ There is no time to prove every idea here, so borrow from people who already bui
 ## Stack
 
 - Bun 1.4.3 or newer runs the server, installs packages, type-checks, and runs the tests. Vite runs on Node, its tested runtime, and `bun run` falls back to Bun when Node isn't installed.
+- Server, scripts, and tests use Bun's own APIs before Node's or a package: `Bun.spawn`, `Bun.sleep`, `Bun.file`, `Bun.serve`, `bun:sqlite`, and so on. The client runs in the browser, so it has none of them.
 - Three Bun workspace packages: `client` (the Solid app), `server` (plain Bun), and `shared` (the code both run, as `@bica/shared/...`). See [architecture.md](docs/architecture.md#packages).
 - `site` is a prototype of the website: an Astro home page plus Starlight docs at `/docs`, with D2 diagrams through `astro-d2`. `bun run dev:site` runs it on port 3144.
 - Solid 2 (release candidate) through `@solidjs/vite-plugin` in client start mode: the app renders only in the browser, with no server-side rendering. This is not SolidStart.
@@ -70,6 +71,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 
 Pi Durable, Solid 2, and Pierre are new and change often, and the web may describe a newer version than the one installed. Read the installed copy first.
 
+- Bun: https://bun.com/llms.txt indexes the docs, one Markdown page each. Look there before reaching for a Node API or a package.
 - Pi Durable: `server/node_modules/@earendil-works/pi-durable/README.md` and `CHANGELOG.md`, plus the READMEs of `pi-ai` and `chord` next to it. Examples: https://github.com/earendil-works/pi/tree/main/packages/durable.
 - Pi packages as inspiration: https://github.com/earendil-works/pi/tree/main/packages. Before building or changing an agent tool, prompt, or session feature, look at how Pi does it, mostly `coding-agent` (its tools in `src/core/tools`, and `examples`), `agent`, and `ai`. Bica never runs that code, but the APIs are close, so borrow the ideas and adapt them to Pi Durable.
 - Solid 2: `client/node_modules/solid-js/CHEATSHEET.md` and the skills under SolidJS 2 below. Full docs for agents: https://v2.solidjs.com/llms.txt

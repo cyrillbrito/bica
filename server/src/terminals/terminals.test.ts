@@ -68,7 +68,7 @@ test('archiving a session closes the terminals it leads, and leaves the ones det
   for (const t of left) await tab.request('terminal.remove', { id: t.id });
 });
 
-test('a long terminal_read wait ends at its text, or when a message arrives', async () => {
+test('a long terminal_read wait ends at its text, when a message arrives, or when another session interrupts the command', async () => {
   const tab = await bica.connect();
   const ref = await bica.project(tab, 'long-wait');
   const read = (id: string, until?: string) =>
@@ -84,6 +84,17 @@ test('a long terminal_read wait ends at its text, or when a message arrives', as
   const sessions = tab.watch('sessions', {});
   const done = (id: string) =>
     sessions.until((l) => l.some((s) => s.id === id && s.status === 'done'));
+  // The transcript shows the read as running once it waits.
+  const reading = (id: string) =>
+    tab
+      .watch('conversation', { id })
+      .until((c) =>
+        (
+          c?.docs['pi.live'] as { tools?: { name: string; status: string }[] }
+        )?.tools?.some(
+          (t) => t.name === 'terminal_read' && t.status === 'running',
+        ),
+      );
 
   const ready = await tab.request('terminal.create', {
     ...ref,
@@ -107,10 +118,7 @@ test('a long terminal_read wait ends at its text, or when a message arrives', as
     prompt: 'Wait for the job',
     requestId: crypto.randomUUID(),
   });
-  await sessions.until((l) =>
-    l.some((s) => s.id === second && s.status === 'running'),
-  );
-  await Bun.sleep(300);
+  await reading(second);
   await tab.request('session.submit', {
     id: second,
     prompt: 'Never mind',
@@ -118,7 +126,42 @@ test('a long terminal_read wait ends at its text, or when a message arrives', as
     whenBusy: 'steer',
   });
   await done(second);
-  for (const id of [ready, stuck]) await tab.request('terminal.remove', { id });
+
+  const stopped = await tab.request('terminal.create', {
+    ...ref,
+    command: 'sleep 600',
+  });
+  bica.reply(read(stopped));
+  const { id: waiting } = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Wait for the job',
+    requestId: crypto.randomUUID(),
+  });
+  await reading(waiting);
+  bica.reply(
+    fauxAssistantMessage(
+      fauxToolCall('terminal_send', {
+        id: stopped,
+        input: '',
+        interrupt: true,
+        wait: 0,
+        summary: 'Stop the job',
+      }),
+      { stopReason: 'toolUse' },
+    ),
+    // One answer each, whichever session asks first.
+    fauxAssistantMessage('Done'),
+    fauxAssistantMessage('Done'),
+  );
+  const { id: stopper } = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Stop the job',
+    requestId: crypto.randomUUID(),
+  });
+  await done(stopper);
+  await done(waiting);
+  for (const id of [ready, stuck, stopped])
+    await tab.request('terminal.remove', { id });
 });
 
 test('stopping a terminal ends the processes its command started', async () => {

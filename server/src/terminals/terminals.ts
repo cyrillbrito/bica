@@ -43,8 +43,10 @@ interface Terminal {
   exited: PromiseWithResolvers<void>;
   // Waiters for new output (agent reads).
   wake: Set<() => void>;
-  // Waiters for the running command to finish: its exit code, or null if
-  // the shell ended.
+  // Commands finished so far, however they ended: waits compare it.
+  finished: number;
+  // Notes for the running command's end: its exit code, or null if the
+  // shell ended. Stopping the command on purpose drops them.
   done: Set<(code: number | null) => void>;
   // The start of a command mark split across pty reads.
   carry: string;
@@ -174,6 +176,7 @@ function marks(t: Terminal, text: string) {
 }
 
 function finish(t: Terminal, code: number | null) {
+  t.finished++;
   for (const done of t.done) done(code);
   t.done.clear();
 }
@@ -273,6 +276,7 @@ export async function createTerminal(
     sinks: new Set(),
     exited: Promise.withResolvers(),
     wake: new Set(),
+    finished: 0,
     done: new Set(),
     carry: '',
   };
@@ -295,17 +299,17 @@ export function writeTerminal(id: string, data: string) {
 }
 
 /**
- * Ctrl-C, then up to 3 s for the prompt. On purpose, so whoever waits on
- * the command hears nothing.
+ * Ctrl-C, then up to 3 s for the prompt. On purpose, so no note says the
+ * command ended; a wait on it still ends.
  */
 export async function interruptTerminal(id: string) {
   const t = get(id);
   if (!t.pty) throw new Error('The terminal has exited');
   t.done.clear();
   if (t.info.busy === false) return;
-  const done = new Promise<void>((resolve) => t.done.add(() => resolve()));
+  const prompt = waitFor(id, 3000, {});
   t.pty.terminal!.write('\x03');
-  await Promise.race([done, Bun.sleep(3000)]);
+  await prompt;
 }
 
 export function resizeTerminal(id: string, cols: number, rows: number) {
@@ -354,8 +358,7 @@ export async function stopTerminal(id: string) {
 
 /**
  * A fresh shell in place, which runs the first command again, or `command`
- * instead. A restart is on purpose: whoever waits on the old command hears
- * nothing.
+ * instead. A restart is on purpose: no note says the old command ended.
  */
 export async function restartTerminal(
   id: string,
@@ -382,7 +385,7 @@ export async function restartTerminal(
 export async function removeTerminal(id: string) {
   const t = terminals.get(id);
   if (!t) return;
-  // Closed on purpose: whoever waits on its command hears nothing.
+  // Closed on purpose: no note says its command ended.
   t.done.clear();
   await stopTerminal(id);
   terminals.delete(id);
@@ -450,13 +453,9 @@ export function tail(id: string, lines = 100) {
 }
 
 /**
- * Waits up to `ms` for the process to exit or its output to settle
- * (`quiet` ms without new output, after at least some output).
- */
-/**
- * Waits up to `ms` for the running command to finish, the shell to exit,
- * `until` to show up in new output, or `signal`. Without `until`, a terminal
- * at its prompt returns at once.
+ * Waits up to `ms` for the running command to end (however it ends), the
+ * shell to exit, `until` to show up in new output, or `signal`. Without
+ * `until`, a terminal at its prompt returns at once.
  */
 export async function waitFor(
   id: string,
@@ -466,21 +465,22 @@ export async function waitFor(
   const t = get(id);
   if (!t.pty || (!until && t.info.busy === false) || signal?.aborted) return;
   const from = t.start + t.output.length;
+  const finished = t.finished;
   await new Promise<void>((resolve) => {
     const done = () => {
       clearTimeout(deadline);
       t.wake.delete(check);
-      t.done.delete(done);
       signal?.removeEventListener('abort', done);
       resolve();
     };
+    // The end mark comes as output, so every end shows up here.
     const check = () => {
       const fresh = t.output.slice(Math.max(0, from - t.start));
-      if (until && plain(fresh).includes(until)) done();
+      if (t.finished > finished || (until && plain(fresh).includes(until)))
+        done();
     };
     const deadline = setTimeout(done, ms);
     t.wake.add(check);
-    t.done.add(done);
     signal?.addEventListener('abort', done);
     void t.exited.promise.then(done);
   });

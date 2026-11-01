@@ -18,11 +18,11 @@ In zsh, Bica knows when each command starts and ends and its exit code, without 
 Agents get four tools, shaped after Codex's and Claude Code's background shells:
 
 - `terminal_start` opens a shell, maybe with a first command. Starting the same name again restarts it in place, so a restarted dev server leaves no dead terminal behind.
-- `terminal_read` returns the latest output and whether a command is running. It can wait up to 30 minutes first, so agents wait for a test run or a build here instead of `sleep` in bash. The wait ends early when the command finishes, when a given text such as a server's ready line shows up, or when a message arrives for the agent, yours included.
+- `terminal_read` returns the latest output and whether a command is running. It can wait up to 30 minutes first, so agents wait for a test run or a build here instead of `sleep` in bash. The wait ends early when the command ends, however it ends (Ctrl-C from anyone, a crash, a restart, or a close), when a given text such as a server's ready line shows up, or when a message arrives for the agent, yours included.
 - `terminal_send` types into it, optionally pressing Ctrl-C first.
 - `terminal_stop` closes it.
 
-With `notify`, the agent gets a note when the command finishes, even if it is idle by then. A dev server rarely finishes, so its note usually means it crashed. Agents are told to use terminals instead of `&`, to check for a running one first, and to stop what they started.
+With `notify`, the agent gets a note when the command finishes, even if it is idle by then. A dev server rarely finishes, so its note usually means it crashed. A stop on purpose sends none: `terminal_send` with its Ctrl-C, a restart, or a close. Agents are told to use terminals instead of `&`, to check for a running one first, and to stop what they started.
 
 ## Parent and Detach
 
