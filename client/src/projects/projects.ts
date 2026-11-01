@@ -1,10 +1,18 @@
 import { useLocation } from '@solidjs/router';
-import { createMemo, createSignal } from 'solid-js';
+import { createMemo } from 'solid-js';
 
-import type { Project, ProjectEdit, Workspace } from '@bica/shared/protocol';
+import { CHATS_ID } from '@bica/shared/projects';
+import type {
+  Project,
+  ProjectEdit,
+  SessionSummary,
+  Workspace,
+} from '@bica/shared/protocol';
 import { useSessions } from '../sessions/sessions';
 import { request, useTopic } from '../socket/socket';
 import { useTerminals } from '../terminals/terminals';
+import { stored } from '../ui/stored';
+import { pageOf } from '../router';
 
 export function useProjects() {
   return useTopic('projects', () => ({}));
@@ -36,8 +44,7 @@ function baseName(path: string) {
 
 export const folderName = baseName;
 
-/** The built-in project for chats: each starts in a new empty folder. */
-export const CHATS_ID = 'chats';
+export { CHATS_ID };
 
 // The main folder is just "project": a label like "main" reads as the branch
 // and clashes with the branch line below it.
@@ -48,6 +55,18 @@ export function workspaceName(project: Project, path: string) {
   return `${project.name} / ${folderName(path)}`;
 }
 
+/** Where a session runs or ran: its workspace, or the branch of a worktree since removed. */
+export function whereOf(
+  projects: Project[],
+  s: Pick<SessionSummary, 'projectId' | 'cwd' | 'cleanedUp'>,
+) {
+  const project = projects.find((p) => p.id === s.projectId);
+  if (!project) return undefined;
+  if (s.cleanedUp?.branch) return `${project.name} / ${s.cleanedUp.branch}`;
+  if (project.id === CHATS_ID || !s.cwd) return project.name;
+  return workspaceName(project, s.cwd);
+}
+
 export interface Target {
   projectId: string;
   cwd?: string;
@@ -55,32 +74,14 @@ export interface Target {
   worktree?: boolean;
 }
 
-const KEY = 'bica.project';
-const CWD_KEY = 'bica.cwd';
-const WORKTREE_KEY = 'bica.worktree';
-
 // Where new sessions start; remembered across visits.
-const [currentTarget, setTarget] = createSignal<Target | undefined>(
-  !localStorage.getItem(KEY)
-    ? undefined
-    : {
-        projectId: localStorage.getItem(KEY)!,
-        cwd: localStorage.getItem(CWD_KEY) ?? undefined,
-        worktree: !!localStorage.getItem(WORKTREE_KEY),
-      },
-  { name: 'currentTarget' },
-);
+const [target, saveTarget] = stored<Target | null>('target', null);
 
-export { currentTarget };
-
-export function setCurrentTarget(target: Target) {
-  localStorage.setItem(KEY, target.projectId);
-  if (target.cwd) localStorage.setItem(CWD_KEY, target.cwd);
-  else localStorage.removeItem(CWD_KEY);
-  if (target.worktree) localStorage.setItem(WORKTREE_KEY, '1');
-  else localStorage.removeItem(WORKTREE_KEY);
-  setTarget(target);
+export function currentTarget() {
+  return target() ?? undefined;
 }
+
+export const setCurrentTarget: (t: Target) => void = saveTarget;
 
 /** The remembered target if it still exists, else the first project's main folder. */
 export function resolveTarget(projects: Project[], target?: Target) {
@@ -110,21 +111,17 @@ export function useCurrentWorkspace() {
   const terminals = useTerminals();
   return createMemo(
     () => {
-      const [, kind, id] = location.pathname.split('/');
-      let projectId: string | null | undefined;
-      let cwd: string | null | undefined;
-      if (kind === 'p' && id) {
-        projectId = decodeURIComponent(id);
-        cwd = new URLSearchParams(location.search).get('w');
-      } else if (kind === 's' && id) {
-        const s = sessions().find((s) => s.id === decodeURIComponent(id));
-        projectId = s?.projectId;
-        cwd = s?.cwd;
-      } else if (kind === 't' && id) {
-        const t = terminals().find((t) => t.id === decodeURIComponent(id));
-        projectId = t?.projectId;
-        cwd = t?.cwd;
-      }
+      const page = pageOf(location);
+      const here =
+        page.kind === 'p'
+          ? page
+          : page.kind === 's'
+            ? sessions().find((s) => s.id === page.id)
+            : page.kind === 't'
+              ? terminals().find((t) => t.id === page.id)
+              : undefined;
+      const projectId = here?.projectId;
+      const cwd = here?.cwd;
       const project = projects().find((p) => p.id === projectId);
       if (!project) return undefined;
       const workspace =

@@ -20,12 +20,6 @@ export function elapsed(timestamp: number) {
   return Math.max(0, tick() - timestamp);
 }
 
-/** "12s", "2m 5s". */
-export function formatDuration(ms: number) {
-  const s = Math.max(1, Math.round(ms / 1000));
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
 /** Reactive: re-reads as time passes. */
 export function timeAgo(timestamp: number) {
   const diff = now() - timestamp;
@@ -92,9 +86,10 @@ export function createStopwatch(on: () => boolean, ms = 1000) {
   return time;
 }
 
-/** A running clock: "42s", "3m 07s", "1h 05m". */
-export function formatClock(ms: number) {
-  const s = Math.floor(ms / 1000);
+/** How long, as every timer, countdown, and duration shows it: "42s", "3m 07s", "1h 05m". */
+export function formatDuration(ms: number) {
+  // Never "0s": anything that happened took some time.
+  const s = Math.max(1, Math.floor(ms / 1000));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`;
@@ -102,9 +97,9 @@ export function formatClock(ms: number) {
 }
 
 /**
- * A live timer like `formatClock`, or nothing for the first 10s: most steps
+ * A live timer like `formatDuration`, or nothing for the first 10s: most steps
  * end by then, and a count only helps once a wait gets long.
  */
 export function formatLive(ms: number) {
-  return ms < 10_000 ? undefined : formatClock(ms);
+  return ms < 10_000 ? undefined : formatDuration(ms);
 }

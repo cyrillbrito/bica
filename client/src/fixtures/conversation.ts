@@ -35,6 +35,8 @@ export type Block =
       ms?: number;
       error?: boolean;
       details?: Json;
+      // In a live answer: the call has returned, `ms` after it started.
+      done?: boolean;
     };
 
 /** One entry, or one answer with its tool results. */
@@ -53,6 +55,8 @@ export interface ChatOptions {
   // The provider failed and the run waits to try again.
   retry?: string;
   thinking?: ThinkingLevel;
+  // Prompts waiting for the run: steered into it, or sent after it.
+  queue?: ['steer' | 'followUp', string][];
 }
 
 export interface Chat {
@@ -74,7 +78,11 @@ const CATALOG = {
       cacheTtl: { short: 300, long: 3600 },
     },
   ],
-  compaction: { reserveTokens: 16_384, backgroundTokens: 32_768 },
+  compaction: {
+    reserveTokens: 16_384,
+    backgroundTokens: 32_768,
+    keepRecentTokens: 20_000,
+  },
 } as unknown as ModelCatalog;
 
 // Opus list prices, dollars per million tokens.
@@ -278,9 +286,12 @@ export function chat(id: string, turns: Turn[], opts: ChatOptions): Chat {
               {
                 callId: ids[i]!,
                 name: b.tool,
-                status: 'running' as const,
+                status: b.done ? ('done' as const) : ('running' as const),
                 output: b.output,
-                details: { startedAt: Date.now() - (b.ms ?? 4_000) },
+                details: {
+                  startedAt: Date.now() - (b.ms ?? 4_000),
+                  ...(b.done && { durationMs: b.ms }),
+                },
               },
             ]
           : [],
@@ -294,7 +305,13 @@ export function chat(id: string, turns: Turn[], opts: ChatOptions): Chat {
     docs: {
       'pi.agent': { model: MODEL, thinkingLevel: opts.thinking ?? 'medium' },
       'pi.live': live,
-      'pi.inbox': { items: [] },
+      'pi.inbox': {
+        items: (opts.queue ?? []).map(([mode, content], i) => ({
+          id: String(100 + i),
+          mode,
+          content,
+        })),
+      },
       'pi.usage': {
         models: {
           [`${MODEL.provider}/${MODEL.modelId}`]: {

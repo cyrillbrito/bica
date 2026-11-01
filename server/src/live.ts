@@ -53,3 +53,32 @@ export function live<T>(
 }
 
 export type Live<T> = ReturnType<typeof live<T>>;
+
+/**
+ * One live value per key, such as a folder, re-read every `ms` while anyone
+ * watches it. Kept once made: an unwatched one is just an object, no timer.
+ */
+export function polled<T>(ms: number, read: (key: string) => Promise<T>) {
+  const topics = new Map<string, Live<T>>();
+  return {
+    get(key: string) {
+      let topic = topics.get(key);
+      if (!topic) {
+        topic = live(
+          () => read(key),
+          (refresh) => {
+            const timer = setInterval(refresh, ms);
+            return () => clearInterval(timer);
+          },
+        );
+        topics.set(key, topic);
+      }
+      return topic;
+    },
+    /** Re-read now instead of at the next tick; nothing if never watched. */
+    refresh(key: string) {
+      return topics.get(key)?.refresh();
+    },
+    keys: () => topics.keys(),
+  };
+}

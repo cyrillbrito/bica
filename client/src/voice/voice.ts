@@ -4,6 +4,7 @@ import { request, useTopicWhenReady } from '../socket/socket';
 import { toPromptImage } from '../sessions/images';
 import { soundOn } from '../ui/sound';
 import { errorText } from '../ui/errors';
+import { stored } from '../ui/stored';
 
 // Development only: `?voice=off` shows the app as it is without the sign-in
 // calls and dictation need, kept for the tab like `?data=`. `?voice=on`
@@ -43,18 +44,11 @@ export const MUSIC_LEVELS = {
 export type MusicLevel = keyof typeof MUSIC_LEVELS;
 
 // Per device, like the sounds: the speakers decide what is loud.
-const MUSIC_KEY = 'music';
-const [musicLevel, setLevel] = createSignal<MusicLevel>(
-  (localStorage.getItem(MUSIC_KEY) as MusicLevel | null) || 'medium',
-  { name: 'musicLevel' },
+export const [musicLevel, setMusicLevel] = stored<MusicLevel>(
+  'music',
+  'medium',
+  Object.keys(MUSIC_LEVELS) as MusicLevel[],
 );
-export { musicLevel };
-
-export function setMusicLevel(level: MusicLevel) {
-  setLevel(level);
-  if (level === 'medium') localStorage.removeItem(MUSIC_KEY);
-  else localStorage.setItem(MUSIC_KEY, level);
-}
 
 function musicVolume() {
   return MUSIC_LEVELS[untrack(musicLevel)] ?? MUSIC_LEVELS.medium;

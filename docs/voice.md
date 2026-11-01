@@ -22,7 +22,7 @@ GPT-Live is only the voice. It listens, talks, can be interrupted, and decides w
 - "How's it going" gets the agent's latest turn and how long ago it was, and "stop" stops the run.
 - The photo button in the call panel adds photos, and on a phone it can open the camera. The voice can't see them, so they wait on the server and go with the next handoff: take a picture, then ask "what's wrong with this?". Photos still waiting when the call ends are dropped.
 
-Voice settings, in the context chip's menu, set a session's speed and instructions such as "talk with me in simple French".
+Voice settings, in the session's ⋯ menu in the top bar, set a session's speed and instructions such as "talk with me in simple French".
 
 ## Hold music
 

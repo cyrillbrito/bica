@@ -6,19 +6,11 @@ import type {
   VoiceSettings,
   WorkspaceRef,
 } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { context } from '../harness';
 import { getAgent, selection } from '../agents/registry';
-import {
-  getProject,
-  removeGitWorktree,
-  worktreeRisk,
-} from '../projects/projects';
-import {
-  allTerminals,
-  removeTerminal,
-  terminalsIn,
-} from '../terminals/terminals';
-import { named } from './read';
+import { getProject } from '../projects/projects';
+import { allTerminals, removeTerminal } from '../terminals/terminals';
 import {
   editSession,
   getConversation,
@@ -77,28 +69,6 @@ export async function markSeen(id: string, seen = true) {
 }
 
 /**
- * Removes a worktree: its sessions archived, terminals closed, folder and
- * local branch gone. Without force, returns what would be lost instead.
- */
-export async function removeWorktree(
-  projectId: string,
-  cwd: string,
-  force: boolean,
-) {
-  const project = await getProject(projectId);
-  const w = project.workspaces.find((w) => w.path === cwd && !w.main);
-  if (!w) throw new Error(`${cwd} is not a worktree of ${project.name}`);
-  if (!force) {
-    const risk = await worktreeRisk(cwd, w.pr);
-    if (risk) return risk;
-  }
-  await retireSessions(cwd, w.branch, w.pr);
-  await Promise.all(terminalsIn(cwd).map((t) => removeTerminal(t.id)));
-  await removeGitWorktree(projectId, cwd);
-  return null;
-}
-
-/**
  * Before a worktree goes: archives its sessions and notes the branch and PR
  * on each, so the archived list still says what they were for.
  */
@@ -108,7 +78,7 @@ export async function retireSessions(
   pr: PullRequest | null,
 ) {
   const here = (await listSessions()).filter((s) => s.cwd === cwd);
-  if (here.some((s) => s.status === 'running' || s.status === 'retrying'))
+  if (here.some((s) => isBusy(s.status)))
     throw new Error('A session there is still running');
   for (const s of here)
     await editSession(Number(s.id) as ConversationId, (meta) => {
@@ -173,26 +143,4 @@ async function emptiedWorktree(id: string) {
   if (!project?.workspaces.some((w) => w.path === s.cwd && !w.main))
     return null;
   return { projectId: s.projectId, cwd: s.cwd };
-}
-
-/**
- * Archives a session, then with `worktree` removes its worktree too, unless
- * another open session works there or something would be lost. Returns what
- * happened to the worktree, '' when not asked.
- */
-export async function archiveWithWorktree(id: string, worktree: boolean) {
-  await archive(id, true);
-  const all = await listSessions();
-  const s = all.find((o) => o.id === id);
-  if (!worktree || !s?.cwd || !s.projectId) return '';
-  const project = await getProject(s.projectId);
-  if (!project.workspaces.some((w) => w.path === s.cwd && !w.main))
-    return `Its folder ${s.cwd} isn't a worktree, so it stays.`;
-  const others = all.filter((o) => o.cwd === s.cwd && !o.archivedAt);
-  if (others.length)
-    return `Kept the worktree: ${others.map(named).join(', ')} still works there.`;
-  const risk = await removeWorktree(s.projectId, s.cwd, false);
-  return risk
-    ? `Kept the worktree ${s.cwd}: it has ${risk}.`
-    : `Removed its worktree ${s.cwd} and its branch.`;
 }

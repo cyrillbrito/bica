@@ -33,6 +33,7 @@ import Kbd from '../ui/Kbd';
 import { OptionList, optionClass } from '../ui/Option';
 import { Popover } from '../ui/Popover';
 import { errorText } from '../ui/errors';
+import { isTouch } from '../ui/layout';
 
 // `ref` is the n of its `[Image #n]` marker. While it's still being read,
 // `data` is empty and `preview` shows the file as picked.
@@ -276,7 +277,7 @@ export default function Composer(props: {
   };
 
   // Phones only: their keyboards' own dictation is the weak spot.
-  const touch = matchMedia('(pointer: coarse)').matches;
+  const touch = isTouch();
   const dictation = createDictation((text) => {
     const before = textarea.value.slice(0, textarea.selectionStart);
     const space = before && !/\s$/.test(before) ? ' ' : '';
@@ -626,7 +627,7 @@ export default function Composer(props: {
               e.key === 'Enter' &&
               !e.shiftKey &&
               held === null &&
-              !matchMedia('(pointer: coarse)').matches
+              !isTouch()
             ) {
               e.preventDefault();
               void send(!!props.busy);

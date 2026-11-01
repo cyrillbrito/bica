@@ -16,10 +16,10 @@ import { getAgent, selection } from '../agents/registry';
 import {
   CHATS_ID,
   createChatFolder,
-  createWorktree,
   getProject,
   listProjects,
 } from '../projects/projects';
+import { createWorktree } from '../projects/worktrees';
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
 import { VOICE_TITLE, nameSession, promptTitle, retitle } from './names';

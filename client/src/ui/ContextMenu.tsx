@@ -65,10 +65,11 @@ export function MenuButton(props: {
   items: () => MenuEntry[];
   class?: string;
   title?: string;
+  size?: 'sm' | 'md' | 'lg';
 }) {
   return (
     <IconButton
-      size="sm"
+      size={props.size ?? 'sm'}
       class={props.class}
       title={props.title ?? 'More actions'}
       aria-haspopup="menu"

@@ -32,7 +32,7 @@ import {
   sidebarWidth,
   sliding,
 } from './ui/layout';
-import { Router } from './router';
+import { Router, pageOf } from './router';
 import './App.css';
 
 // Without `on`, a navigation holds the old page until the new one's data
@@ -42,9 +42,13 @@ import './App.css';
 // wait for the rest (the session page does).
 function Page(props: { children: JSX.Element }) {
   const location = useLocation();
-  const kind = createMemo(() => location.pathname.split('/')[1], {
-    name: 'pageKind',
-  });
+  const kind = createMemo(
+    () => {
+      const page = pageOf(location);
+      return page.kind === 'other' ? page.name : page.kind;
+    },
+    { name: 'pageKind' },
+  );
   return (
     <Loading on={kind()} fallback={<TopBar />}>
       {props.children}

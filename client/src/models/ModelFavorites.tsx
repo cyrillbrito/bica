@@ -7,6 +7,8 @@ import { CheckMark } from '../ui/CheckMark';
 import { CloseIcon, PlusIcon } from '../ui/icons';
 import { NoMatches, OptionGroup, OptionList, optionClass } from '../ui/Option';
 import { Popover, PopoverSearch } from '../ui/Popover';
+import { matches } from '../ui/search';
+import { isTouch } from '../ui/layout';
 
 // OpenRouter alone has hundreds: past this, a provider waits for a search.
 const PER_PROVIDER = 30;
@@ -99,16 +101,12 @@ function AddModels(props: {
   const on = createMemo(() => new Set(props.enabled), { name: 'modelsOn' });
   const groups = createMemo(
     () => {
-      const words = query().toLowerCase().split(/\s+/).filter(Boolean);
       const c = catalog();
       return c.providers
         .map((p) => {
           const found = c.models.filter(
             (m) =>
-              m.provider === p.id &&
-              words.every((w) =>
-                `${m.name} ${m.id} ${p.name}`.toLowerCase().includes(w),
-              ),
+              m.provider === p.id && matches(query(), m.name, m.id, p.name),
           );
           return {
             id: p.id,
@@ -143,7 +141,7 @@ function AddModels(props: {
         id={id}
         label="Add models"
         onToggle={(open) => {
-          if (open && matchMedia('(hover: hover)').matches) search?.focus();
+          if (open && !isTouch()) search?.focus();
           if (!open) setQuery('');
         }}
       >

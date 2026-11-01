@@ -13,7 +13,7 @@ import {
 import type { GitChange, WorkspaceRef } from '@bica/shared/protocol';
 import { readBlobs, readDiff, type Side } from '../git/git';
 import { readFile, type View } from './files';
-import { LINE_NUMBERS_MIN_PX, THEME, parseDiffOptions } from './DiffBlock';
+import { FILE_OPTIONS, diffOptions } from './pierre';
 import FilePreview, { previewKind, type PreviewKind } from './FilePreview';
 import { errorText } from '../ui/errors';
 
@@ -228,17 +228,7 @@ export default function CodeView(props: {
                 : '',
           );
           const options = {
-            theme: THEME,
-            themeType: 'system' as const,
-            // Phones get unified; split needs the width.
-            diffStyle:
-              split && matchMedia('(min-width: 48rem)').matches
-                ? ('split' as const)
-                : ('unified' as const),
-            disableFileHeader: true,
-            // Narrow views give the width to the code instead.
-            disableLineNumbers: scroller.clientWidth < LINE_NUMBERS_MIN_PX,
-            parseDiffOptions: parseDiffOptions(k.path),
+            ...diffOptions(k.path, scroller.clientWidth, split),
             overflow,
             unsafeCSS: SCROLLBAR_CSS,
             onPostRender,
@@ -269,9 +259,7 @@ export default function CodeView(props: {
             return;
           }
           const options = {
-            theme: THEME,
-            themeType: 'system' as const,
-            disableFileHeader: true,
+            ...FILE_OPTIONS,
             overflow,
             unsafeCSS: SCROLLBAR_CSS,
             onPostRender,

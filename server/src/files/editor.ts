@@ -5,7 +5,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import type { FoundPath, WorkspaceRef } from '@bica/shared/protocol';
 import { listProjects } from '../projects/projects';
 import { fileLink } from './download';
-import { inside, open } from './workspace';
+import { inside, open } from '../projects/workspace';
 
 /**
  * Opens a workspace, or a file in it, in the editor on the dev machine. Bun

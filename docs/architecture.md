@@ -31,7 +31,7 @@ The repo is three Bun workspace packages, one per side, so each runs and type-ch
 
 - `client`: the Solid app, built by Vite, which runs in the browser. Its types have the DOM and no Bun or Node. `vite.config.ts` runs in Node, so `tsconfig.node.json` checks it apart, with Node's types.
 - `server`: plain Bun, with the socket, the agents, git, and the shells. Its types have Bun and no DOM. It reaches for Bun's own APIs before Node's: git runs only through `git/commands.ts`, one typed function per git command, with network ones under a timeout and never prompting (lint fails on raw git elsewhere), other commands through `Bun.spawn` (which has `timeout` and `maxBuffer`), timed jobs through `Bun.cron`, and outside calls through Bun's `WebSocket`, which takes headers. Paths, files, and logs stay on `node:fs` and `node:path`, where Bun has nothing better.
-- `shared`: the code both run, imported as `@bica/shared/...`: the message types, the agents' names, and the transcript projection.
+- `shared`: the code both run, imported as `@bica/shared/...`: the message types, the agents' names, what a session's status means (`status.ts`), and the transcript projection.
 
 The client can't import the server, because its `package.json` doesn't list it.
 
@@ -43,8 +43,8 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `orchestration/`: sessions working with other sessions, built on `sessions/`: the session tools, parents and child sessions, Detach, watching, and the notes when a run ends ([orchestration.md](./orchestration.md)). The hub builds on it from its own folder.
 - `agents/` (server): Coding and Assistant, the shared prompt sections, the registry that lists every agent, and `extensions.ts`, which installs the extensions behind the names agents pick into Pi Durable's registry at startup ([agents.md](./agents.md), [system-prompt.md](./system-prompt.md)). `tools/` holds the agent's general tools, and `harness.ts` opens Pi Durable ([tools.md](./tools.md)).
 - `models/`: models, keys, sign-ins, and plan accounts ([models.md](./models.md)). The rest of the folder works the same for every provider: what Bica knows about particular ones sits in `known-providers.ts`, and Exa's key in `exa.ts`.
-- `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)).
-- `files/` and `git/`: file and diff views and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)).
+- `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)). On the server, `worktrees.ts` makes and removes worktrees, and `workspace.ts` checks a workspace ref before file or git code touches its folder.
+- `files/` and `git/`: file and diff views, reading files, the file list, and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)). Git's diffs read file contents through `server/src/files/files.ts`, so what counts as text, media, or too large is decided once.
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).
 - `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
 
@@ -52,7 +52,7 @@ A file goes to the feature that owns it, not the one that uses it first. Feature
 
 A client feature folder mixes components (`PascalCase.tsx`) with stores and helpers (`kebab-case.ts`). The file named after the feature, such as `sessions/sessions.ts`, holds its state and its requests to the server. The `shared` package stays flat: `protocol.ts` holds every call and topic in one file.
 
-Some folders aren't features. In the client, `app/` is the frame around pages (sidebar, ⌘K, top bar, side panel), `ui/` the design system and DOM helpers, `socket/` the browser end of the socket, `fixtures/` the test data, and `routes/` the pages, one file per URL. On the server, the root files do one job each: `serve.ts` is the HTTP server and its few routes and starts Bica's background work once its port is taken, `socket.ts` is the one table of calls and topics, each passing its arguments to the feature that owns the call, and `testing/` starts a real Bica for the tests.
+Some folders aren't features. In the client, `app/` is the frame around pages (sidebar, ⌘K, top bar, side panel), `ui/` the design system and DOM helpers, with no knowledge of sessions or other features, `socket/` the browser end of the socket, `fixtures/` the test data, and `routes/` the pages, one file per URL. On the server, the root files do one job each: `serve.ts` is the HTTP server and its few routes and starts Bica's background work once its port is taken, `socket.ts` is the one table of calls and topics, each passing its arguments to the feature that owns the call, and `testing/` starts a real Bica for the tests.
 
 Features call each other directly, by relative path to the file they need, with no `index.ts` in between. Only `routes/` and `App.tsx` import `app/`, and `router.ts` is open to all. No package has import cycles, and lint fails on one. The session tools start sessions, and sessions need the tools, so nothing in `sessions/` imports `orchestration/`: `serve.ts` installs them through `agents/extensions.ts` before the harness opens, and sessions find them by name in Pi Durable's registry.
 

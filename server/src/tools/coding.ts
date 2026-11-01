@@ -12,7 +12,7 @@ import {
 import { bunImages } from './fit-image';
 
 /** Whether `path` lies inside `cwd`; the edit tools strip a leading @. */
-function inside(cwd: string, path: string) {
+function ownsPath(cwd: string, path: string) {
   const rel = relative(cwd, resolve(cwd, path.replace(/^@/, '')));
   return !!rel && !rel.startsWith('..') && !isAbsolute(rel);
 }
@@ -27,7 +27,7 @@ function ownFolder<P extends TSchema, D extends JsonValue>(
     execute: (args, api, context) => {
       const cwd = api.env?.cwd;
       // Only given to write and edit, whose schemas require a path.
-      if (!cwd || !inside(cwd, (args as { path: string }).path))
+      if (!cwd || !ownsPath(cwd, (args as { path: string }).path))
         throw new Error(
           `You can only change files inside your folder, ${cwd}. Hand other changes to a session.`,
         );

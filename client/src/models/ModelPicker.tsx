@@ -1,6 +1,5 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
 
-import { formatTokens } from '@bica/shared/context-usage';
 import { useSettings } from '../settings';
 import { modelKey, pickable, shortName, useModels } from './models';
 import type {
@@ -15,6 +14,8 @@ import { NoMatches, OptionGroup, OptionList, optionClass } from '../ui/Option';
 import { Popover, PopoverSearch } from '../ui/Popover';
 import { Segmented, segmentClass } from '../ui/Segmented';
 import { Switch } from '../ui/Switch';
+import { matches } from '../ui/search';
+import { formatTokens } from '../ui/format';
 
 type Model = ModelCatalog['models'][number];
 
@@ -83,11 +84,8 @@ export default function ModelPicker(props: {
   const [query, setQuery] = createSignal('', { name: 'modelQuery' });
   const groups = createMemo(
     () => {
-      const words = query().toLowerCase().split(/\s+/).filter(Boolean);
       const byProvider = new Map<string, Model[]>();
-      for (const m of options().filter((m) =>
-        words.every((w) => `${m.name} ${m.id}`.toLowerCase().includes(w)),
-      )) {
+      for (const m of options().filter((m) => matches(query(), m.name, m.id))) {
         byProvider.set(m.provider, [...(byProvider.get(m.provider) ?? []), m]);
       }
       return [...byProvider].map(([id, models]) => ({

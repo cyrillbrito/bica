@@ -38,6 +38,7 @@ export async function getCatalog(): Promise<ModelCatalog> {
     compaction: {
       reserveTokens: DEFAULT_COMPACTION_POLICY.reserveTokens,
       backgroundTokens: DEFAULT_COMPACTION_POLICY.backgroundTokens,
+      keepRecentTokens: DEFAULT_COMPACTION_POLICY.keepRecentTokens,
     },
   };
 }

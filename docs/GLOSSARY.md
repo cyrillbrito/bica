@@ -102,7 +102,9 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Context window**: How much context a model can read at once. _Avoid_: context size, token limit
 
-**Context chip**: The chip in a session's top bar that shows how full the context window is, with its menu and details. _Avoid_: context meter
+**Context chip**: The chip in a session's top bar that shows how full the context window is, with its menu of Compact, Prune, and the details. _Avoid_: context meter
+
+**Active**: The sidebar tab that keeps what is in play: sessions that need you, run, or moved in the last few minutes. Wider than Needs you. _Avoid_: inbox
 
 **Prompt cache**: The provider's copy of the context so far, cheap to reread while it is warm, gone once it expires. _Avoid_: cache (alone, when it could mean the browser's)
 

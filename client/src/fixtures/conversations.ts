@@ -1,190 +1,16 @@
 // Test transcripts for the session page (`?data=demo`, `?data=worst`): every
 // kind of row, and one run that plays out live (thinking, parallel tools,
-// streaming text) on a loop. Shaped like the server's conversation view.
-import type { ConversationView } from '@earendil-works/pi-durable';
+// streaming text) on a loop. Built with chat(), so they go through the same
+// projection as live data.
 import { createSignal } from 'solid-js';
 
+import type { ProjectedView } from '@bica/shared/projection';
 import type { StepDetail } from '@bica/shared/protocol';
-import { PruneEntry } from '@bica/shared/prune';
+import { chat, type Block, type ChatOptions, type Turn } from './conversation';
 import { fixtureContext } from './usage';
 
 const MIN = 60_000;
-const now = Date.now();
-
-type Block =
-  | { type: 'text'; text: string }
-  | { type: 'thinking'; thinking: string; durationMs?: number }
-  | {
-      type: 'toolCall';
-      id: string;
-      name: string;
-      arguments: Record<string, unknown>;
-    };
-
-export interface Call {
-  name: string;
-  args: Record<string, unknown>;
-  output?: string;
-  error?: boolean;
-  details?: Record<string, unknown>;
-  ms?: number;
-}
-
-/** Builds a view entry by entry, the way Pi Durable stores them. */
-class Transcript {
-  entries: Record<string, unknown>[] = [];
-  details = new Map<string, StepDetail>();
-  private id = 0;
-  private callId = 0;
-  private at = now - 40 * MIN;
-  constructor(private session: string) {}
-
-  private push(kind: string, model: unknown[]) {
-    this.entries.push({
-      id: ++this.id,
-      conversationId: this.session,
-      kind,
-      model,
-    });
-  }
-  write(kind: string, data: unknown) {
-    this.entries.push({
-      id: ++this.id,
-      conversationId: this.session,
-      kind,
-      data,
-    });
-    return this;
-  }
-  compaction(summary: string) {
-    this.push('pi.compaction', [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `The conversation so far was summarized:\n<summary>\n${summary}\n</summary>`,
-          },
-        ],
-        timestamp: this.later(MIN),
-      },
-    ]);
-    this.entries.at(-1)!.data = { reason: 'manual' };
-    return this;
-  }
-  private later(ms: number) {
-    this.at += ms;
-    return this.at;
-  }
-
-  user(text: string, at = this.later(MIN)) {
-    this.at = at;
-    this.push('pi.user', [{ role: 'user', content: text, timestamp: at }]);
-    return this;
-  }
-
-  /** An answer: blocks in order; `calls` become tool calls with results. */
-  answer(
-    parts: (string | { think: string; ms: number } | Call | Call[])[],
-    extra: { error?: string } = {},
-  ) {
-    const blocks: Block[] = [];
-    const results: unknown[] = [];
-    for (const part of parts) {
-      if (typeof part === 'string') blocks.push({ type: 'text', text: part });
-      else if ('think' in part) {
-        const key = `${this.id + 1}:0:${blocks.length}`;
-        this.details.set(key, { text: part.think });
-        blocks.push({
-          type: 'thinking',
-          thinking: '',
-          durationMs: part.ms,
-          folded: true,
-        } as Block);
-      } else
-        for (const call of [part].flat()) {
-          const id = `call_${this.session}_${++this.callId}`;
-          blocks.push({
-            type: 'toolCall',
-            id,
-            name: call.name,
-            arguments: call.args,
-          });
-          const start = this.later(1500);
-          const details = {
-            ...call.details,
-            startedAt: start,
-            durationMs: call.ms ?? 400,
-          };
-          this.details.set(id, {
-            args: call.args,
-            output: call.output,
-            details,
-          });
-          results.push({
-            role: 'toolResult',
-            toolCallId: id,
-            toolName: call.name,
-            content: [{ type: 'text', text: call.output ?? '' }],
-            details,
-            isError: !!call.error,
-            timestamp: start + (call.ms ?? 400),
-          });
-        }
-    }
-    this.push('pi.assistant', [
-      {
-        role: 'assistant',
-        content: blocks,
-        api: 'anthropic-messages',
-        provider: 'anthropic',
-        model: 'claude-opus-4-5',
-        usage: USAGE,
-        stopReason: extra.error ? 'error' : results.length ? 'toolUse' : 'stop',
-        errorMessage: extra.error,
-        timestamp: this.later(MIN / 2),
-      },
-    ]);
-    for (const r of results) this.push('pi.toolResult', [r]);
-    return this;
-  }
-
-  view(docs: Record<string, unknown> = {}): ConversationView {
-    return {
-      conversation: { id: this.session } as never,
-      entries: this.entries as never,
-      docs: {
-        'pi.agent': {
-          model: { provider: 'anthropic', modelId: 'claude-opus-4-5' },
-          thinkingLevel: 'medium',
-        },
-        'bica.context': CONTEXT,
-        ...docs,
-      } as never,
-    };
-  }
-}
-
-const USAGE = {
-  input: 1200,
-  output: 800,
-  cacheRead: 42_000,
-  cacheWrite: 900,
-  totalTokens: 44_900,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-};
-
-const CONTEXT = {
-  used: 46_000,
-  measured: true,
-  window: 200_000,
-  parts: [],
-  biggest: [],
-  misses: 0,
-  compacting: false,
-  running: false,
-  prunable: 0,
-};
+const START = Date.now() - 40 * MIN;
 
 const PATCH = `--- a/src/components/Sidebar.tsx
 +++ b/src/components/Sidebar.tsx
@@ -212,32 +38,20 @@ const max = () => Math.min(480, innerWidth - 400);
 | \`bun run check\` | passes |
 | Phone layout | unchanged |`;
 
-function queue(...items: [mode: 'steer' | 'followUp', text: string][]) {
-  return {
-    'pi.inbox': {
-      items: items.map(([mode, content], i) => ({
-        id: String(100 + i),
-        mode,
-        content,
-      })),
-    },
-  };
-}
-
 /** A finished session with every kind of row. */
-function finished(id: string) {
-  const t = new Transcript(id)
-    .user('Why does the sidebar collapse to nothing when I drag it?')
-    .answer([
-      {
-        think:
-          'The drag handler sets the width straight from the pointer. Nothing clamps it, so a fast drag past the edge sets a negative width. I should read the resizer and the layout state first.',
-        ms: 6400,
-      },
-      'Let me look at how the width is set.',
-      [
+function finished(): Turn[] {
+  return [
+    { user: 'Why does the sidebar collapse to nothing when I drag it?' },
+    {
+      agent: [
         {
-          name: 'read',
+          think:
+            'The drag handler sets the width straight from the pointer. Nothing clamps it, so a fast drag past the edge sets a negative width. I should read the resizer and the layout state first.',
+          ms: 6400,
+        },
+        { say: 'Let me look at how the width is set.' },
+        {
+          tool: 'read',
           args: {
             path: 'src/components/Sidebar.tsx',
             summary: 'Read the sidebar',
@@ -246,7 +60,7 @@ function finished(id: string) {
           ms: 120,
         },
         {
-          name: 'bash',
+          tool: 'bash',
           args: {
             command: 'rg -n "layout.sessions" src',
             summary: 'Find who sets the width',
@@ -256,17 +70,17 @@ function finished(id: string) {
           ms: 340,
         },
         {
-          name: 'web_search',
+          tool: 'web_search',
           args: { queries: ['CSS anchor positioning resize handle'] },
           output: '5 results',
           ms: 4100,
         },
       ],
-    ])
-    .answer([
-      [
+    },
+    {
+      agent: [
         {
-          name: 'edit',
+          tool: 'edit',
           args: {
             path: 'src/components/Sidebar.tsx',
             summary: 'Clamp the width',
@@ -278,7 +92,7 @@ function finished(id: string) {
           ms: 90,
         },
         {
-          name: 'bash',
+          tool: 'bash',
           args: { command: 'bun run check', summary: 'Type check' },
           output:
             "client/src/ui/layout.ts(91,7): error TS2322: Type 'string' is not assignable to type 'number'.\nexit code 2",
@@ -286,21 +100,18 @@ function finished(id: string) {
           ms: 5200,
         },
       ],
-    ])
-    .answer([
-      {
-        think: 'One more cast in layout.ts, then check again.',
-        ms: 1800,
-      },
-      [
+    },
+    {
+      agent: [
+        { think: 'One more cast in layout.ts, then check again.', ms: 1800 },
         {
-          name: 'edit',
+          tool: 'edit',
           args: { path: 'client/src/ui/layout.ts', summary: 'Fix the type' },
           details: { stats: { added: 1, removed: 1 } },
           ms: 70,
         },
         {
-          name: 'codemode',
+          tool: 'codemode',
           args: {
             code: 'const r = await tools.bash({ command: "bun run check" });\nreturn r.exit_code;',
             summary: 'Check types and lint together',
@@ -319,57 +130,120 @@ function finished(id: string) {
           ms: 3200,
         },
       ],
-    ])
-    .answer([REPLY])
-    .user('Can it remember the width per device?')
-    .answer(['Saving it in `localStorage` would make it per device.'], {
+    },
+    { agent: [{ say: REPLY }] },
+    { user: 'Can it remember the width per device?' },
+    {
+      agent: [{ say: 'Saving it in `localStorage` would make it per device.' }],
       error:
         '429 {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 80,000 output tokens per minute. Try again later, or see https://docs.anthropic.com/en/api/rate-limits"}}',
-    });
-  return t;
+    },
+  ];
 }
 
 /** Waiting on the `ask` tool: the session stopped on its result. */
-function asking(id: string) {
-  const t = new Transcript(id).user('Write the post about the new diff view.');
-  t.answer([
-    { think: 'Two choices the author has to make before I write.', ms: 2100 },
-    'Before I start, two quick questions.',
+function asking(): Turn[] {
+  return [
+    { user: 'Write the post about the new diff view.' },
     {
-      name: 'ask',
-      args: {
-        questions: [
-          {
-            header: 'Tone',
-            question: 'How should the post sound?',
-            options: [
+      agent: [
+        {
+          think: 'Two choices the author has to make before I write.',
+          ms: 2100,
+        },
+        { say: 'Before I start, two quick questions.' },
+        {
+          tool: 'ask',
+          args: {
+            questions: [
               {
-                label: 'Casual (Recommended)',
-                description: 'Like the other posts: short, first person.',
+                header: 'Tone',
+                question: 'How should the post sound?',
+                options: [
+                  {
+                    label: 'Casual (Recommended)',
+                    description: 'Like the other posts: short, first person.',
+                  },
+                  {
+                    label: 'Technical',
+                    description: 'Explain how Pierre renders.',
+                  },
+                  { label: 'Release notes', description: 'A list of changes.' },
+                ],
               },
               {
-                label: 'Technical',
-                description: 'Explain how Pierre renders.',
+                header: 'Media',
+                question: 'What should it show?',
+                multiSelect: true,
+                options: [
+                  { label: 'Screenshots' },
+                  { label: 'A short video' },
+                  { label: 'Code samples' },
+                ],
               },
-              { label: 'Release notes', description: 'A list of changes.' },
             ],
           },
-          {
-            header: 'Media',
-            question: 'What should it show?',
-            multiSelect: true,
-            options: [
-              { label: 'Screenshots' },
-              { label: 'A short video' },
-              { label: 'Code samples' },
-            ],
-          },
-        ],
-      },
-      output: 'Asked the user; their answer arrives as the next prompt.',
+          output: 'Asked the user; their answer arrives as the next prompt.',
+        },
+      ],
     },
-  ]);
-  return t;
+  ];
+}
+
+/** Long names, huge output, non-Latin text, many calls. */
+function worstHistory(): Turn[] {
+  const huge = Array.from(
+    { length: 400 },
+    (_, i) => `line ${i + 1}: ${'█'.repeat(i % 60)} ok`,
+  ).join('\n');
+  return [
+    {
+      user: `${'Please '.repeat(30)}fix the sidebar. https://example.com/${'very-long-path/'.repeat(12)}`,
+    },
+    {
+      agent: [
+        { think: 'x'.repeat(5000), ms: 184_000 },
+        ...Array.from({ length: 12 }, (_, i): Block => ({
+          tool: i % 3 ? 'read' : 'bash',
+          args: {
+            path: `/Users/aleksandra/Repos/northwind-enterprise-platform/packages/${'nested/'.repeat(6)}component-${i}.tsx`,
+            command: `bun x vitest run --reporter=verbose ${'--filter something '.repeat(6)}`,
+          },
+          output: i === 4 ? huge : 'ok',
+          error: i === 7,
+          ms: i * 2300,
+        })),
+      ],
+    },
+    {
+      agent: [
+        {
+          say: 'نور الهدى: إصلاح القائمة الجانبية. 侧边栏已修复。 Боковая панель исправлена.',
+        },
+        {
+          tool: 'mcp__northwind__very_long_tool_name_that_never_ends',
+          args: { input: '{"nested":{"deeply":[1,2,3,{"more":true}]}}' },
+          output: JSON.stringify({ ok: false, reason: 'n'.repeat(300) }),
+          error: true,
+          ms: 61_000,
+        },
+      ],
+    },
+    {
+      agent: [],
+      error:
+        '500 {"type":"error","error":{"type":"api_error","message":"Internal server error"},"request_id":"req_011CTqXk3b9mF8vF3sYyKq2P"}',
+    },
+  ];
+}
+
+/** A transcript a page can open, ask for step details, and play actions on. */
+interface Talk {
+  readonly value: ProjectedView;
+  detail: (key: string) => StepDetail | null;
+  submit?: (text: string) => void;
+  compact?: () => Promise<void>;
+  prune?: () => Promise<void>;
 }
 
 /**
@@ -377,21 +251,22 @@ function asking(id: string) {
  * with a live timer, then the reply streaming in word by word.
  */
 function live(id: string, worst: boolean) {
-  const base = worst ? worstHistory(id) : finished(id);
-  base.user(
-    worst
-      ? 'Ahora haz que el ancho se guarde por dispositivo, y añade una prueba. 也请检查手机布局。'
-      : 'Now make the width stick per device, and add a test.',
-  );
-  const committed = base.entries.slice();
+  const base: Turn[] = [
+    ...(worst ? worstHistory() : finished()),
+    {
+      user: worst
+        ? 'Ahora haz que el ancho se guarde por dispositivo, y añade una prueba. 也请检查手机布局。'
+        : 'Now make the width stick per device, and add a test.',
+    },
+  ];
   const words = (
     worst
       ? `${REPLY}\n\n${'Then the same again, with a much longer paragraph so the streaming text wraps over several lines and keeps going for a while. '.repeat(3)}`
       : `I'll store the width under \`bica.sidebar\` in \`localStorage\` and read it back before the first paint, so there is no jump on load.\n\n${REPLY}`
   ).split(/(?<=\s)/);
-  const calls = worst
+  const calls: { tool: string; args: Record<string, unknown> }[] = worst
     ? Array.from({ length: 7 }, (_, i) => ({
-        name: ['bash', 'read', 'web_fetch', 'grep_everything_in_the_workspace'][
+        tool: ['bash', 'read', 'web_fetch', 'grep_everything_in_the_workspace'][
           i % 4
         ]!,
         args: {
@@ -404,206 +279,131 @@ function live(id: string, worst: boolean) {
       }))
     : [
         {
-          name: 'bash',
+          tool: 'bash',
           args: {
             command: 'bun test client/src/lib/layout.test.ts',
             summary: 'Run the layout tests',
           },
         },
         {
-          name: 'read',
+          tool: 'read',
           args: {
             path: 'client/src/ui/layout.ts',
             summary: 'Read the layout state',
           },
         },
       ];
+  // In the worst case one call hangs and fails.
+  const failing = (i: number) => worst && i === 2;
+  const THINK = 4000;
+  const ends = (i: number) => 1500 + i * 900;
+  const settled = THINK + ends(calls.length);
+  const queue: ChatOptions['queue'] = [
+    [
+      'followUp',
+      worst
+        ? 'And after that, please also double check that the phone layout still works with the keyboard open on iOS Safari and on Android Chrome with a long title'
+        : 'Then update the docs',
+    ],
+    ['steer', 'Use sessionStorage instead'],
+  ];
+
   const LOOP = 30_000;
   const start = Date.now();
-  const frame = (): ConversationView => {
+  const frame = () => {
     const t = (Date.now() - start) % LOOP;
-    const cycle = Math.floor((Date.now() - start) / LOOP);
-    const at = start + cycle * LOOP;
-    const content: Block[] = [];
-    const slots: unknown[] = [];
-    const entries = committed.slice();
-    if (t < 4000)
-      content.push({ type: 'thinking', thinking: '', folded: true } as Block);
-    else {
-      content.push({
-        type: 'thinking',
-        thinking: '',
-        durationMs: 4000,
-        folded: true,
-      } as Block);
-      const callIds = calls.map((_, i) => `live_${id}_${cycle}_${i}`);
-      calls.forEach((c, i) =>
-        content.push({
-          type: 'toolCall',
-          id: callIds[i]!,
-          name: c.name,
-          arguments: c.args,
-        }),
-      );
-      // The round: each call finishes a little after the one before.
-      calls.forEach((c, i) => {
-        const startedAt = at + 4000;
-        const ends = 4000 + 1500 + i * 900;
-        const done = t >= ends && !(worst && i === 2);
-        if (done && t >= 4000 + 1500 + calls.length * 900) return;
-        slots.push({
-          callId: callIds[i],
-          name: c.name,
-          status: done ? 'done' : 'running',
-          output: done ? 'ok' : undefined,
-          details: { startedAt, durationMs: done ? ends - 4000 : undefined },
-        });
-      });
-      const settled = 4000 + 1500 + calls.length * 900;
-      if (t >= settled) {
-        // The round is committed: an entry for the call answer and its results.
-        entries.push({
-          id: 9000 + cycle * 10,
-          conversationId: id,
-          kind: 'pi.assistant',
-          model: [
-            {
-              role: 'assistant',
-              content: content.slice(),
-              usage: USAGE,
-              stopReason: 'toolUse',
-              timestamp: at + 4000,
-            },
-          ],
-        });
-        calls.forEach((c, i) =>
-          entries.push({
-            id: 9001 + cycle * 10 + i,
-            conversationId: id,
-            kind: 'pi.toolResult',
-            model: [
-              {
-                role: 'toolResult',
-                toolCallId: callIds[i],
-                toolName: c.name,
-                content: [
-                  {
-                    type: 'text',
-                    text:
-                      worst && i === 2
-                        ? 'fetch failed: ETIMEDOUT after 30s'
-                        : 'ok',
-                  },
-                ],
-                details: { startedAt: at + 4000, durationMs: 1500 + i * 900 },
-                isError: worst && i === 2,
-                timestamp: at + settled,
-              },
-            ],
+    const thought: Block = { think: '', ms: THINK };
+    if (t < THINK)
+      return chat(id, base, { start: START, live: [{ think: '' }], queue });
+    if (t < settled)
+      return chat(id, base, {
+        start: START,
+        queue,
+        live: [
+          thought,
+          ...calls.map((c, i): Block => {
+            const done = t - THINK >= ends(i) && !failing(i);
+            return {
+              ...c,
+              done,
+              output: done ? 'ok' : undefined,
+              ms: done ? ends(i) : t - THINK,
+            };
           }),
-        );
-        content.length = 0;
-        const shown = Math.min(words.length, Math.floor((t - settled) / 60));
-        if (shown)
-          content.push({ type: 'text', text: words.slice(0, shown).join('') });
-      }
-    }
-    const v = base.view();
-    return {
-      ...v,
-      entries: entries as never,
-      docs: {
-        ...v.docs,
-        ...queue(
-          [
-            'followUp',
-            worst
-              ? 'And after that, please also double check that the phone layout still works with the keyboard open on iOS Safari and on Android Chrome with a long title'
-              : 'Then update the docs',
-          ],
-          ['steer', 'Use sessionStorage instead'],
-        ),
-        'pi.live': {
-          run: { taskId: 1, inputs: [] },
-          generation: content.length
-            ? {
-                attempt: 1,
-                message: {
-                  role: 'assistant',
-                  content,
-                  usage: USAGE,
-                  timestamp: at,
-                },
-              }
-            : { attempt: 1 },
-          tools: slots.length ? slots : undefined,
-        },
-      } as never,
+        ],
+      });
+    // The round is in: its answer and results, then the reply streams.
+    const round: Turn = {
+      agent: [
+        thought,
+        ...calls.map((c, i): Block => ({
+          ...c,
+          output: failing(i) ? 'fetch failed: ETIMEDOUT after 30s' : 'ok',
+          error: failing(i),
+          ms: ends(i),
+        })),
+      ],
     };
+    const shown = Math.min(words.length, Math.floor((t - settled) / 60));
+    return chat(id, [...base, round], {
+      start: START,
+      queue,
+      live: shown ? [{ say: words.slice(0, shown).join('') }] : [],
+    });
   };
   const [view, setView] = createSignal(frame(), { name: 'fixtureLive' });
   let timer: ReturnType<typeof setInterval> | undefined;
   return {
-    details: base.details,
     get value() {
       if (!timer) timer = setInterval(() => setView(frame()), 60);
-      return view();
+      return view().view;
     },
+    detail: (key: string) => view().detail(key),
+  } satisfies Talk;
+}
+
+/**
+ * A finished transcript that takes a prompt: it lands, and a reply follows.
+ * A compaction or a prune adds its row.
+ */
+function answering(id: string, start: Turn[]) {
+  const turns = [...start];
+  let running = false;
+  const build = () =>
+    chat(id, turns, { start: START, ...(running && { live: [] }) });
+  const [built, setBuilt] = createSignal(build(), { name: 'fixtureTalk' });
+  const add = (turn: Turn) => {
+    turns.push(turn);
+    setBuilt(build());
+  };
+  return {
+    get value() {
+      return built().view;
+    },
+    detail: (key: string) => built().detail(key),
+    submit(text: string) {
+      // The run starts; nothing streams for a moment, then the reply lands.
+      running = true;
+      add({ user: text });
+      setTimeout(() => {
+        running = false;
+        add({ agent: [{ say: 'Got it, writing it now.' }] });
+      }, 2500);
+    },
+    compacted: (summary: string) => add({ compacted: summary, auto: false }),
+    pruned: (freed: number) => add({ cleaned: freed }),
   };
 }
 
-/** Long names, huge output, non-Latin text, many calls. */
-function worstHistory(id: string) {
-  const huge = Array.from(
-    { length: 400 },
-    (_, i) => `line ${i + 1}: ${'█'.repeat(i % 60)} ok`,
-  ).join('\n');
-  return new Transcript(id)
-    .user(
-      `${'Please '.repeat(30)}fix the sidebar. https://example.com/${'very-long-path/'.repeat(12)}`,
-    )
-    .answer([
-      { think: 'x'.repeat(5000), ms: 184_000 },
-      Array.from({ length: 12 }, (_, i) => ({
-        name: i % 3 ? 'read' : 'bash',
-        args: {
-          path: `/Users/aleksandra/Repos/northwind-enterprise-platform/packages/${'nested/'.repeat(6)}component-${i}.tsx`,
-          command: `bun x vitest run --reporter=verbose ${'--filter something '.repeat(6)}`,
-        },
-        output: i === 4 ? huge : 'ok',
-        error: i === 7,
-        ms: i * 2300,
-      })),
-    ])
-    .answer([
-      'نور الهدى: إصلاح القائمة الجانبية. 侧边栏已修复。 Боковая панель исправлена.',
-      {
-        name: 'mcp__northwind__very_long_tool_name_that_never_ends',
-        args: { input: '{"nested":{"deeply":[1,2,3,{"more":true}]}}' },
-        output: JSON.stringify({ ok: false, reason: 'n'.repeat(300) }),
-        error: true,
-        ms: 61_000,
-      },
-    ])
-    .answer([], {
-      error:
-        '500 {"type":"error","error":{"type":"api_error","message":"Internal server error"},"request_id":"req_011CTqXk3b9mF8vF3sYyKq2P"}',
-    });
-}
-
-type Talk = {
-  readonly value: ConversationView;
-  submit?: (text: string) => void;
-  compact?: () => Promise<void>;
-  prune?: () => Promise<void>;
-  write?: (kind: string, data: unknown) => void;
-  compacted?: (summary: string) => void;
-};
+type Shape = 'running' | 'finished' | 'asking';
 
 /** The talk with its own context, which compaction and pruning change. */
 function withContext(
-  talk: Talk,
-  shape: 'running' | 'finished' | 'asking',
+  talk: Talk & {
+    compacted?: (summary: string) => void;
+    pruned?: (freed: number) => void;
+  },
+  shape: Shape,
   worst: boolean,
 ): Talk {
   const context = fixtureContext(shape, worst);
@@ -614,11 +414,12 @@ function withContext(
         ...v,
         docs: {
           ...v.docs,
-          'bica.context': context.value() as never,
+          'bica.context': context.value(),
           ...(context.spend && { 'pi.usage': context.spend }),
         },
       };
     },
+    detail: talk.detail,
     submit: talk.submit,
     compact: async () => {
       await context.compact();
@@ -634,39 +435,13 @@ function withContext(
     prune: async () => {
       const freed = context.value().prunable;
       await context.prune();
-      talk.write?.(PruneEntry.kind, { freed });
+      talk.pruned?.(freed);
     },
   };
 }
 
 export interface Conversations {
   views: Map<string, Talk>;
-  details: Map<string, StepDetail>;
-}
-
-/** A finished transcript that takes a prompt: it lands, and a reply follows. */
-function answering(t: Transcript): Talk {
-  const [view, setView] = createSignal(t.view(), { name: 'fixtureTalk' });
-  return {
-    get value() {
-      return view();
-    },
-    write(kind, data) {
-      setView(t.write(kind, data).view());
-    },
-    compacted(summary) {
-      setView(t.compaction(summary).view());
-    },
-    submit(text) {
-      // The run starts; nothing streams for a moment, then the reply lands.
-      t.user(text, Date.now());
-      setView(t.view({ 'pi.live': { run: { taskId: 1, inputs: [] } } }));
-      setTimeout(
-        () => setView(t.answer(['Got it, writing it now.']).view()),
-        2500,
-      );
-    },
-  };
 }
 
 /** Transcripts for the given session ids; any can be absent. */
@@ -677,23 +452,25 @@ export function conversations(ids: {
   worst?: boolean;
 }): Conversations {
   const views = new Map<string, Talk>();
-  const details = new Map<string, StepDetail>();
   const worst = !!ids.worst;
-  const add = (id: string, t: Transcript, shape: 'finished' | 'asking') => {
-    views.set(id, withContext(answering(t), shape, worst));
-    for (const [k, v] of t.details) details.set(k, v);
-  };
   if (ids.finished)
-    add(
+    views.set(
       ids.finished,
-      ids.worst ? worstHistory(ids.finished) : finished(ids.finished),
-      'finished',
+      withContext(
+        answering(ids.finished, worst ? worstHistory() : finished()),
+        'finished',
+        worst,
+      ),
     );
-  if (ids.asking) add(ids.asking, asking(ids.asking), 'asking');
-  if (ids.running) {
-    const l = live(ids.running, worst);
-    views.set(ids.running, withContext(l, 'running', worst));
-    for (const [k, v] of l.details) details.set(k, v);
-  }
-  return { views, details };
+  if (ids.asking)
+    views.set(
+      ids.asking,
+      withContext(answering(ids.asking, asking()), 'asking', worst),
+    );
+  if (ids.running)
+    views.set(
+      ids.running,
+      withContext(live(ids.running, worst), 'running', worst),
+    );
+  return { views };
 }

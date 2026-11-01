@@ -10,18 +10,20 @@ import {
 import { PRUNE_HINT } from '@bica/shared/prune';
 import type { ContextBreakdown, Part } from '@bica/shared/context-breakdown';
 import {
-  formatTokens,
   level,
   nearAutoCompact,
   type ContextUsage,
 } from '@bica/shared/context-usage';
+import { formatTokens } from '../ui/format';
 import {
   pruneSession,
   compactSession,
   isCompacting,
   isPruning,
   pruneUnavailable,
-} from '../sessions/sessions';
+  compactHint,
+  compactUnavailable,
+} from './context-usage';
 import { toast } from '../ui/Toast';
 import { buttonClass } from '../ui/Button';
 import Chevron from '../ui/Chevron';
@@ -325,7 +327,12 @@ export default function ContextField(props: {
                         }
                         icon={<CompactIcon />}
                         labels={['Compact', 'Compacting', 'Compacted']}
-                        title="Summarize older context now; keeps the last ~20k as is"
+                        title={
+                          compactUnavailable(props.id, u()) ?? compactHint(u())
+                        }
+                        disabled={
+                          !compacting() && !!compactUnavailable(props.id, u())
+                        }
                         onClick={compact}
                       />
                     </Show>

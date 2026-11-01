@@ -5,11 +5,12 @@ import type {
   ToolRegistration,
 } from '@earendil-works/pi-durable';
 import type { SessionStatus } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { CHATS_ID, listProjects } from '../projects/projects';
 import { allTerminals } from '../terminals/terminals';
 import { terminalState } from '../terminals/tools';
 import { spawnSession } from '../sessions/create';
-import { archiveWithWorktree } from '../sessions/meta';
+import { archiveWithWorktree } from '../projects/worktrees';
 import { archiveIfAsked, watch } from './notes';
 import { stop, submit } from '../sessions/prompts';
 import {
@@ -248,9 +249,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
       const s = await readSession(id);
       if (!self)
         checkInCharge(s, String(api.conversationId), user_asked, 'archive');
-      const running = (status: string) =>
-        status === 'running' || status === 'retrying';
-      if (!self && !running(s.status)) {
+      if (!self && !isBusy(s.status)) {
         const worktree = await archiveWithWorktree(id, !!remove_worktree);
         return text(`Archived ${named(s)}. ${worktree}`.trim());
       }
@@ -261,7 +260,7 @@ function sessionTools(hub: boolean): ToolRegistration[] {
         meta.archiveAfterRun = { worktree: !!remove_worktree };
       });
       // Ended between the read and the flag: nothing would archive it now.
-      if (!self && !running((await readSession(id)).status))
+      if (!self && !isBusy((await readSession(id)).status))
         await archiveIfAsked(conversation);
       const worktree = remove_worktree
         ? ', and its worktree removed if nothing would be lost'

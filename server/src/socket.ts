@@ -15,14 +15,8 @@ import {
   type Topics,
   type WorkspaceRef,
 } from '@bica/shared/protocol';
-import {
-  archive,
-  removeWorktree,
-  markSeen,
-  rename,
-  setAgent,
-  setVoice,
-} from './sessions/meta';
+import { archive, markSeen, rename, setAgent, setVoice } from './sessions/meta';
+import { removeWorktree } from './projects/worktrees';
 import {
   pruneContext,
   compact,
@@ -63,8 +57,8 @@ import {
   watchProjects,
 } from './projects/projects';
 import { suggestCommitMessage } from './git/commit-message';
-import { findPath, openInEditor, openPath } from './git/editor';
-import { workspaceFileLink } from './git/download';
+import { findPath, openInEditor, openPath } from './files/editor';
+import { workspaceFileLink } from './files/download';
 import {
   createTerminal,
   detachTerminal,
@@ -82,12 +76,11 @@ import {
   discard,
   pull,
   push,
-  readText,
   stage,
   unstage,
-  watchFiles,
   watchStatus,
 } from './git/workspace';
+import { readText, watchFiles } from './files/files';
 
 type Sink = {
   snapshot: (value: unknown, kept?: number) => void;

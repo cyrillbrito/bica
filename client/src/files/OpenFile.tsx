@@ -26,19 +26,16 @@ import { IconButton } from '../ui/Button';
 import { previewKind } from './FilePreview';
 import { DownloadIcon, PinIcon, PreviewIcon, WrapIcon } from '../ui/icons';
 import { Segmented, segmentClass } from '../ui/Segmented';
+import { stored } from '../ui/stored';
 
 // Side by side by default; remembered for the tab's lifetime.
 const [split, setSplit] = createSignal(true);
 // Rendered by default; remembered for the tab's lifetime.
 const [preview, setPreview] = createSignal(true);
 // Off by default; remembered per device.
-const WRAP_KEY = 'bica.wrap';
-const [wrap, setWrap] = createSignal(localStorage.getItem(WRAP_KEY) === '1');
+const [wrap, setWrap] = stored('wrap', false);
 function toggleWrap() {
-  const next = !wrap();
-  setWrap(next);
-  if (next) localStorage.setItem(WRAP_KEY, '1');
-  else localStorage.removeItem(WRAP_KEY);
+  setWrap(!wrap());
 }
 
 /**

@@ -16,6 +16,7 @@ import CallBar from '../../voice/CallBar';
 import Composer, { type ComposerApi } from '../../sessions/Composer';
 import ContextChip from '../../context-usage/ContextChip';
 import ContextNag from '../../context-usage/ContextNag';
+import { isPruning } from '../../context-usage/context-usage';
 import MessageRow, { RULE } from '../../sessions/MessageRow';
 import ModelPicker from '../../models/ModelPicker';
 import OpenFile from '../../files/OpenFile';
@@ -29,12 +30,16 @@ import StuckStrip from '../../sessions/StuckStrip';
 import TonightStrip from '../../sessions/TonightStrip';
 import Queue from '../../sessions/Queue';
 import StatusDot from '../../sessions/StatusDot';
+import AgentBadge from '../../sessions/AgentBadge';
+import { menuItem, useSessionActions } from '../../sessions/actions';
+import { MenuButton, type MenuEntry } from '../../ui/ContextMenu';
+import VoiceSettings from '../../voice/VoiceSettings';
 import TitleInput from '../../sessions/TitleInput';
 import TopBar from '../../app/TopBar';
 import { IconButton } from '../../ui/Button';
 import Empty from '../../ui/Empty';
-import { CloseIcon, ParentIcon, SessionIcon } from '../../ui/icons';
-import { drawer, hasPanels, setNoPanels } from '../../ui/layout';
+import { CloseIcon, ParentIcon, SessionIcon, VoiceIcon } from '../../ui/icons';
+import { drawer, setNoPanels } from '../../ui/layout';
 import { openFromSearch, sameOpen, sessionFileHref } from '../../files/files';
 import { useCurrentWorkspace } from '../../projects/projects';
 import { paths } from '../../router';
@@ -42,7 +47,6 @@ import { sessionChoice, setOpenModel } from '../../models/models';
 import {
   configureSession,
   forkSession,
-  isPruning,
   markSeen,
   sendPrompt,
   stopSession,
@@ -51,8 +55,10 @@ import {
   useHub,
   useSessions,
 } from '../../sessions/sessions';
-import { pageFocused } from '../../ui/badge';
+import { pageFocused } from '../../ui/focus';
 import Working from '../../sessions/Working';
+import { hasPanels } from '@bica/shared/agents';
+import { isBusy } from '@bica/shared/status';
 import type { ProjectedView } from '@bica/shared/projection';
 import { SessionId } from '../../sessions/step-detail';
 import { hideThinking } from '../../sessions/thinking';
@@ -233,10 +239,27 @@ export default function Session(props: RouteProps<'/s/:id'>) {
   );
 
   // From the list, not the transcript: the composer is ready before it loads.
-  const busy = createMemo(
-    () => ['running', 'retrying'].includes(summary()?.status ?? ''),
-    { name: 'sessionBusy' },
-  );
+  const busy = createMemo(() => isBusy(summary()?.status), {
+    name: 'sessionBusy',
+  });
+  const { actionsFor } = useSessionActions();
+  let voiceDialog: HTMLDialogElement | undefined;
+  // The session's own menu: what the sidebar row offers, plus its voice.
+  const sessionMenu = (): MenuEntry[] => {
+    const s = summary();
+    if (!s) return [];
+    return [
+      ...actionsFor(s, () => setRenaming(true))
+        .filter((a) => a.id !== 'new-tab')
+        .map(menuItem),
+      'separator',
+      {
+        label: 'Voice settings',
+        icon: <VoiceIcon />,
+        onSelect: () => voiceDialog?.showModal(),
+      },
+    ];
+  };
   // A session opens at its newest message, also when switching to another.
   const stick = createStickToBottom();
   createEffect(
@@ -276,19 +299,21 @@ export default function Session(props: RouteProps<'/s/:id'>) {
       <Title>{title()}</Title>
       <TopBar
         actions={
-          <Ready>
-            {(v) => (
-              <ContextChip
-                id={props.params.id!}
-                view={v()}
-                usage={usage()!}
-                agent={summary()?.agent ?? 'coding'}
-                voice={summary()?.voice ?? null}
-              />
-            )}
-          </Ready>
+          <>
+            <Ready>
+              {(v) => (
+                <ContextChip
+                  id={props.params.id!}
+                  view={v()}
+                  usage={usage()!}
+                />
+              )}
+            </Ready>
+            <MenuButton size="md" title="Session actions" items={sessionMenu} />
+          </>
         }
       >
+        <AgentBadge agent={summary()?.agent ?? 'coding'} />
         {/* The open session is always read: only show a state worth noticing. */}
         <Ready>
           {(v) => (
@@ -525,6 +550,11 @@ export default function Session(props: RouteProps<'/s/:id'>) {
           )}
         </Show>
       </div>
+      <VoiceSettings
+        id={props.params.id!}
+        voice={summary()?.voice ?? null}
+        ref={(el) => (voiceDialog = el)}
+      />
     </Show>
   );
 }

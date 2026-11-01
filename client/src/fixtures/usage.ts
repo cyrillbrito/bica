@@ -361,7 +361,11 @@ export function fixtureCatalog(worst: boolean): ModelCatalog {
       { id: 'openrouter', name: 'OpenRouter', source: 'stored credential' },
     ],
     models,
-    compaction: { reserveTokens: RESERVE, backgroundTokens: BACKGROUND },
+    compaction: {
+      reserveTokens: RESERVE,
+      backgroundTokens: BACKGROUND,
+      keepRecentTokens: 20_000,
+    },
   };
 }
 

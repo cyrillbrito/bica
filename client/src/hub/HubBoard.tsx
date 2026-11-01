@@ -1,38 +1,23 @@
 import { For, Show, createMemo } from 'solid-js';
 
-import { formatCost } from '@bica/shared/context-usage';
-import type { SessionStatus, SessionSummary } from '@bica/shared/protocol';
+import type { SessionSummary } from '@bica/shared/protocol';
+import { isBusy, needsYou, urgency } from '@bica/shared/status';
 import { useProjects, workspaceName } from '../projects/projects';
 import { useSessions } from '../sessions/sessions';
+import { formatCost } from '../ui/format';
 import { timeAgo } from '../ui/time';
 import { paths } from '../router';
-import StatusDot from '../sessions/StatusDot';
+import StatusDot, { STATUS } from '../sessions/StatusDot';
+import { stored } from '../ui/stored';
 import Chevron from '../ui/Chevron';
 
-// What needs you comes first: a question, then a failure, then a reply.
-const RANK: Record<SessionStatus, number> = {
-  waiting: 0,
-  error: 1,
-  done: 2,
-  retrying: 3,
-  running: 3,
-  idle: 4,
-};
-
-const WORD: Partial<Record<SessionStatus, string>> = {
-  waiting: 'Asks you',
-  error: 'Failed',
-  done: 'New reply',
-  retrying: 'Retrying',
-  running: 'Running',
-};
-
-const NEEDS_YOU = new Set<SessionStatus>(['waiting', 'error', 'done']);
+const [boardOpen, setBoardOpen] = stored('hubBoardOpen', true);
 
 type Branch = { session: SessionSummary; cost: number; children: Branch[] };
 
+// What needs you first, then the newest.
 function byRank(a: SessionSummary, b: SessionSummary) {
-  return RANK[a.status] - RANK[b.status] || b.updatedAt - a.updatedAt;
+  return urgency(a.status) - urgency(b.status) || b.updatedAt - a.updatedAt;
 }
 
 /**
@@ -105,27 +90,21 @@ export default function HubBoard(props: { hubId: string }) {
   const spent = () => tree().reduce((n, b) => n + b.cost, 0);
   const rows = (list: Branch[]): number =>
     list.reduce((n, b) => n + 1 + rows(b.children), 0);
-  const needsYou = () => tracked().filter((s) => NEEDS_YOU.has(s.status));
-  const running = () =>
-    tracked().filter((s) => s.status === 'running' || s.status === 'retrying');
+  const waiting = () => tracked().filter((s) => needsYou(s.status));
+  const running = () => tracked().filter((s) => isBusy(s.status));
   return (
     <Show when={tracked().length}>
       <details
         class="group/board expand shrink-0 border-t border-line"
-        open={localStorage.getItem('bica.hubBoardOpen') !== '0'}
-        onToggle={(e) =>
-          localStorage.setItem(
-            'bica.hubBoardOpen',
-            e.currentTarget.open ? '1' : '0',
-          )
-        }
+        open={boardOpen()}
+        onToggle={(e) => setBoardOpen(e.currentTarget.open)}
       >
         <summary class="chat-column flex h-10 items-center gap-2 text-meta text-muted hover:text-fg touch:h-11">
           <Chevron class="group-open/board:rotate-90" />
           <span class="font-medium text-fg">Threads</span>
           <span class="min-w-0 flex-1 truncate">
             {[
-              needsYou().length && `${needsYou().length} need you`,
+              waiting().length && `${waiting().length} need you`,
               running().length && `${running().length} running`,
               `${rows(tree())} open`,
               spent() >= 0.01 && `${formatCost(spent())} spent`,
@@ -143,6 +122,13 @@ export default function HubBoard(props: { hubId: string }) {
     </Show>
   );
 }
+
+const TEXT = {
+  accent: 'text-accent',
+  danger: 'text-danger',
+  warn: 'text-warn-ink',
+  muted: 'text-muted',
+} as const;
 
 function Row(props: { branch: Branch }) {
   const projects = useProjects();
@@ -166,7 +152,7 @@ function Row(props: { branch: Branch }) {
         <span
           class={[
             'min-w-0 flex-1 truncate',
-            NEEDS_YOU.has(s().status) && 'font-semibold',
+            needsYou(s().status) && 'font-semibold',
           ]}
         >
           {s().title || 'New session'}
@@ -181,14 +167,10 @@ function Row(props: { branch: Branch }) {
         <span
           class={[
             'shrink-0 text-meta tabular-nums',
-            s().status === 'waiting'
-              ? 'text-accent'
-              : s().status === 'error'
-                ? 'text-danger'
-                : 'text-muted',
+            TEXT[STATUS[s().status].tone ?? 'muted'],
           ]}
         >
-          {[WORD[s().status], timeAgo(s().updatedAt)]
+          {[STATUS[s().status].word, timeAgo(s().updatedAt)]
             .filter(Boolean)
             .join(' · ')}
         </span>

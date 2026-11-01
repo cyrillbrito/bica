@@ -38,3 +38,9 @@ export function isAgent(value: unknown): value is AgentId {
 export function isLongLived(agent: AgentId) {
   return agent === 'assistant' || agent === 'hub';
 }
+
+// The hub has no shell and works in no project (docs/hub.md), so its
+// sessions show no Git, files, or terminal panels.
+export function hasPanels(agent: AgentId) {
+  return agent !== 'hub';
+}

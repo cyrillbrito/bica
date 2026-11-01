@@ -24,9 +24,9 @@ import { openPath, showPath } from '../files/files';
 
 import Mermaid from './Mermaid';
 import { createSmoothText } from './smooth-text';
+import { CODE_THEME } from '../files/pierre';
 
 // Pierre's shared Shiki instance, the same one the diff and file views use.
-const THEMES = { light: 'pierre-light', dark: 'pierre-dark' } as const;
 const LANGS = [
   'typescript',
   'tsx',
@@ -57,7 +57,7 @@ const [langsLoaded, setLangsLoaded] = createSignal(0, { name: 'shikiLangs' });
 const requested = new Set<string>();
 
 void getSharedHighlighter({
-  themes: [THEMES.light, THEMES.dark],
+  themes: [CODE_THEME.light, CODE_THEME.dark],
   langs: LANGS,
 }).then((h) => setShiki(() => h));
 
@@ -65,7 +65,7 @@ function loadLang(lang: string) {
   if (requested.has(lang)) return;
   requested.add(lang);
   getSharedHighlighter({
-    themes: [THEMES.light, THEMES.dark],
+    themes: [CODE_THEME.light, CODE_THEME.dark],
     langs: [lang],
   }).then(
     () => setLangsLoaded((n) => n + 1),
@@ -97,7 +97,7 @@ function highlight(code: string, lang?: string) {
     html = h
       .codeToHtml(code, {
         lang,
-        themes: THEMES,
+        themes: CODE_THEME,
         defaultColor: 'light-dark()',
       })
       .replace(/^<pre[^>]*><code[^>]*>/, '')

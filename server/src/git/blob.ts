@@ -1,7 +1,8 @@
 import type { BunRequest } from 'bun';
 import { gzipSync } from 'node:zlib';
 
-import { kindOf, readBlob } from './workspace';
+import { kindOf } from '../files/files';
+import { readBlob } from './workspace';
 
 // Diffs read each side by its git blob hash from status, over plain HTTP:
 // a hash always means the same bytes, so the browser keeps them for good

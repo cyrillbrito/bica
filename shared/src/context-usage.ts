@@ -24,6 +24,8 @@ export interface ContextUsage {
   compactAt?: number;
   /** Where it starts compacting in the background. */
   backgroundAt?: number;
+  /** What a compaction keeps as it is, the newest turns. */
+  keepRecent?: number;
   /** When the last request went out and how long its cache lives (ms). */
   cache?: { at: number; ttl: number };
   compacting: boolean;
@@ -145,6 +147,7 @@ export function contextUsage(
     measured: measuredAt >= 0 && stale === 0,
     window,
     compactAt,
+    keepRecent: catalog?.compaction.keepRecentTokens,
     backgroundAt:
       compactAt && catalog
         ? compactAt - catalog.compaction.backgroundTokens
@@ -212,24 +215,4 @@ export function pruneBlocked(u: Pick<ContextUsage, 'compacting' | 'prunable'>) {
 /** Close enough to Pi Durable's auto-compaction to say it is coming. */
 export function nearAutoCompact(u: ContextUsage) {
   return !!u.compactAt && u.used >= u.compactAt * 0.85;
-}
-
-/** 950, 12.3k, 126k, 1.2M */
-export function formatTokens(n: number) {
-  if (n < 1000) return String(Math.round(n));
-  if (n < 10_000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`;
-  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
-  return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-}
-
-export function formatCost(dollars: number) {
-  return dollars < 0.01 && dollars > 0 ? '<$0.01' : `$${dollars.toFixed(2)}`;
-}
-
-/** 4:05 below an hour, then 1h 12m. */
-export function formatClock(ms: number) {
-  const s = Math.ceil(ms / 1000);
-  return s >= 3600
-    ? `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
-    : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }

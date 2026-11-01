@@ -13,6 +13,7 @@ import {
 } from './voice';
 import { IconButton } from '../ui/Button';
 import { HangUpIcon, ImageIcon, MicIcon, MicOffIcon } from '../ui/icons';
+import { isBusy } from '@bica/shared/status';
 
 // Each bar's share of the level, so the meter has a shape at rest and moving.
 const BARS = [0.5, 0.85, 1, 0.75, 0.45];
@@ -122,8 +123,7 @@ export function HoldMusic() {
     () => {
       const c = call();
       if (!c || c.phase !== 'live' || c.talking || !soundOn()) return false;
-      const status = sessions().find((s) => s.id === c.sessionId)?.status;
-      return status === 'running' || status === 'retrying';
+      return isBusy(sessions().find((s) => s.id === c.sessionId)?.status);
     },
     { name: 'holdMusicOn' },
   );

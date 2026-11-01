@@ -3,15 +3,10 @@ import type { JSX } from '@solidjs/web';
 import { For, Show, createMemo, createSignal } from 'solid-js';
 
 import type { ContextBreakdown, Item } from '@bica/shared/context-breakdown';
-import {
-  cacheLeft,
-  formatClock,
-  formatCost,
-  formatTokens,
-  type ContextUsage,
-} from '@bica/shared/context-usage';
-import { compactSession, isCompacting } from '../sessions/sessions';
-import { tick } from '../ui/time';
+import { cacheLeft, type ContextUsage } from '@bica/shared/context-usage';
+import { compactHint, compactSession, isCompacting } from './context-usage';
+import { formatCost, formatTokens } from '../ui/format';
+import { formatDuration, tick } from '../ui/time';
 import ContextField, { percent } from './ContextField';
 import { Breakdown } from '../ui/Breakdown';
 import Alert from '../ui/Alert';
@@ -157,7 +152,7 @@ function Cache(props: {
                 : left() === undefined
                   ? '—'
                   : left()! > 0
-                    ? `Warm ${formatClock(left()!)}`
+                    ? `Warm ${formatDuration(left()!)}`
                     : 'Cold'
             }
             tone={cold() ? 'warn' : undefined}
@@ -299,8 +294,7 @@ function Compact(props: { id: string; usage: ContextUsage }) {
         <Alert>{error()}</Alert>
       </Show>
       <p class="text-meta text-muted">
-        Summarizes older turns, keeps the last ~20k as is. The agent can keep
-        working.
+        {compactHint(props.usage)} The agent can keep working.
       </p>
     </section>
   );

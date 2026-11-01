@@ -7,17 +7,16 @@ import type {
   DirListing,
   Project,
   ProjectEdit,
-  PullRequest,
   Workspace,
 } from '@bica/shared/protocol';
+import { CHATS_ID } from '@bica/shared/projects';
 import * as git from '../git/commands';
-import { copyIgnored } from './copy-ignored';
 import { pullRequests } from './github';
 import { live } from '../live';
 import { BICA_HOME, jsonFile } from '../storage';
 
-// Chats: sessions with no project, each in a fresh empty folder of its own.
-export const CHATS_ID = 'chats';
+export { CHATS_ID };
+
 const CHATS: Stored = {
   id: CHATS_ID,
   name: 'Chats',
@@ -129,7 +128,7 @@ async function initRepo(path: string) {
   if (!(await git.isInsideRepo(path))) await git.initRepo(path);
 }
 
-function slugify(title: string, fallback: string) {
+export function slugify(title: string, fallback: string) {
   return (
     title
       .toLowerCase()
@@ -146,6 +145,10 @@ const projects = live(listProjects, (refresh) => {
 });
 
 export const watchProjects = projects.watch;
+
+export function refreshProjects() {
+  return projects.refresh();
+}
 
 export async function addProject(path: string) {
   const real = await realpath(path);
@@ -199,93 +202,6 @@ export async function updateProject(id: string, edit: ProjectEdit) {
     if (!p) throw new Error(`No project ${id}`);
     p.name = name;
   });
-  await projects.refresh();
-}
-
-/**
- * A new worktree for a session: its own branch from the freshly fetched
- * default branch, or the local one when it is ahead, in a sibling folder
- * like `../shop-sidebar-resize`, with the main folder's ignored files
- * cloned in. Its path, and a warning when the fetch failed.
- */
-export async function createWorktree(projectId: string, title: string) {
-  const project = await getProject(projectId);
-  if (!project.git) throw new Error(`${project.name} is not a git repo`);
-  // The folder already says the project: `shop-ui-polish`, not
-  // `shop-shop-ui-polish`.
-  const prefix = `${slugify(project.name, '')}-`;
-  let slug = slugify(title, 'session');
-  if (slug.startsWith(prefix) && slug.length > prefix.length)
-    slug = slug.slice(prefix.length);
-  const taken = async (name: string) =>
-    existsSync(`${project.path}-${name}`) ||
-    (await git.hasBranch(project.path, name));
-  let branch = slug;
-  for (let i = 2; await taken(branch); i++) branch = `${slug}-${i}`;
-  // No origin: start from what is checked out locally.
-  let base = 'HEAD';
-  let warning: string | undefined;
-  const tracked = await git.originDefault(project.path);
-  if (tracked) {
-    base = tracked;
-    const local = tracked.replace(/^origin\//, '');
-    // A fetch normally takes a second or two; the session shouldn't wait
-    // long on a remote that is down.
-    await git.fetchBranch(project.path, 'origin', local, 10_000).catch((e) => {
-      warning = `Couldn't fetch ${local}: ${fetchProblem(e)}. The worktree starts from the last fetched copy.`;
-    });
-    // Work merged locally but not pushed yet counts: new sessions start on it.
-    if (await git.isAncestor(project.path, base, local)) base = local;
-  }
-  const path = `${project.path}-${branch}`;
-  // No tracking: the branch pushes to its own name, not to main.
-  await git.addWorktree(project.path, { path, branch, base });
-  await copyIgnored(project.path, path).catch((e) =>
-    console.warn(`Copying ignored files into ${path} failed:`, e),
-  );
-  await projects.refresh();
-  return { path, warning };
-}
-
-function fetchProblem(e: unknown) {
-  const said = e instanceof Error ? e.message : String(e);
-  if (
-    /could not read (username|password)|authentication failed|permission denied/i.test(
-      said,
-    )
-  )
-    return 'origin needs a sign-in';
-  if (e instanceof git.NoAnswer) return 'origin is not answering';
-  return said.split('\n')[0].replace(/^fatal: /, '');
-}
-
-/** What removing a worktree would lose, in words; null: nothing. */
-export async function worktreeRisk(path: string, pr: PullRequest | null) {
-  const changed = await git.changedPaths(path);
-  if (changed.length)
-    return `${changed.length} uncommitted file${changed.length > 1 ? 's' : ''}`;
-  // Squash merges leave the commits out of main, and the merged branch is
-  // often deleted on the remote, so the PR's head is the other proof.
-  const head = await git.head(path);
-  if (head && pr?.head === head) return null;
-  // Merged into a local branch, say `main`, but not pushed: still safe.
-  const unsaved = await git.commitsOnlyHere(
-    path,
-    await git.currentBranch(path),
-  );
-  if (unsaved)
-    return `${unsaved} commit${unsaved > 1 ? 's' : ''} on no other branch, local or pushed`;
-  return null;
-}
-
-/** Deletes a worktree's folder and its local branch, whatever is in them. */
-export async function removeGitWorktree(projectId: string, path: string) {
-  const project = await getProject(projectId);
-  const w = project.workspaces.find((w) => w.path === path && !w.main);
-  if (!w) throw new Error(`${path} is not a worktree of ${project.name}`);
-  // The caller already checked for work.
-  await git.removeWorktree(project.path, path);
-  if (w.branch) await git.deleteBranch(project.path, w.branch).catch(() => {});
   await projects.refresh();
 }
 

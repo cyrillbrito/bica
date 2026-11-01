@@ -81,8 +81,8 @@ export function projector(
       usageKey = key;
       const status = contextUsage(view, catalog());
       const breakdown = contextBreakdown(contextOf(view), status.used);
-      // Rounded to what formatTokens shows, so a new answer, which rescales
-      // every part, changes fewer of them.
+      // Rounded to what the client's formatTokens shows, so a new answer,
+      // which rescales every part, changes fewer of them.
       for (const p of [...breakdown.parts, ...breakdown.biggest])
         p.tokens = shown(p.tokens);
       // Through JSON to drop the fields it leaves undefined.

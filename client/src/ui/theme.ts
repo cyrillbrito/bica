@@ -1,25 +1,15 @@
-import { createSignal } from 'solid-js';
+import { storageKey, stored } from './stored';
 
 export type Theme = 'system' | 'light' | 'dark';
 
-// Per device, not a server setting: phone and laptop may want different ones.
 const KEY = 'theme';
 const BG = { light: '#fbfbfa', dark: '#1c1c20' };
 
-// Document.tsx imports the boot script, and the build renders it under Bun.
-function read(): Theme {
-  if (typeof localStorage === 'undefined') return 'system';
-  const t = localStorage.getItem(KEY);
-  return t === 'light' || t === 'dark' ? t : 'system';
-}
-
-const [theme, set] = createSignal<Theme>(read(), { name: 'theme' });
+const [theme, save] = stored<Theme>(KEY, 'system', ['system', 'light', 'dark']);
 export { theme };
 
 export function setTheme(t: Theme) {
-  set(t);
-  if (t === 'system') localStorage.removeItem(KEY);
-  else localStorage.setItem(KEY, t);
+  save(t);
   apply(t);
 }
 
@@ -38,4 +28,4 @@ function apply(t: Theme) {
 }
 
 /** Runs inline in <head> before first paint, so a forced theme doesn't flash. */
-export const themeBootScript = `try{var t=localStorage.getItem('${KEY}');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;var c=t==='dark'?'${BG.dark}':'${BG.light}';document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=c})}}catch(e){}`;
+export const themeBootScript = `try{var t=localStorage.getItem('${storageKey(KEY)}');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;var c=t==='dark'?'${BG.dark}':'${BG.light}';document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=c})}}catch(e){}`;

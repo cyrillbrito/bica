@@ -2,6 +2,7 @@ import type { FileTreeRowDecoration, GitStatusEntry } from '@pierre/trees';
 import { createEffect, createMemo, onSettled, untrack } from 'solid-js';
 
 import { openContextMenu, type MenuEntry } from '../ui/ContextMenu';
+import { isTouch } from '../ui/layout';
 
 type Tree = InstanceType<(typeof import('@pierre/trees'))['FileTree']>;
 export type TreeStatus = GitStatusEntry['status'];
@@ -17,12 +18,6 @@ function folders(path: string) {
     .split('/')
     .slice(0, -1)
     .map((_, i, parts) => `${parts.slice(0, i + 1).join('/')}/`);
-}
-
-function coarse() {
-  return (
-    typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
-  );
 }
 
 /**
@@ -128,7 +123,7 @@ export default function FileTree(props: {
         flattenEmptyDirectories: true,
         search: !props.fit,
         stickyFolders: !props.fit,
-        itemHeight: coarse() ? 44 : 28,
+        itemHeight: isTouch() ? 44 : 28,
         // Long names shorten; the line counts beside them don't.
         unsafeCSS:
           '[data-item-section="decoration"]{flex:1 0 auto}[data-item-section="decoration"]>span{flex-shrink:0}',
@@ -145,7 +140,7 @@ export default function FileTree(props: {
         composition: props.menu && {
           contextMenu: {
             triggerMode: 'both',
-            buttonVisibility: coarse() ? 'always' : 'when-needed',
+            buttonVisibility: isTouch() ? 'always' : 'when-needed',
             onOpen: (item, ctx) => {
               const chosen = t.getSelectedPaths();
               const ids = chosen.includes(item.path) ? chosen : [item.path];

@@ -1,7 +1,6 @@
-import { createSignal } from 'solid-js';
-
 import { toast } from '../ui/Toast';
-import { paths } from '../router';
+import { stored } from '../ui/stored';
+import { pageOf, paths } from '../router';
 import { fixtureKept, testing } from '../fixtures';
 import type { WorkspaceRef } from '@bica/shared/protocol';
 import { request, useTopic } from '../socket/socket';
@@ -115,9 +114,9 @@ export function sessionFileHref(id: string, open: Open) {
  * otherwise. Read at click time, so the plain location is enough.
  */
 export function openHref(ref: WorkspaceRef, open: Open) {
-  const [, kind, id] = location.pathname.split('/');
-  return kind === 's' && id
-    ? sessionFileHref(decodeURIComponent(id), open)
+  const page = pageOf(location);
+  return page.kind === 's'
+    ? sessionFileHref(page.id, open)
     : workspaceHref(ref, open);
 }
 
@@ -125,11 +124,7 @@ export type Kept = WorkspaceRef & Open;
 
 // ponytail: per device in localStorage; move to the server if laptop and
 // phone should share them.
-const KEPT_KEY = 'bica.kept';
-const [keptHere, setKept] = createSignal<Kept[]>(
-  JSON.parse(localStorage.getItem(KEPT_KEY) ?? '[]'),
-  { name: 'keptFiles' },
-);
+const [keptHere, setKept] = stored<Kept[]>('kept', []);
 /** Reactive: files kept open on this device (test data stands in, see fixtures/). */
 export function kept() {
   return fixtureKept() ?? keptHere();
@@ -147,7 +142,6 @@ function saveKept(list: Kept[]) {
   // Test data must never land in this device's real list.
   if (testing()) return;
   setKept(list);
-  localStorage.setItem(KEPT_KEY, JSON.stringify(list));
 }
 
 export function keepOpen(ref: WorkspaceRef, open: Open) {

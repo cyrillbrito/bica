@@ -1,17 +1,10 @@
 import { createSignal } from 'solid-js';
 
-import type { AgentId } from '@bica/shared/agents';
-
 // Wide screens: panels are columns the user can hide.
 export const [sidebarHidden, setSidebarHidden] = createSignal(false);
 export const [sidePanelHidden, setSidePanelHidden] = createSignal(false);
 // The open session has no files and changes panel.
 export const [noPanels, setNoPanels] = createSignal(false);
-// The hub has no shell and works in no project (docs/hub.md), so its
-// sessions show no Git, files, or terminal panels.
-export function hasPanels(agent: AgentId) {
-  return agent !== 'hub';
-}
 
 // Column widths in px, dragged by the user. The signals hold what the user
 // asked for; the exported `sidebarW` / `sidePanelW` are what is rendered, always
@@ -74,6 +67,16 @@ export function sidebarW() {
 // Narrow screens: panels are overlays, at most one open.
 export type Drawer = 'sidebar' | 'side-panel' | null;
 export const [drawer, setDrawer] = createSignal<Drawer>(null);
+
+/**
+ * A touch screen: an on-screen keyboard would cover what a focused field
+ * opens, and Enter is its only newline. Matches the `touch:` variant.
+ */
+export function isTouch() {
+  return (
+    typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+  );
+}
 
 function sidebarIsColumn() {
   return matchMedia('(min-width: 48rem)').matches;

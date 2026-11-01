@@ -12,6 +12,7 @@ import {
 } from '@earendil-works/pi-durable';
 
 import type { SessionSummary } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { isTurn, statusOf } from '@bica/shared/transcript';
 import { context, getHarness } from '../harness';
 import { live } from '../live';
@@ -134,8 +135,7 @@ export async function summarize(
   let status = statusOf(live, newest);
   const stuck = stuckOf(id);
   // Its run would look busy for good.
-  if (stuck && (status === 'running' || status === 'retrying'))
-    status = 'error';
+  if (stuck && isBusy(status)) status = 'error';
   if (
     status === 'idle' &&
     newest &&

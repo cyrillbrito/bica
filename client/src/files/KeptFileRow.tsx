@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@solidjs/router';
 import { Show } from 'solid-js';
 
-import { paths } from '../router';
+import { isWorkspacePage } from '../router';
 import { IconButton } from '../ui/Button';
 import { copyText } from '../ui/clipboard';
 import { contextMenu, type MenuEntry } from '../ui/ContextMenu';
@@ -16,8 +16,7 @@ export function isOpenKept(
   location: { pathname: string; search: string },
 ) {
   return (
-    location.pathname === paths.p(k.projectId)() &&
-    new URLSearchParams(location.search).get('w') === k.cwd &&
+    isWorkspacePage(location, k.projectId, k.cwd) &&
     openFromSearch(location.search)?.path === k.path
   );
 }

@@ -1,51 +1,22 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { readFile, stat } from 'node:fs/promises';
+import { join, relative, sep } from 'node:path';
 
-import type {
-  FileText,
-  GitChange,
-  GitStatus,
-  WorkspaceRef,
-} from '@bica/shared/protocol';
-import { live, type Live } from '../live';
-import { getProject } from '../projects/projects';
+import type { GitChange, GitStatus, WorkspaceRef } from '@bica/shared/protocol';
+import {
+  MAX_FILE,
+  MAX_MEDIA,
+  maxSize,
+  readDisk,
+  refreshFiles,
+  toText,
+} from '../files/files';
+import { polled } from '../live';
+import { inside, isRepo, open } from '../projects/workspace';
 import { onToolRan } from '../tools/tool-ran';
 import * as git from './commands';
 
-const MAX_FILE = 2 * 1024 * 1024;
-// Media is shown as itself, not as text, so it gets a looser cap.
-const MAX_MEDIA = 25 * 1024 * 1024;
-// Plain folders are walked by hand; stop somewhere sane.
-const MAX_FILES = 20_000;
-const SKIP_DIRS = new Set(['.git', 'node_modules']);
 // No file watcher: open views poll, and only while someone looks.
 const STATUS_MS = 1500;
-const FILES_MS = 4000;
-
-/** The folder behind a ref, refusing anything that isn't a workspace. */
-export async function open({ projectId, cwd }: WorkspaceRef) {
-  const project = await getProject(projectId);
-  const workspace = project.workspaces.find((w) => w.path === cwd);
-  if (!workspace)
-    throw new Error(`${cwd} is not a workspace of ${project.name}`);
-  // The folder itself: each chat folder is its own repo, its project isn't.
-  return { cwd, git: await isRepo(cwd) };
-}
-
-/** A path inside the workspace; the browser only sends relative ones. */
-export function inside(cwd: string, path: string) {
-  const full = resolve(cwd, path);
-  if (isAbsolute(path) || !full.startsWith(cwd + sep))
-    throw new Error(`${path} is outside the workspace`);
-  return full;
-}
-
-function isRepo(dir: string) {
-  return stat(join(dir, '.git')).then(
-    () => true,
-    () => false,
-  );
-}
 
 /** The workspace's own repo, or one of its submodules by relative path. */
 async function repoDir(cwd: string, repo?: string) {
@@ -71,41 +42,18 @@ async function submodulePaths(cwd: string) {
   return paths.filter((_, i) => found[i]);
 }
 
-// ---------- live topics: one poller per workspace, shared by watchers ----------
-
-// Kept once made: an unwatched one is just an object with no timer.
-const statuses = new Map<string, Live<GitStatus>>();
-const fileLists = new Map<string, Live<string[]>>();
-
-function polled<T>(
-  map: Map<string, Live<T>>,
-  cwd: string,
-  ms: number,
-  read: () => Promise<T>,
-) {
-  let topic = map.get(cwd);
-  if (!topic) {
-    topic = live(read, (refresh) => {
-      const timer = setInterval(refresh, ms);
-      return () => clearInterval(timer);
-    });
-    map.set(cwd, topic);
-  }
-  return topic;
-}
+// One poller per workspace, shared by watchers.
+const statuses = polled(STATUS_MS, (cwd) => readStatus(cwd));
 
 /** Re-read now instead of at the next tick, after we changed something. */
 async function poke(cwd: string) {
-  await Promise.all([
-    statuses.get(cwd)?.refresh(),
-    fileLists.get(cwd)?.refresh(),
-  ]);
+  await Promise.all([statuses.refresh(cwd), refreshFiles(cwd)]);
 }
 
 // An agent's edit shows as soon as its tool call ends.
 onToolRan((dir) => {
-  for (const cwd of new Set([...statuses.keys(), ...fileLists.keys()]))
-    if (dir === cwd || dir.startsWith(cwd + sep)) void poke(cwd);
+  for (const cwd of statuses.keys())
+    if (dir === cwd || dir.startsWith(cwd + sep)) void statuses.refresh(cwd);
 });
 
 export async function watchStatus(
@@ -117,9 +65,7 @@ export async function watchStatus(
     listener(null);
     return () => {};
   }
-  return polled(statuses, cwd, STATUS_MS, () => readStatus(cwd)).watch(
-    listener,
-  );
+  return statuses.get(cwd).watch(listener);
 }
 
 /**
@@ -265,8 +211,7 @@ async function diskBlob(full: string) {
     return null;
   }
   // Text past MAX_FILE isn't shown anyway, so a growing log isn't re-read.
-  const cap = MEDIA[extension(full) ?? ''] ? MAX_MEDIA : MAX_FILE;
-  if (s.size > cap) return undefined;
+  if (s.size > maxSize(full)) return undefined;
   const at = `${s.mtimeMs}:${s.size}`;
   const known = diskHashes.get(full);
   if (known?.at === at) return known.hash;
@@ -293,7 +238,7 @@ export async function readBlob(
   const { cwd } = await open(ref);
   const full = inside(cwd, path);
   const s = await stat(full).catch(() => null);
-  const disk = s?.isFile() && s.size <= MAX_MEDIA ? await fromDisk(full) : null;
+  const disk = s?.isFile() && s.size <= MAX_MEDIA ? await readDisk(full) : null;
   if (disk && blobHash(disk) === hash) return { bytes: disk, exact: true };
   const repo = await repoDir(cwd, repoPath);
   const kept = await git.blob(repo, hash, MAX_MEDIA);
@@ -499,82 +444,10 @@ export async function pendingChanges(
   };
 }
 
-const MEDIA: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  avif: 'image/avif',
-  bmp: 'image/bmp',
-  ico: 'image/x-icon',
-  pdf: 'application/pdf',
-  mp3: 'audio/mpeg',
-  wav: 'audio/wav',
-  ogg: 'audio/ogg',
-  m4a: 'audio/mp4',
-  flac: 'audio/flac',
-  mp4: 'video/mp4',
-  webm: 'video/webm',
-  mov: 'video/quicktime',
-};
-
-// By extension, else by magic bytes: screenshots often land with odd names.
-function extension(path: string) {
-  return /\.([^./]+)$/.exec(path)?.[1]?.toLowerCase();
-}
-
-function mediaType(path: string, buffer: Buffer) {
-  const ext = extension(path);
-  if (ext && MEDIA[ext]) return MEDIA[ext];
-  const head = buffer.subarray(0, 12).toString('latin1');
-  if (head.startsWith('\x89PNG')) return 'image/png';
-  if (head.startsWith('\xff\xd8\xff')) return 'image/jpeg';
-  if (head.startsWith('GIF8')) return 'image/gif';
-  if (head.startsWith('RIFF') && head.endsWith('WEBP')) return 'image/webp';
-  if (head.startsWith('%PDF')) return 'application/pdf';
-  return undefined;
-}
-
-/** How a file can be shown: as text, as media of a type, or not at all. */
-export function kindOf(
-  buffer: Buffer,
-  path: string,
-): 'text' | 'binary' | 'too large' | { mimeType: string } {
-  const mimeType = mediaType(path, buffer);
-  if (mimeType) return buffer.length > MAX_MEDIA ? 'too large' : { mimeType };
-  if (buffer.length > MAX_FILE) return 'too large';
-  // Git's own test: a NUL in the first 8000 bytes means binary.
-  if (buffer.subarray(0, 8000).includes(0)) return 'binary';
-  return 'text';
-}
-
-export function toText(buffer: Buffer | null, path: string): FileText {
-  if (!buffer) return { text: null, reason: 'missing' };
-  const kind = kindOf(buffer, path);
-  if (kind === 'text') return { text: buffer.toString('utf8') };
-  if (typeof kind === 'string') return { text: null, reason: kind };
-  return {
-    text: null,
-    reason: 'media',
-    mimeType: kind.mimeType,
-    data: buffer.toString('base64'),
-  };
-}
-
-function fromDisk(full: string) {
-  return readFile(full).catch(() => null);
-}
-
 // Null when that side has no such file.
 async function fromGit(cwd: string, path: string, side: 'HEAD' | 'index') {
   const bytes = await git.fileAt(cwd, path, side, MAX_MEDIA * 2);
   return bytes === 'too large' ? null : bytes;
-}
-
-export async function readText(ref: WorkspaceRef, path: string) {
-  const { cwd } = await open(ref);
-  return toText(await fromDisk(inside(cwd, path)), path);
 }
 
 export async function diff(
@@ -606,50 +479,6 @@ export async function diff(
   }
   const [a, b] = staged
     ? [fromGit(repo, before, 'HEAD'), fromGit(repo, rel, 'index')]
-    : [fromGit(repo, rel, 'index'), fromDisk(full)];
+    : [fromGit(repo, rel, 'index'), readDisk(full)];
   return { old: toText(await a, before), new: toText(await b, path) };
-}
-
-export async function watchFiles(
-  ref: WorkspaceRef,
-  listener: (paths: string[]) => void,
-) {
-  const { cwd, git: isGit } = await open(ref);
-  return polled(fileLists, cwd, FILES_MS, () =>
-    isGit ? gitFiles(cwd) : walk(cwd),
-  ).watch(listener);
-}
-
-async function gitFiles(cwd: string): Promise<string[]> {
-  const { files, submodules, untracked, deleted } = await git.fileList(cwd);
-  // A submodule would otherwise show up as a file; list its own files instead.
-  const nested = await Promise.all(
-    submodules.map((sub) =>
-      // Not checked out (no .git inside): nothing to show.
-      stat(join(cwd, sub, '.git'))
-        .then(() => gitFiles(join(cwd, sub)))
-        .then((ps) => ps.map((p) => `${sub}/${p}`))
-        .catch(() => []),
-    ),
-  );
-  const gone = new Set(deleted);
-  return [...new Set([...files, ...untracked])]
-    .filter((p) => !gone.has(p))
-    .concat(...nested)
-    .sort();
-}
-
-async function walk(cwd: string) {
-  const out: string[] = [];
-  const visit = async (dir: string) => {
-    for (const e of await readdir(dir, { withFileTypes: true })) {
-      if (out.length >= MAX_FILES) return;
-      const full = join(dir, e.name);
-      if (e.isDirectory()) {
-        if (!SKIP_DIRS.has(e.name)) await visit(full);
-      } else if (e.isFile()) out.push(relative(cwd, full));
-    }
-  };
-  await visit(cwd);
-  return out.sort();
 }

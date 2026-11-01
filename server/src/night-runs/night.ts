@@ -1,6 +1,7 @@
 import { AgentDoc, type ConversationId } from '@earendil-works/pi-durable';
 
 import type { SessionSummary } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { context, getHarness } from '../harness';
 import { accountsOf, openWindows } from '../models/plans';
 import { models } from '../models/registry';
@@ -48,9 +49,7 @@ export function startNight() {
 }
 
 function running(s: SessionSummary) {
-  return (
-    starting.has(s.id) || s.status === 'running' || s.status === 'retrying'
-  );
+  return starting.has(s.id) || isBusy(s.status);
 }
 
 async function tick() {

@@ -22,7 +22,7 @@ import { copyText } from '../ui/clipboard';
 import { paths } from '../router';
 import { imageUrl, openImage } from './images';
 import { clockTime } from '../ui/time';
-import { formatTokens } from '@bica/shared/context-usage';
+import { formatTokens } from '../ui/format';
 import { contextMenu } from '../ui/ContextMenu';
 import { type Message } from '@bica/shared/transcript';
 import { promptArrived } from './queue-glide';

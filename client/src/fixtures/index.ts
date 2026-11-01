@@ -321,7 +321,7 @@ export function testAnswer<C extends Call>(
   const answer =
     call === 'session.detail'
       ? talk
-        ? (live!.details.get(a.key!) ?? null)
+        ? talk.detail(a.key!)
         : chatOf(m, a.id!)?.detail(a.key!)
       : call === 'file.read' && file
         ? text(file.new)

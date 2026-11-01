@@ -2,8 +2,9 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Project, SessionSummary, Workspace } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import * as git from '../git/commands';
-import { removeWorktree } from '../sessions/meta';
+import { removeWorktree } from './worktrees';
 import { listSessions } from '../sessions/store';
 import { listProjects } from './projects';
 
@@ -59,8 +60,7 @@ export async function finishedWorktrees(
       // worktrees, such as a build cache's, can hold ignored files they need.
       if (w.main || !w.path.startsWith(`${project.path}-`)) continue;
       const here = sessions.filter((s) => s.cwd === w.path);
-      if (here.some((s) => s.status === 'running' || s.status === 'retrying'))
-        continue;
+      if (here.some((s) => isBusy(s.status))) continue;
       const used = Math.max(
         ...here.map((s) => s.updatedAt),
         await lastGitUse(w.path),

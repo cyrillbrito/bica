@@ -21,6 +21,8 @@ import { NoMatches, OptionGroup, OptionList, optionClass } from '../ui/Option';
 import { Popover, PopoverSearch } from '../ui/Popover';
 import { Tag } from '../ui/Tag';
 import { providerLogo } from './provider-logos';
+import { matches } from '../ui/search';
+import { isTouch } from '../ui/layout';
 
 type Method = Account['methods'][number]['type'];
 type Choice = { account: Account; type: Method };
@@ -239,12 +241,7 @@ function AddProvider(props: {
   const id = 'add-provider';
   let search: HTMLInputElement | undefined;
   const [query, setQuery] = createSignal('', { name: 'providerQuery' });
-  const matches = (text: string) =>
-    query()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .every((w) => text.toLowerCase().includes(w));
+  const found = (...texts: string[]) => matches(query(), ...texts);
   const open = () =>
     props.accounts.filter((a) => !a.status && !a.tool && !a.extra);
   // A plan signed in already is listed again, for another account of it.
@@ -254,9 +251,7 @@ function AddProvider(props: {
         .filter((a) => (!a.status && !a.extra) || a.addAccount)
         .flatMap((a) =>
           a.methods
-            .filter(
-              (m) => m.type === 'oauth' && matches(`${a.name} ${a.id} plan`),
-            )
+            .filter((m) => m.type === 'oauth' && found(a.name, a.id, 'plan'))
             .map((m) => ({
               account: a,
               type: m.type,
@@ -266,9 +261,7 @@ function AddProvider(props: {
         );
       const keys = open().flatMap((a) =>
         a.methods
-          .filter(
-            (m) => m.type === 'api_key' && matches(`${a.name} ${a.id} key`),
-          )
+          .filter((m) => m.type === 'api_key' && found(a.name, a.id, 'key'))
           .map((m) => ({
             account: a,
             type: m.type,
@@ -277,7 +270,7 @@ function AddProvider(props: {
           })),
       );
       const tools = props.accounts.filter(
-        (a) => a.tool && !a.status && matches(`${a.name} ${a.about ?? ''} key`),
+        (a) => a.tool && !a.status && found(a.name, a.about ?? '', 'key'),
       );
       return [
         { label: 'Sign in with a plan', items: plans },
@@ -313,7 +306,7 @@ function AddProvider(props: {
         id={id}
         label="Add provider"
         onToggle={(on) => {
-          if (on && matchMedia('(hover: hover)').matches) search?.focus();
+          if (on && !isTouch()) search?.focus();
           if (!on) setQuery('');
         }}
       >

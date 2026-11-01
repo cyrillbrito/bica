@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 
 import type { SessionStatus } from '@bica/shared/protocol';
-import { age, elapsed, formatClock } from '../ui/time';
+import { age, elapsed, formatDuration } from '../ui/time';
 import { Tag, type Tone } from '../ui/Tag';
 
 // Shape and color both carry the status.
@@ -19,13 +19,28 @@ const look: Record<SessionStatus, string> = {
   idle: 'rounded-full border border-muted opacity-60',
 };
 
-export const statusLabel: Record<SessionStatus, string> = {
-  running: 'Running',
-  retrying: 'Retrying after a provider error',
-  error: 'Failed',
-  waiting: 'Waiting for you',
-  done: 'Done, unread',
-  idle: 'Idle',
+/**
+ * How each status reads (docs/GLOSSARY.md: Status): in full, as one word,
+ * and the tint of the ones that ask for something.
+ */
+export const STATUS: Record<
+  SessionStatus,
+  {
+    label: string;
+    word: string;
+    tone?: Extract<Tone, 'accent' | 'warn' | 'danger'>;
+  }
+> = {
+  running: { label: 'Running', word: 'Running' },
+  retrying: {
+    label: 'Retrying after a provider error',
+    word: 'Retrying',
+    tone: 'warn',
+  },
+  error: { label: 'Failed', word: 'Failed', tone: 'danger' },
+  waiting: { label: 'Waiting for you', word: 'Waiting', tone: 'accent' },
+  done: { label: 'Unread', word: 'Unread' },
+  idle: { label: 'Idle', word: '' },
 };
 
 /**
@@ -46,8 +61,8 @@ export default function StatusDot(props: { status: SessionStatus }) {
             <span
               class={['size-2.5', look[status], pop && 'swap-in']}
               role="img"
-              aria-label={statusLabel[status]}
-              title={statusLabel[status]}
+              aria-label={STATUS[status].label}
+              title={STATUS[status].label}
             />
           );
         }}
@@ -55,13 +70,6 @@ export default function StatusDot(props: { status: SessionStatus }) {
     </span>
   );
 }
-
-// A calm tint per status that asks for something; the rest show a time.
-const TAG: Partial<Record<SessionStatus, [string, Tone]>> = {
-  waiting: ['Waiting', 'accent'],
-  error: ['Failed', 'danger'],
-  retrying: ['Retrying', 'warn'],
-};
 
 /**
  * The right end of a session row, after affectUI's Agent Inbox: a live clock
@@ -74,10 +82,10 @@ export function StatusTag(props: {
   since?: number | null;
   updatedAt: number;
 }) {
-  const kind = () =>
+  const kind = (): SessionStatus | 'clock' | 'age' =>
     props.status === 'running' && props.since
       ? 'clock'
-      : TAG[props.status]
+      : STATUS[props.status].tone
         ? props.status
         : 'age';
   let seen = false;
@@ -87,9 +95,10 @@ export function StatusTag(props: {
         {(k) => {
           const fade = seen;
           seen = true;
+          const tag = k === 'clock' || k === 'age' ? undefined : STATUS[k];
           return (
             <Show
-              when={TAG[k as SessionStatus]}
+              when={tag?.tone && tag}
               fallback={
                 <span
                   class={[
@@ -100,14 +109,14 @@ export function StatusTag(props: {
                   title={k === 'clock' ? 'Running for' : undefined}
                 >
                   {k === 'clock'
-                    ? formatClock(elapsed(props.since!))
+                    ? formatDuration(elapsed(props.since!))
                     : age(props.updatedAt)}
                 </span>
               }
             >
               {(tag) => (
-                <Tag tone={tag()[1]} class={fade ? 'appear' : undefined}>
-                  {tag()[0]}
+                <Tag tone={tag().tone!} class={fade ? 'appear' : undefined}>
+                  {tag().word}
                 </Tag>
               )}
             </Show>

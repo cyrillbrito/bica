@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
 
 import type { SessionSummary, TerminalInfo } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { setArchived } from './sessions';
 import { detachTerminal, useTerminals } from '../terminals/terminals';
 import { Button } from '../ui/Button';
@@ -24,10 +25,6 @@ const [closing, setClosing] = createSignal<ReadonlySet<string>>(new Set(), {
   name: 'archiveClosing',
 });
 let settle: (choice: Choice) => void = () => {};
-
-function busy(s: SessionSummary) {
-  return s.status === 'running' || s.status === 'retrying';
-}
 
 /** Every open child session of `id`, and their children. */
 function descendants(id: string, all: readonly SessionSummary[]) {
@@ -169,7 +166,7 @@ export default function ArchiveDialog() {
               type="button"
               role="checkbox"
               aria-checked={picked().has(s().id) ? 'true' : 'false'}
-              disabled={busy(s())}
+              disabled={isBusy(s().status)}
               class={['group/opt', optionClass]}
               onClick={() => toggle(picked, setPicked, s().id)}
             >

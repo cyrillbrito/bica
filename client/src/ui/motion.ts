@@ -1,30 +1,24 @@
-import { createSignal, untrack } from 'solid-js';
+import { untrack } from 'solid-js';
+
+import { storageKey, stored } from './stored';
 
 export type Motion = 'system' | 'full' | 'reduced';
 
-// Per device, like the theme. Lets the browser animate even when macOS has
-// reduced motion on (most browsers can't override it themselves).
+// Lets the browser animate even when macOS has reduced motion on (most
+// browsers can't override it themselves).
 const KEY = 'motion';
 
-// Document.tsx imports the boot script, and the build renders it under Bun.
-function read(): Motion {
-  if (typeof localStorage === 'undefined') return 'system';
-  const m = localStorage.getItem(KEY);
-  return m === 'full' || m === 'reduced' ? m : 'system';
-}
-
-const [motion, set] = createSignal<Motion>(read(), { name: 'motion' });
+const [motion, save] = stored<Motion>(KEY, 'system', [
+  'system',
+  'full',
+  'reduced',
+]);
 export { motion };
 
 export function setMotion(m: Motion) {
-  set(m);
-  if (m === 'system') {
-    localStorage.removeItem(KEY);
-    delete document.documentElement.dataset.motion;
-  } else {
-    localStorage.setItem(KEY, m);
-    document.documentElement.dataset.motion = m;
-  }
+  save(m);
+  if (m === 'system') delete document.documentElement.dataset.motion;
+  else document.documentElement.dataset.motion = m;
 }
 
 /** For JS animations; CSS uses the `motion-safe` / `motion-reduce` variants. */
@@ -37,4 +31,4 @@ export function reducedMotion() {
 }
 
 /** Runs inline in <head> before first paint. */
-export const motionBootScript = `try{var m=localStorage.getItem('${KEY}');if(m==='full'||m==='reduced')document.documentElement.dataset.motion=m}catch(e){}`;
+export const motionBootScript = `try{var m=localStorage.getItem('${storageKey(KEY)}');if(m==='full'||m==='reduced')document.documentElement.dataset.motion=m}catch(e){}`;

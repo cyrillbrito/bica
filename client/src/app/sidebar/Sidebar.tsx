@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from '@solidjs/router';
 import { For, Show, createMemo, createSignal, onCleanup } from 'solid-js';
 
-import type { SessionStatus, SessionSummary } from '@bica/shared/protocol';
+import type { SessionSummary } from '@bica/shared/protocol';
+import { isBusy, needsYou } from '@bica/shared/status';
 import { kept } from '../../files/files';
 import PlanUsage from '../../models/PlanUsage';
 import { openProjectPicker } from '../../projects/ProjectPicker';
@@ -9,13 +10,13 @@ import {
   CHATS_ID,
   reorderProjects,
   useProjects,
-  workspaceName,
+  whereOf,
 } from '../../projects/projects';
 import { paths } from '../../router';
 import { useHub, useSessions } from '../../sessions/sessions';
 import StatusDot from '../../sessions/StatusDot';
 import { useTerminals } from '../../terminals/terminals';
-import { useBadge } from '../../ui/badge';
+import { useBadge, useChimes } from '../../sessions/alerts';
 import { IconButton } from '../../ui/Button';
 import { contextMenu, openContextMenu } from '../../ui/ContextMenu';
 import Divider, { dividerClass } from '../../ui/Divider';
@@ -33,8 +34,8 @@ import {
 import { closeDrawer } from '../../ui/layout';
 import { Logo } from '../../ui/Logo';
 import { Segmented, SegmentCount, segmentClass } from '../../ui/Segmented';
-import { useChimes } from '../../ui/sound';
 import { createSortable, type Drag } from '../../ui/sortable';
+import { stored } from '../../ui/stored';
 import { toast } from '../../ui/Toast';
 import { openPalette } from '../palette/CommandPalette';
 import { SidebarContext, type SidebarRows } from './context';
@@ -53,22 +54,16 @@ import {
 const DROP_LINE =
   "before:absolute before:inset-x-2 before:h-0.5 before:rounded-full before:bg-muted before:content-['']";
 
-// The inbox tabs on top, after affectUI's Agent Inbox. Needs you: waiting on
-// an answer, failed, unread, or running: everything still in play. A session
-// that moved in the last 10 minutes stays too, since you likely just read it.
-type Filter = 'all' | 'needs';
+// The inbox tabs on top, after affectUI's Agent Inbox. Active: what needs
+// you or still runs, everything in play. A session that moved in the last
+// 10 minutes stays too, since you likely just read it.
+type Filter = 'all' | 'active';
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'needs', label: 'Needs you' },
-];
-const NEEDS: SessionStatus[] = [
-  'waiting',
-  'error',
-  'done',
-  'running',
-  'retrying',
+  { id: 'active', label: 'Active' },
 ];
 const RECENT = 10 * 60_000;
+const [parkedOpen, setParkedOpen] = stored('parkedOpen', true);
 
 export default function Sidebar() {
   const sessions = useSessions();
@@ -111,7 +106,10 @@ export default function Sidebar() {
   const minute = setInterval(() => setNow(Date.now()), 60_000);
   onCleanup(() => clearInterval(minute));
   const inFilter = (f: Filter, s: SessionSummary) =>
-    f === 'all' || NEEDS.includes(statusOf(s)) || now() - s.updatedAt < RECENT;
+    f === 'all' ||
+    needsYou(statusOf(s)) ||
+    isBusy(s.status) ||
+    now() - s.updatedAt < RECENT;
 
   const [filter, setFilter] = createSignal<Filter>('all', {
     name: 'sidebarFilter',
@@ -212,7 +210,6 @@ export default function Sidebar() {
   const parkedSections = createMemo(() => bySection(parked()), {
     name: 'parkedSections',
   });
-  const parkedOpen = () => localStorage.getItem('bica.parkedOpen') !== '0';
 
   const archived = createMemo(() => sessions().filter((s) => s.archivedAt), {
     name: 'archivedSessions',
@@ -220,14 +217,6 @@ export default function Sidebar() {
   const [archivedOpen, setArchivedOpen] = createSignal(false, {
     name: 'archivedOpen',
   });
-
-  // The workspace a session ran in, for the archived list.
-  const whereOf = (s: SessionSummary) => {
-    const project = projects().find((p) => p.id === s.projectId);
-    if (!project) return undefined;
-    if (s.cleanedUp?.branch) return `${project.name} / ${s.cleanedUp.branch}`;
-    return s.cwd ? workspaceName(project, s.cwd) : project.name;
-  };
 
   const selection = createSelection({
     sessions,
@@ -237,7 +226,7 @@ export default function Sidebar() {
         ? archived()
         : sections().flatMap((s) => s.groups.flatMap((g) => g.sessions)),
   });
-  const menus = createSidebarMenus({ sessions, rename: setRenaming });
+  const menus = createSidebarMenus({ rename: setRenaming });
 
   const rows: SidebarRows = {
     statusOf,
@@ -254,7 +243,7 @@ export default function Sidebar() {
       selection.selected().length > 1 && selection.isSelected(s.id)
         ? selection.menu(selection.selected())
         : menus.sessionMenu(s),
-    whereOf,
+    whereOf: (s) => whereOf(projects(), s),
     workspaceMenu: menus.workspaceMenu,
     newSession: menus.newSession,
     removeWorkspace: menus.removeWorkspace,
@@ -384,7 +373,7 @@ export default function Sidebar() {
               <span class="grid size-9 place-items-center rounded-full bg-hover">
                 <InboxIcon />
               </span>
-              Nothing needs you
+              Nothing in play
             </div>
           </Show>
           {/* Always here, so the hub is one tap away even before it exists. */}
@@ -495,12 +484,7 @@ export default function Sidebar() {
             <details
               class="group/parked expand mt-1 mb-3"
               open={parkedOpen()}
-              onToggle={(e) =>
-                localStorage.setItem(
-                  'bica.parkedOpen',
-                  e.currentTarget.open ? '1' : '0',
-                )
-              }
+              onToggle={(e) => setParkedOpen(e.currentTarget.open)}
             >
               <summary
                 data-flip="d:parked"

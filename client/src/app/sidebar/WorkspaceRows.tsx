@@ -7,7 +7,7 @@ import { workspaceHref } from '../../files/files';
 import BranchName from '../../projects/BranchName';
 import { CHATS_ID } from '../../projects/projects';
 import PullRequestBadge from '../../projects/PullRequestBadge';
-import { paths } from '../../router';
+import { isWorkspacePage } from '../../router';
 import TerminalRow from '../../terminals/TerminalRow';
 import { IconButton } from '../../ui/Button';
 import { contextMenu } from '../../ui/ContextMenu';
@@ -146,11 +146,14 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
         })
       : undefined;
   // Lit while its page is open, unless one of its kept files is the open row.
-  const open = () =>
-    !!g().target?.cwd &&
-    location.pathname === paths.p(g().target!.projectId)() &&
-    new URLSearchParams(location.search).get('w') === g().target!.cwd &&
-    !g().files.some((k) => isOpenKept(k, location));
+  const open = () => {
+    const t = g().target;
+    return (
+      !!t?.cwd &&
+      isWorkspacePage(location, t.projectId, t.cwd) &&
+      !g().files.some((k) => isOpenKept(k, location))
+    );
+  };
   return (
     <div
       data-flip={`w:${g().key}`}

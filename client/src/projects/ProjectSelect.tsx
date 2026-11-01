@@ -11,6 +11,8 @@ import { CheckIcon, FolderIcon, PlusIcon, SparkleIcon } from '../ui/icons';
 import { NoMatches, optionClass } from '../ui/Option';
 import { createActiveOption } from '../ui/listKeys';
 import { Popover, PopoverSearch } from '../ui/Popover';
+import { matches } from '../ui/search';
+import { isTouch } from '../ui/layout';
 
 interface Item {
   key: string;
@@ -23,14 +25,6 @@ interface Item {
 }
 
 let nextId = 0;
-
-/** Whether `hay` has every word of the query. */
-function matches(hay: string, query: string) {
-  return query
-    .toLowerCase()
-    .split(/\s+/)
-    .every((w) => hay.includes(w));
-}
 
 /**
  * Which project a new session starts in: projects only, the ones used last
@@ -62,9 +56,9 @@ export default function ProjectSelect(props: {
 
   const items = createMemo(
     (): Item[] => {
-      const has = (hay: string) => matches(hay, query());
+      const has = (hay: string) => matches(query(), hay);
       const listed = projects()
-        .filter((p) => p.id !== CHATS_ID && has(p.name.toLowerCase()))
+        .filter((p) => p.id !== CHATS_ID && has(p.name))
         .map((p) => ({
           key: p.id,
           target: { projectId: p.id },
@@ -135,7 +129,7 @@ export default function ProjectSelect(props: {
           if (input) input.value = '';
           nav.move(Math.max(0, items().findIndex(isOn)));
           // On a phone the keyboard would cover the list.
-          if (matchMedia('(pointer: fine)').matches) input?.focus();
+          if (!isTouch()) input?.focus();
         }}
       >
         <PopoverSearch

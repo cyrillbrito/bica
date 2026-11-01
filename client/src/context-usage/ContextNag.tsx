@@ -12,7 +12,6 @@ import {
   EXPIRING,
   bloat,
   cacheLeft,
-  formatTokens,
   nearAutoCompact,
   type ContextUsage,
 } from '@bica/shared/context-usage';
@@ -23,8 +22,11 @@ import {
   isCompacting,
   isPruning,
   pruneUnavailable,
-} from '../sessions/sessions';
+  compactHint,
+  compactUnavailable,
+} from './context-usage';
 import { cheer } from '../ui/sound';
+import { formatTokens } from '../ui/format';
 import { tick } from '../ui/time';
 import type { Message } from '@bica/shared/transcript';
 import { Button, IconButton } from '../ui/Button';
@@ -151,8 +153,10 @@ export default function ContextNag(props: {
       size="sm"
       variant={p.primary ? 'primary' : 'outline'}
       loading={compacting()}
-      disabled={compacting() || pruning()}
-      title="Summarizes older context. The last ~20k stay as they are."
+      disabled={!!compactUnavailable(props.id, props.usage)}
+      title={
+        compactUnavailable(props.id, props.usage) ?? compactHint(props.usage)
+      }
       onClick={compact}
     >
       <CompactIcon />

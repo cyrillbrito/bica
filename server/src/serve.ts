@@ -1,5 +1,5 @@
 import { serveBlob } from './git/blob';
-import { serveDownload } from './git/download';
+import { serveDownload } from './files/download';
 import { installAgents } from './agents/extensions';
 import { startNight } from './night-runs/night';
 import { watchRuns } from './orchestration/notes';

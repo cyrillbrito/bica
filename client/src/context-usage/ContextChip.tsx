@@ -1,21 +1,16 @@
-import { Dynamic, type JSX } from '@solidjs/web';
 import { Show } from 'solid-js';
 
 import type { ContextBreakdown } from '@bica/shared/context-breakdown';
 import type { ProjectedView } from '@bica/shared/projection';
 import {
-  BLOATED,
   EXPIRING,
-  LONG_LIVED_COMPACT_AT,
   bloat,
   cacheLeft,
-  formatClock,
-  formatCost,
-  formatTokens,
   level,
   type ContextUsage,
 } from '@bica/shared/context-usage';
-import { tick } from '../ui/time';
+import { formatCost, formatTokens } from '../ui/format';
+import { formatDuration, tick } from '../ui/time';
 import { PRUNE_HINT } from '@bica/shared/prune';
 import { toast } from '../ui/Toast';
 import {
@@ -24,47 +19,28 @@ import {
   isCompacting,
   isPruning,
   pruneUnavailable,
-  setAgent,
-} from '../sessions/sessions';
-import { AGENTS, isLongLived, type AgentId } from '@bica/shared/agents';
-import type { VoiceSettings as Voice } from '@bica/shared/protocol';
+  compactHint,
+  compactUnavailable,
+} from './context-usage';
 import ContextDetails, { spendOf } from './ContextDetails';
 import { percent } from './ContextField';
 import { RollingNumber } from '../ui/RollingNumber';
-import VoiceSettings from '../voice/VoiceSettings';
 import { openContextMenu } from '../ui/ContextMenu';
 import { buttonClass } from '../ui/Button';
 import {
-  AssistantIcon,
   PruneIcon,
-  CodeIcon,
-  HubIcon,
   ColdIcon,
   CompactIcon,
   ExpiringIcon,
   InfoIcon,
-  MoonIcon,
-  VoiceIcon,
 } from '../ui/icons';
-
-const LONG_LIVED_HINT = `While it sits idle, Bica clears old tool output once the cache is cold, and past ${formatTokens(LONG_LIVED_COMPACT_AT)} it has the agent save to its memory files, then compacts. Past ${formatTokens(BLOATED)} it does that at the first pause.`;
-
-const AGENT_ICON: Record<AgentId, () => JSX.Element> = {
-  coding: CodeIcon,
-  assistant: AssistantIcon,
-  night: MoonIcon,
-  hub: HubIcon,
-};
 
 /** The context chip in the session's top bar: compact, prune, or the details. */
 export default function ContextChip(props: {
   id: string;
   view: ProjectedView;
   usage: ContextUsage & ContextBreakdown;
-  agent: AgentId;
-  voice: Voice | null;
 }) {
-  let voiceDialog: HTMLDialogElement | undefined;
   let dialog: HTMLDialogElement | undefined;
   const usage = () => props.usage;
   const left = () => cacheLeft(usage(), tick());
@@ -82,9 +58,9 @@ export default function ContextChip(props: {
     openContextMenu(r.right - 200, r.bottom + 4, [
       {
         label: isCompacting(props.id, usage()) ? 'Compacting…' : 'Compact',
-        hint: 'A model summarizes the older part of the session, so the next prompt sends far less. The transcript keeps everything.',
+        hint: compactHint(usage()),
         icon: <CompactIcon />,
-        disabled: isCompacting(props.id, usage()) && 'Already compacting',
+        disabled: compactUnavailable(props.id, usage()),
         onSelect: () =>
           void compactSession(props.id).catch((e) => toast.error(e)),
       },
@@ -95,21 +71,6 @@ export default function ContextChip(props: {
         disabled: pruneUnavailable(props.id, usage()),
         onSelect: () =>
           void pruneSession(props.id).catch((e) => toast.error(e)),
-      },
-      ...(props.agent === 'assistant'
-        ? [
-            {
-              label: 'Turn off assistant mode',
-              hint: 'Back to a coding session. Rebuilds the prompt cache once.',
-              icon: <CodeIcon />,
-              onSelect: () => void setAgent(props.id, 'coding'),
-            },
-          ]
-        : []),
-      {
-        label: 'Voice settings',
-        icon: <VoiceIcon />,
-        onSelect: () => voiceDialog?.showModal(),
       },
       'separator',
       {
@@ -140,20 +101,12 @@ export default function ContextChip(props: {
         aria-haspopup="menu"
         onClick={menu}
       >
-        <Show when={props.agent !== 'coding'}>
-          <span
-            class="text-muted"
-            title={`${AGENTS[props.agent].label}: ${AGENTS[props.agent].description}.${isLongLived(props.agent) ? ` ${LONG_LIVED_HINT}` : ''}`}
-          >
-            <Dynamic component={AGENT_ICON[props.agent]} />
-          </span>
-        </Show>
         <Ring usage={usage()} />
         <RollingNumber value={usage().used} format={formatTokens} />
         <Show when={!usage().running && expiring()}>
           <span
             class="flex items-center gap-1 text-warn"
-            title={`Prompt cache expires in ${formatClock(left()!)}. A message sent before then rereads the context from cache, cheaper and faster.`}
+            title={`Prompt cache expires in ${formatDuration(left()!)}. A message sent before then rereads the context from cache, cheaper and faster.`}
           >
             <ExpiringIcon />
             {Math.max(1, Math.ceil(left()! / 60_000))}m
@@ -174,11 +127,6 @@ export default function ContextChip(props: {
         spend={spend()}
         ref={(el) => (dialog = el)}
       />
-      <VoiceSettings
-        id={props.id}
-        voice={props.voice}
-        ref={(el) => (voiceDialog = el)}
-      />
     </>
   );
 }
@@ -189,7 +137,7 @@ function chipTitle(u: ContextUsage, left: number | undefined, spent: number) {
     : `${formatTokens(u.used)} tokens`;
   const cost = spent ? `. Spent ${formatCost(spent)}` : '';
   if (u.running || left === undefined) return `Context: ${size}${cost}`;
-  return `Context: ${size}. Prompt cache ${left > 0 ? `warm for ${formatClock(left)}` : 'cold'}${cost}`;
+  return `Context: ${size}. Prompt cache ${left > 0 ? `warm for ${formatDuration(left)}` : 'cold'}${cost}`;
 }
 
 function Ring(props: { usage: ContextUsage }) {

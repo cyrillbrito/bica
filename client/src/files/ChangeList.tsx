@@ -1,8 +1,9 @@
-import { createMemo, createSignal, untrack } from 'solid-js';
+import { createMemo, untrack } from 'solid-js';
 
 import type { GitChange } from '@bica/shared/protocol';
 import FileTree, { type TreeStatus } from './FileTree';
 import type { MenuEntry } from '../ui/ContextMenu';
+import { stored } from '../ui/stored';
 
 export const TREE_STATUS: Record<GitChange['status'], TreeStatus> = {
   M: 'modified',
@@ -14,16 +15,10 @@ export const TREE_STATUS: Record<GitChange['status'], TreeStatus> = {
 };
 
 // Tree or flat list, per device, for every changes list at once.
-const KEY = 'changesAsList';
-const [asList, setAsList] = createSignal(localStorage.getItem(KEY) === '1', {
-  name: 'changesAsList',
-});
+const [asList, setAsList] = stored('changesAsList', false);
 export { asList };
 export function toggleAsList() {
-  const next = !asList();
-  setAsList(next);
-  if (next) localStorage.setItem(KEY, '1');
-  else localStorage.removeItem(KEY);
+  setAsList(!asList());
 }
 
 export default function ChangeList(props: {

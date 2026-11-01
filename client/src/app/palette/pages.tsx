@@ -4,69 +4,43 @@ import { closeDrawer, toggleSidePanel, toggleSidebar } from '../../ui/layout';
 import {
   CHATS_ID,
   currentTarget,
-  setCurrentTarget,
   useProjects,
+  whereOf,
   workspaceName,
-  type Target,
 } from '../../projects/projects';
 import type { SessionSummary } from '@bica/shared/protocol';
-import {
-  forkSession,
-  markSeen,
-  renameSession,
-  setArchived,
-  stopSession,
-  useSessions,
-} from '../../sessions/sessions';
-import { createTerminal, useTerminals } from '../../terminals/terminals';
+import { needsYou as needsYouNow, urgency } from '@bica/shared/status';
+import { useSessionActions } from '../../sessions/actions';
+import { renameSession, useSessions } from '../../sessions/sessions';
+import { useTerminals } from '../../terminals/terminals';
 import { setTheme, theme, type Theme } from '../../ui/theme';
 import { age } from '../../ui/time';
 import { useCurrentWorkspace } from '../../projects/projects';
 import { workspaceHref } from '../../files/files';
-import { paths } from '../../router';
+import { pageOf, paths } from '../../router';
 import { openProjectPicker } from '../../projects/ProjectPicker';
-import { archiveWithChildren } from '../../sessions/ArchiveDialog';
 import { setStartAgent } from '../../sessions/StartComposer';
 import StatusDot from '../../sessions/StatusDot';
 import {
-  ArchiveIcon,
   ArrowDownIcon,
   AssistantIcon,
   BranchIcon,
   CheckIcon,
   FolderIcon,
-  ForkIcon,
   HubIcon,
   SidePanelIcon,
   KeyboardIcon,
   PencilIcon,
   PlusIcon,
-  RestoreIcon,
   SearchIcon,
   SessionIcon,
   SettingsIcon,
   SidebarIcon,
-  StopIcon,
   TerminalIcon,
   ThemeIcon,
-  UnreadIcon,
 } from '../../ui/icons';
 import { toast } from '../../ui/Toast';
 import type { Command, Page } from './commands';
-
-// Answers first: these are why you came back.
-const NEEDS_YOU: SessionSummary['status'][] = ['waiting', 'done', 'error'];
-
-// After the page changes, the new page's composer is the place to type.
-function focusComposer() {
-  requestAnimationFrame(() =>
-    requestAnimationFrame(() =>
-      document
-        .querySelector<HTMLTextAreaElement>('main textarea[name=prompt]')
-        ?.focus(),
-    ),
-  );
-}
 
 /**
  * What ⌘K offers: the root page, with the pages it opens, and every action
@@ -81,61 +55,38 @@ export function useCommands() {
   const workspace = useCurrentWorkspace();
 
   const sessionId = () => {
-    const [, kind, id] = location.pathname.split('/');
-    return kind === 's' && id ? decodeURIComponent(id) : undefined;
+    const page = pageOf(location);
+    return page.kind === 's' ? page.id : undefined;
   };
 
-  const whereOf = (s: SessionSummary) => {
-    const project = projects().find((p) => p.id === s.projectId);
-    if (!project) return undefined;
-    if (project.id === CHATS_ID || !s.cwd) return project.name;
-    return workspaceName(project, s.cwd);
-  };
+  const { actionsFor, startIn, openTerminalIn } = useSessionActions();
 
   const sessionItem = (s: SessionSummary, group?: string): Command => ({
     id: `s:${s.id}`,
     label: s.title || 'Untitled',
-    hint: [whereOf(s), s.archivedAt && 'archived'].filter(Boolean).join(' · '),
+    hint: [whereOf(projects(), s), s.archivedAt && 'archived']
+      .filter(Boolean)
+      .join(' · '),
     icon: () => <StatusDot status={s.archivedAt ? 'idle' : s.status} />,
     meta: age(s.updatedAt),
     group,
     run: () => navigate(paths.s(s.id)()),
   });
 
-  const startIn = (target: Target) => {
-    setCurrentTarget(target);
-    closeDrawer();
-    navigate(paths());
-    focusComposer();
-  };
-
   // Where a new session would start: this page's workspace, else the last one picked.
   const newSessionHere = () => {
     const w = workspace();
-    if (w) startIn({ projectId: w.project.id, cwd: w.workspace.path });
-    else {
-      closeDrawer();
-      navigate(paths());
-      focusComposer();
-    }
-  };
-
-  const newTerminalHere = async () => {
-    const w = workspace();
-    if (!w) return;
-    closeDrawer();
-    navigate(paths.t(await createTerminal(w.ref))());
+    startIn(w && { projectId: w.project.id, cwd: w.workspace.path });
   };
 
   // Waiting first, then unread answers, then failures; newest first in each.
   // The open one is skipped, so pressing again moves on.
   const needsYou = () =>
     sessions()
-      .filter((s) => !s.archivedAt && NEEDS_YOU.includes(s.status))
+      .filter((s) => !s.archivedAt && needsYouNow(s.status))
       .sort(
         (a, b) =>
-          NEEDS_YOU.indexOf(a.status) - NEEDS_YOU.indexOf(b.status) ||
-          b.updatedAt - a.updatedAt,
+          urgency(a.status) - urgency(b.status) || b.updatedAt - a.updatedAt,
       );
 
   const nextNeedsYou = () => {
@@ -255,80 +206,21 @@ export function useCommands() {
     ],
   });
 
-  // The open session's own actions, as in its sidebar menu.
+  // The open session's own actions, as in its menus. Ones that can't run now
+  // are left out, since ⌘K has no disabled rows.
   const sessionActions = (): Command[] => {
     const s = sessions().find((s) => s.id === sessionId());
     if (!s) return [];
-    const group = 'This session';
-    const running = s.status === 'running' || s.status === 'retrying';
-    return [
-      ...(running
-        ? [
-            {
-              id: 'c:stop',
-              label: 'Stop',
-              icon: StopIcon,
-              group,
-              run: () => void stopSession(s.id),
-            },
-          ]
-        : []),
-      {
-        id: 'c:rename',
-        label: 'Rename',
-        words: 'title',
-        icon: PencilIcon,
-        group,
-        page: () => renamePage(s),
-      },
-      {
-        id: 'c:fork',
-        label: 'Fork',
-        words: 'copy branch duplicate',
-        icon: ForkIcon,
-        group,
-        run: () => void forkSession(s.id).then((id) => navigate(paths.s(id)())),
-      },
-      ...(s.status === 'idle' && !s.archivedAt
-        ? [
-            {
-              id: 'c:unread',
-              label: 'Mark as unread',
-              icon: UnreadIcon,
-              group,
-              run: () => {
-                navigate(paths());
-                void markSeen(s.id, false);
-              },
-            },
-          ]
-        : []),
-      ...(s.archivedAt
-        ? [
-            {
-              id: 'c:unarchive',
-              label: 'Unarchive',
-              icon: RestoreIcon,
-              group,
-              run: () => void setArchived([s], false),
-            },
-          ]
-        : running
-          ? []
-          : [
-              {
-                id: 'c:archive',
-                label: 'Archive',
-                words: 'hide done close',
-                icon: ArchiveIcon,
-                group,
-                run: () =>
-                  void archiveWithChildren(s, sessions(), () =>
-                    navigate(paths()),
-                  ),
-              },
-            ]),
-    ];
+    return actionsFor(s, () => {})
+      .filter((a) => !a.disabled)
+      .map((a) => ({
+        id: `c:${a.id}`,
+        label: a.label,
+        words: a.words,
+        icon: a.icon,
+        group: 'This session',
+        ...(a.id === 'rename' ? { page: () => renamePage(s) } : { run: a.run }),
+      }));
   };
 
   const actions = (): Command[] => {
@@ -396,7 +288,7 @@ export function useCommands() {
               icon: TerminalIcon,
               keys: { code: 'Backquote', ctrl: true },
               group,
-              run: () => void newTerminalHere(),
+              run: () => void openTerminalIn(w.ref),
             },
           ]
         : []),
@@ -490,7 +382,7 @@ export function useCommands() {
         ];
       const waiting = needsYou().filter((s) => s.id !== sessionId());
       const recent = open
-        .filter((s) => !s.archivedAt && !NEEDS_YOU.includes(s.status))
+        .filter((s) => !s.archivedAt && !needsYouNow(s.status))
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .slice(0, 5);
       return [

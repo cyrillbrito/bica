@@ -14,7 +14,7 @@ A line above the composer speaks up only when there is something worth doing, an
 
 Progress and results show as lines in the transcript, with a sound when they land.
 
-The chip's menu offers Compact, Prune, turning [assistant mode](./assistant-mode.md) off, voice settings, and the details. The details show the window as a field of cells, filled by the system prompt, tools, the conversation, and tool output. Pointing at a part lights its cells. Below are the biggest prompts, replies, and tool results, the cache hit rate, and the spend per model.
+The chip's menu offers Compact, Prune, and the details. Every place that offers Compact and Prune (the chip, the nag above the composer, the field of cells, the details) shares one busy state and one rule for when each can run, in `client/src/context-usage/context-usage.ts`. Compact says how much it keeps as it is, Pi Durable's `keepRecentTokens`, sent with the model catalog. The details show the window as a field of cells, filled by the system prompt, tools, the conversation, and tool output. Pointing at a part lights its cells. Below are the biggest prompts, replies, and tool results, the cache hit rate, and the spend per model.
 
 ## Where the numbers come from
 

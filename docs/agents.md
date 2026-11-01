@@ -12,7 +12,7 @@ An agent holds nothing else. What Bica does around a session is a feature of its
 - The night runs feature holds a session for tonight as Night, and switches it to Coding once it ran.
 - [Housekeeping](./assistant-mode.md#housekeeping) prunes and compacts Assistant and Hub sessions while they sit idle.
 - The hub's page has no side panels, Settings → Hub picks its folder and model, and the hub hears when any session asks or fails. Sessions it starts get the default model, not its own.
-- ⌘K's New assistant session starts a session as Assistant, and the context chip's menu switches it back to Coding. Switching rebuilds the prompt cache once.
+- ⌘K's New assistant session starts a session as Assistant, and the session's menu switches between Coding and Assistant ([sessions.md](./sessions.md#session-actions)). Switching rebuilds the prompt cache once.
 
 A person picks only Coding or Assistant, as `PickableAgent` in `shared/src/agents.ts` says; Bica sets Night and Hub itself.
 

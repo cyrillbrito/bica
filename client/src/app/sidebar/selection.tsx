@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from '@solidjs/router';
 import { createMemo, createSignal } from 'solid-js';
 
 import type { SessionSummary } from '@bica/shared/protocol';
+import { isBusy } from '@bica/shared/status';
 import { paths } from '../../router';
 import { setArchived } from '../../sessions/sessions';
 import type { MenuEntry } from '../../ui/ContextMenu';
@@ -69,10 +70,10 @@ export function createSelection(props: {
   };
 
   const archive = async (list: SessionSummary[]) => {
-    const busy = (s: SessionSummary) =>
-      s.status === 'running' || s.status === 'retrying';
-    const ready = list.filter((s) => !s.archivedAt && !busy(s));
-    const skipped = list.filter((s) => !s.archivedAt && busy(s)).length;
+    const ready = list.filter((s) => !s.archivedAt && !isBusy(s.status));
+    const skipped = list.filter(
+      (s) => !s.archivedAt && isBusy(s.status),
+    ).length;
     clear();
     if (ready.some((s) => isOpen(s.id))) navigate(paths());
     await setArchived(
@@ -100,9 +101,7 @@ export function createSelection(props: {
               label: `Archive ${active.length} sessions`,
               icon: <ArchiveIcon />,
               disabled:
-                active.every(
-                  (s) => s.status === 'running' || s.status === 'retrying',
-                ) && 'All still running',
+                active.every((s) => isBusy(s.status)) && 'All still running',
               onSelect: () => void archive(list),
             },
           ] satisfies MenuEntry[])

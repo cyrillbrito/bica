@@ -1,7 +1,7 @@
 import { LiveDoc, type ConversationId } from '@earendil-works/pi-durable';
 
 import { context, getHarness } from '../harness';
-import { archiveWithWorktree } from '../sessions/meta';
+import { archiveWithWorktree } from '../projects/worktrees';
 import { tell } from '../sessions/notes';
 import {
   lastSender,

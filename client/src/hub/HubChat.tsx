@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createMemo } from 'solid-js';
 
-import { pageFocused } from '../ui/badge';
+import { pageFocused } from '../ui/focus';
 import {
   markSeen,
   sendPrompt,
@@ -12,6 +12,7 @@ import { SessionId } from '../sessions/step-detail';
 import { createStickToBottom } from '../ui/stick-to-bottom';
 import { hideThinking } from '../sessions/thinking';
 import { toMessages } from '@bica/shared/transcript';
+import { isBusy } from '@bica/shared/status';
 import { call, startCall } from '../voice/voice';
 import CallBar from '../voice/CallBar';
 import Composer, { type ComposerApi } from '../sessions/Composer';
@@ -30,7 +31,7 @@ export default function HubChat(props: { id: string }) {
     () => sessions().find((s) => s.id === props.id)?.status,
     { name: 'hubStatus' },
   );
-  const busy = () => status() === 'running' || status() === 'retrying';
+  const busy = () => isBusy(status());
   const messages = createMemo(
     () => {
       const v = view();

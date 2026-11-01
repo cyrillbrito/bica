@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 
 import type { WorkspaceRef } from '@bica/shared/protocol';
-import { inside, open } from './workspace';
+import { inside, open } from '../projects/workspace';
 
 // Files reach the browser as plain HTTP, so a big PDF or video needn't fit
 // in a socket message. There is no login (docs/deploy.md), so a file is only

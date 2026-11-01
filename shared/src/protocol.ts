@@ -146,8 +146,13 @@ export interface ModelCatalog {
     cacheTtl: { short?: number; long?: number };
   }[];
   // Auto-compaction: blocks at contextWindow - reserveTokens, starts in the
-  // background backgroundTokens before that.
-  compaction: { reserveTokens: number; backgroundTokens: number };
+  // background backgroundTokens before that, and keeps the newest
+  // keepRecentTokens as they are.
+  compaction: {
+    reserveTokens: number;
+    backgroundTokens: number;
+    keepRecentTokens: number;
+  };
 }
 
 /** A model provider or a tool service (Exa) and how it's signed in. */

@@ -2,7 +2,7 @@
 
 Assistant mode is for a session you never close. Most sessions are a task: you finish the work and move on. Some are a companion instead, like a notes vault you talk to every day and come back to for months. Assistant mode lets that kind of session keep going without you thinking about context size, cost, or when to start over.
 
-Start one with ⌘K's New assistant session, which opens the home page set to run as the Assistant [agent](./agents.md), in the project's main folder. The context chip then shows an infinity sign, and its menu can turn it off again.
+Start one with ⌘K's New assistant session, which opens the home page set to run as the Assistant [agent](./agents.md), in the project's main folder. The top bar then shows an infinity sign next to the title. The session's menu (⋯ in the top bar, its sidebar row, or ⌘K) turns assistant mode on for a coding session, and off again.
 
 ## The idea
 
