@@ -3,14 +3,15 @@ import {
   type JsonValue,
   type Op,
 } from '@earendil-works/chord/delta';
-import type {
-  ConversationId,
-  ConversationView,
-} from '@earendil-works/pi-durable';
+import type { ConversationId } from '@earendil-works/pi-durable';
 
 import type { EntriesHeld, ModelCatalog } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
-import { projector, stepDetail } from '@bica/shared/projection';
+import {
+  projector,
+  stepDetail,
+  type ProjectedView,
+} from '@bica/shared/projection';
 import { watchModels } from '../models/models';
 import { saveImage } from './attachments';
 
@@ -21,7 +22,7 @@ import { saveImage } from './attachments';
 export async function watchConversation(
   id: string,
   sink: {
-    snapshot: (view: ConversationView | null, kept?: number) => void;
+    snapshot: (view: ProjectedView | null, kept?: number) => void;
     changes: (ops: readonly Op[]) => void;
   },
   have?: EntriesHeld,
@@ -86,7 +87,7 @@ export async function conversationDetail(id: string, key: string) {
 // the same prefix. A compaction moves the head, and the first id stops
 // matching.
 function keptEntries(
-  entries: ConversationView['entries'],
+  entries: ProjectedView['entries'],
   have: EntriesHeld | undefined,
 ) {
   if (!have || have.count < 1 || have.count > entries.length) return 0;

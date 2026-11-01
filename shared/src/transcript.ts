@@ -8,13 +8,10 @@ import {
   calculateContextTokens,
   estimateTextTokens,
 } from '@earendil-works/pi-ai/utils/estimate';
-import type {
-  ConversationView,
-  EntryRecord,
-  LiveState,
-} from '@earendil-works/pi-durable';
+import type { EntryRecord, LiveState } from '@earendil-works/pi-durable';
 
 import { promptOf } from './images';
+import type { ProjectedView } from './projection';
 import { PRUNE_ENTRY } from './prune';
 import type { PromptImage, SessionStatus } from './protocol';
 
@@ -156,9 +153,9 @@ export interface ToolCall {
   durationMs?: number;
 }
 
-// The browser holds the raw conversation view and derives what it shows.
+// The browser holds the projected view and derives what it shows.
 export function toMessages(
-  view: ConversationView,
+  view: ProjectedView,
   // A fork's last inherited entry; the divider goes after it.
   forkedAt?: number,
   { thinking = true }: { thinking?: boolean } = {},
@@ -191,7 +188,7 @@ export function toMessages(
         : slot?.status === 'running'
           ? 'running'
           : 'pending',
-      output: result ? textOf(result.content) : slot?.output,
+      output: result ? textOf(result.content) : undefined,
       details,
       startedAt: num(time.startedAt),
       // Durable times results; older ones carry it in their details.
@@ -434,10 +431,10 @@ function questionsOf(args: Record<string, unknown>): Question[] {
  * The `ask` call the session waits on: the run ended on its result and
  * nothing came after. Any prompt, an answer or not, moves on.
  */
-function pendingAsk(
-  live: LiveState | undefined,
-  newest: EntryRecord | undefined,
-) {
+// The server reads Pi's live doc, the browser its projection: both keep these.
+type Run = Pick<LiveState, 'run' | 'generation'>;
+
+function pendingAsk(live: Run | undefined, newest: EntryRecord | undefined) {
   if (live?.run) return undefined;
   const last = newest?.model?.at(-1);
   return last?.role === 'toolResult' && last.toolName === ASK && !last.isError
@@ -453,7 +450,7 @@ function textOf(content: readonly { type: string; text?: string }[]) {
 
 /** Shared by the session list (server) and the open session (browser). */
 export function statusOf(
-  live: LiveState | undefined,
+  live: Run | undefined,
   newest: EntryRecord | undefined,
 ): SessionStatus {
   if (live?.run) return live.generation?.retry ? 'retrying' : 'running';
@@ -464,15 +461,15 @@ export function statusOf(
     : 'idle';
 }
 
-export function viewStatus(view: ConversationView) {
+export function viewStatus(view: ProjectedView) {
   return statusOf(liveOf(view), lastTurn(view));
 }
 
 // Voice lines come and go during a run; the status follows the agent.
-function lastTurn(view: ConversationView) {
+function lastTurn(view: ProjectedView) {
   return view.entries.findLast(isTurn);
 }
 
-function liveOf(view: ConversationView) {
-  return view.docs['pi.live'] as LiveState | undefined;
+function liveOf(view: ProjectedView) {
+  return view.docs['pi.live'];
 }

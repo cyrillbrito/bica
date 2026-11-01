@@ -1,6 +1,7 @@
-import type { ConversationView, InboxItem } from '@earendil-works/pi-durable';
+import type { InboxItem } from '@earendil-works/pi-durable';
 import { For, Show, createMemo, createSignal, onCleanup } from 'solid-js';
 
+import type { ProjectedView } from '@bica/shared/projection';
 import { pushQueued, withdrawQueued } from './sessions';
 import type { ComposerApi } from './Composer';
 import { IconButton } from '../ui/Button';
@@ -13,15 +14,14 @@ type Queued = Extract<InboxItem, { content: unknown }>;
 
 export default function Queue(props: {
   id: string;
-  view: ConversationView;
+  view: ProjectedView;
   composer: () => ComposerApi | undefined;
 }) {
   const items = createMemo(
     () =>
-      (
-        (props.view.docs['pi.inbox'] as { items?: InboxItem[] } | undefined)
-          ?.items ?? []
-      ).filter((i): i is Queued => i.mode !== 'write'),
+      (props.view.docs['pi.inbox']?.items ?? []).filter(
+        (i): i is Queued => i.mode !== 'write',
+      ),
     {
       name: 'queuedItems',
       // The view changes on every streamed token; the inbox rarely does.

@@ -1,6 +1,5 @@
 import { Title } from '@solidjs/meta';
 import { useLocation, useNavigate, type RouteProps } from '@solidjs/router';
-import type { ConversationView, LiveState } from '@earendil-works/pi-durable';
 import {
   type Accessor,
   For,
@@ -54,8 +53,7 @@ import {
 } from '../../sessions/sessions';
 import { pageFocused } from '../../ui/badge';
 import Working from '../../sessions/Working';
-import type { ContextBreakdown } from '@bica/shared/context-breakdown';
-import type { ContextUsage } from '@bica/shared/context-usage';
+import type { ProjectedView } from '@bica/shared/projection';
 import { SessionId } from '../../sessions/step-detail';
 import { hideThinking } from '../../sessions/thinking';
 import { call, startCall } from '../../voice/voice';
@@ -186,7 +184,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
         out.push({
           key: 'pruning',
           kind: 'pruning',
-          running: !!(view()?.docs['pi.live'] as LiveState | undefined)?.run,
+          running: !!view()?.docs['pi.live']?.run,
         });
       return out;
     },
@@ -196,7 +194,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
   // from the prompt that started this stretch of work.
   const waiting = createMemo(
     () => {
-      const live = view()?.docs['pi.live'] as LiveState | undefined;
+      const live = view()?.docs['pi.live'];
       if (!live?.run) return undefined;
       let since: number | undefined;
       for (const m of messages().toReversed()) {
@@ -215,13 +213,9 @@ export default function Session(props: RouteProps<'/s/:id'>) {
   );
   // Worked out by the server, which holds the full conversation; shared by
   // the chip and the nag above the composer.
-  const usage = createMemo(
-    () =>
-      view()?.docs['bica.context'] as
-        | (ContextUsage & ContextBreakdown)
-        | undefined,
-    { name: 'contextUsage' },
-  );
+  const usage = createMemo(() => view()?.docs['bica.context'], {
+    name: 'contextUsage',
+  });
   const lastCompaction = createMemo(
     () =>
       messages().findLast(
@@ -255,7 +249,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
   // here. The parts that need the transcript appear when it lands, each in
   // place, so switching sessions shows the page at once and fills it in.
   const Ready = (p: {
-    children: (view: Accessor<ConversationView>) => JSX.Element;
+    children: (view: Accessor<ProjectedView>) => JSX.Element;
   }) => <Show when={view()}>{p.children}</Show>;
   // The agent's model, under the prompt and under a call alike.
   const modelPicker = () => (

@@ -4,16 +4,44 @@
 // Pocket's projection (https://github.com/TannerMidd/pi-pocket).
 import type { Message } from '@earendil-works/pi-ai';
 import type {
+  AgentState,
   ConversationView,
   EntryRecord,
+  InboxState,
   LiveState,
+  ToolSlot,
+  UsageState,
 } from '@earendil-works/pi-durable';
 
-import { contextBreakdown } from './context-breakdown';
-import { contextOf, contextUsage } from './context-usage';
+import { contextBreakdown, type ContextBreakdown } from './context-breakdown';
+import { contextOf, contextUsage, type ContextUsage } from './context-usage';
+import { piDocs } from './pi-docs';
 import type { ModelCatalog, StepDetail } from './protocol';
 
 type Json = Record<string, unknown>;
+
+/** When a tool started and how long it took: all a running row shows. */
+export type ToolTiming = { startedAt?: number; durationMs?: number };
+
+/** `pi.live` without tool output or nested calls; an opened row loads them. */
+export type ProjectedLive = Omit<LiveState, 'tools' | 'nestedTools'> & {
+  tools?: (Omit<ToolSlot, 'output' | 'details'> & { details: ToolTiming })[];
+};
+
+/**
+ * What the browser gets of a conversation. Entries keep Pi's types, but tool
+ * results, thinking and the system prompt in them are emptied, and tool calls
+ * carry `stats` and `streaming`.
+ */
+export type ProjectedView = Omit<ConversationView, 'docs'> & {
+  readonly docs: {
+    'pi.live'?: ProjectedLive;
+    'pi.agent'?: Omit<AgentState, 'instructions'>;
+    'pi.inbox'?: InboxState;
+    'pi.usage'?: UsageState;
+    'bica.context'?: ContextUsage & ContextBreakdown;
+  };
+};
 
 // Long enough for a summary, a path or a command's first line.
 const ARG_CHARS = 200;
@@ -38,12 +66,13 @@ export function projector(
   // Context usage reads everything, so it's worked out here; only when the
   // entries or the run change, not on every streamed word.
   let usageKey: unknown[] = [];
-  let usage: unknown;
-  return (view: ConversationView): ConversationView => {
-    const live = view.docs['pi.live'] as LiveState | undefined;
+  let usage: (ContextUsage & ContextBreakdown) | undefined;
+  return (view: ConversationView): ProjectedView => {
+    const docs = piDocs(view);
+    const live = docs['pi.live'];
     const key = [
       view.entries,
-      view.docs['pi.agent'],
+      docs['pi.agent'],
       live?.run,
       live?.compactions,
       catalog(),
@@ -59,17 +88,16 @@ export function projector(
       // Through JSON to drop the fields it leaves undefined.
       usage = JSON.parse(JSON.stringify({ ...status, ...breakdown }));
     }
-    const { instructions: _instructions, ...agent } = (view.docs['pi.agent'] ??
-      {}) as Json;
+    const { instructions: _instructions, ...agent } = docs['pi.agent'] ?? {};
     return {
       ...view,
       entries: view.entries.map(entry),
       docs: defined({
-        ...view.docs,
+        ...docs,
         'pi.agent': agent,
         'pi.live': live && slimLive(live),
         'bica.context': usage,
-      }) as ConversationView['docs'],
+      }),
     };
   };
 }
@@ -83,7 +111,10 @@ function slimEntry(
     : e;
 }
 
-function slimLive(live: LiveState): LiveState {
+function slimLive(
+  // Their arguments can hold whole files; an opened row loads them.
+  { nestedTools: _nested, ...live }: LiveState,
+): ProjectedLive {
   const message = live.generation?.message as Message | undefined;
   return defined({
     ...live,
@@ -95,11 +126,9 @@ function slimLive(live: LiveState): LiveState {
       }),
     tools: live.tools?.map(({ output: _output, details, ...slot }) => ({
       ...slot,
-      details: timing(details) as never,
+      details: timing(details),
     })),
-    // Their arguments can hold whole files; an opened row loads them.
-    nestedTools: undefined,
-  }) as LiveState;
+  });
 }
 
 function slimMessage(
@@ -172,15 +201,17 @@ function shown(n: number) {
     : Math.round(n / (n < 10_000 ? 100 : 1000)) * (n < 10_000 ? 100 : 1000);
 }
 
-function timing(details: unknown) {
-  const d = (details ?? {}) as Json;
+// Stamped by server/src/tools/tool-time.ts.
+function timing(details: unknown): ToolTiming {
+  const d = (details ?? {}) as ToolTiming;
   return defined({ startedAt: d.startedAt, durationMs: d.durationMs });
 }
 
 // JSON has no `undefined`, and the diff of two projections fails on one.
-function defined<T extends Json>(value: T): T {
-  for (const key of Object.keys(value))
-    if (value[key] === undefined) delete value[key];
+function defined<T extends object>(value: T): T {
+  const record = value as Json;
+  for (const key of Object.keys(record))
+    if (record[key] === undefined) delete record[key];
   return value;
 }
 
@@ -246,7 +277,7 @@ export function stepDetail(
   view: ConversationView,
   key: string,
 ): StepDetail | null {
-  const live = view.docs['pi.live'] as LiveState | undefined;
+  const live = piDocs(view)['pi.live'];
   const partial = live?.generation?.message as Message | undefined;
   const thought = /^(?:(\d+):(\d+)|live):(\d+)$/.exec(key);
   if (thought) {

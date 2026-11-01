@@ -1,6 +1,6 @@
-import type { ConversationView } from '@earendil-works/pi-durable';
 import { createSignal } from 'solid-js';
 
+import type { ProjectedView } from '@bica/shared/projection';
 import type { ModelCatalog, ModelChoice } from '@bica/shared/protocol';
 import { request, useTopic } from '../socket/socket';
 
@@ -73,8 +73,8 @@ export function pickable(
 }
 
 /** The model and effort a session runs with, from its `pi.agent` document. */
-export function sessionChoice(view: ConversationView): ModelChoice | undefined {
-  const agent = view.docs['pi.agent'] as Partial<ModelChoice> | undefined;
+export function sessionChoice(view: ProjectedView): ModelChoice | undefined {
+  const agent = view.docs['pi.agent'];
   if (!agent?.model) return undefined;
   // Pi Durable's default when a session never set one.
   return { model: agent.model, thinkingLevel: agent.thinkingLevel ?? 'off' };

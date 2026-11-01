@@ -22,7 +22,7 @@ A request asks once and gets one reply. A subscription, called a topic, gives a 
 
 Pi Durable hands over a conversation once, then the exact changes from every save. Partial replies are saved several times a second, so the stream looks live.
 
-The browser gets a slimmer copy of the conversation (`shared/src/projection.ts`). Tool calls keep their name, status, timing, and a one-line summary, and thoughts only that they exist and how long they took. Opening one asks the server for its full contents. So streamed tool output costs nothing until you open it. This follows [Pi Pocket's projection](https://github.com/TannerMidd/pi-pocket/blob/main/src/lib/projection.ts).
+The browser gets a slimmer copy of the conversation (`shared/src/projection.ts`). Tool calls keep their name, status, timing, and a one-line summary, and thoughts only that they exist and how long they took. Opening one asks the server for its full contents. So streamed tool output costs nothing until you open it. Its type is `ProjectedView`, with the documents the browser reads typed, so client code reads what is really sent. This follows [Pi Pocket's projection](https://github.com/TannerMidd/pi-pocket/blob/main/src/lib/projection.ts).
 
 Everything else, such as the session list, git, and files, the server re-reads when something changes or polls while someone looks, and sends only the difference.
 

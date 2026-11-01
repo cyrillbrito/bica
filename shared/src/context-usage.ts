@@ -7,12 +7,9 @@ import {
   calculateContextTokens,
   estimateMessageTokens,
 } from '@earendil-works/pi-ai/utils/estimate';
-import type {
-  ContextView,
-  ConversationView,
-  LiveState,
-} from '@earendil-works/pi-durable';
+import type { ContextView, ConversationView } from '@earendil-works/pi-durable';
 
+import { piDocs } from './pi-docs';
 import { PRUNE_ENTRY, pruneEdits, prunedTokens } from './prune';
 import type { ModelCatalog } from './protocol';
 
@@ -118,9 +115,7 @@ export function contextUsage(
   const scale = estimated > 0 && measuredAt >= 0 ? used / estimated : 1;
   const prunable = prunedTokens(ctx, pruneEdits(ctx)) * scale;
 
-  const model = view.docs['pi.agent'] as
-    | { model?: { provider: string; modelId: string } }
-    | undefined;
+  const model = piDocs(view)['pi.agent'];
   const info = catalog?.models.find(
     (m) =>
       m.provider === model?.model?.provider && m.id === model?.model?.modelId,
@@ -143,7 +138,7 @@ export function contextUsage(
   const ttl = lastWrite?.cacheWrite1h
     ? info?.cacheTtl.long
     : info?.cacheTtl.short;
-  const live = view.docs['pi.live'] as LiveState | undefined;
+  const live = piDocs(view)['pi.live'];
 
   return {
     used,

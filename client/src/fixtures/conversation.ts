@@ -8,7 +8,11 @@ import type {
   LiveState,
 } from '@earendil-works/pi-durable';
 
-import { projector, stepDetail } from '@bica/shared/projection';
+import {
+  projector,
+  stepDetail,
+  type ProjectedView,
+} from '@bica/shared/projection';
 import { PRUNE_ENTRY } from '@bica/shared/prune';
 import { VOICE_ENTRY } from '@bica/shared/transcript';
 import type {
@@ -52,7 +56,7 @@ export interface ChatOptions {
 }
 
 export interface Chat {
-  view: ConversationView;
+  view: ProjectedView;
   detail: (key: string) => StepDetail | null;
 }
 

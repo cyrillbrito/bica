@@ -1,8 +1,8 @@
-import type { ConversationView, UsageState } from '@earendil-works/pi-durable';
 import { Dynamic, type JSX } from '@solidjs/web';
 import { Show } from 'solid-js';
 
 import type { ContextBreakdown } from '@bica/shared/context-breakdown';
+import type { ProjectedView } from '@bica/shared/projection';
 import {
   BLOATED,
   EXPIRING,
@@ -58,7 +58,7 @@ const AGENT_ICON: Record<AgentId, () => JSX.Element> = {
 /** The context chip in the session's top bar: compact, prune, or the details. */
 export default function ContextChip(props: {
   id: string;
-  view: ConversationView;
+  view: ProjectedView;
   usage: ContextUsage & ContextBreakdown;
   agent: AgentId;
   voice: Voice | null;
@@ -73,8 +73,7 @@ export default function ContextChip(props: {
     return l !== undefined && l > 0 && l < EXPIRING;
   };
   const cold = () => (left() ?? 1) <= 0;
-  const spend = () =>
-    spendOf(props.view.docs['pi.usage'] as UsageState | undefined);
+  const spend = () => spendOf(props.view.docs['pi.usage']);
   const spent = () => spend().reduce((n, s) => n + s.cost, 0);
 
   const menu = (e: MouseEvent) => {

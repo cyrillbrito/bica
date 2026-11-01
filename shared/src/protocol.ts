@@ -1,8 +1,8 @@
 // The wire format of the one WebSocket (docs/realtime-communication.md).
 // Shared by server/src/socket.ts and client/src/socket/socket.ts; types only.
 import type { Op } from '@earendil-works/chord/delta';
-import type { ConversationView } from '@earendil-works/pi-durable';
 import type { AgentId } from './agents';
+import type { ProjectedView } from './projection';
 
 // A run in progress (or backing off after a provider error), or none: failed,
 // asked the user something (waiting), finished with an answer not yet opened
@@ -612,7 +612,7 @@ export interface Topics {
   settings: { params: Record<string, never>; value: Settings };
   accounts: { params: Record<string, never>; value: Accounts };
   // null: no such conversation.
-  conversation: { params: { id: string }; value: ConversationView | null };
+  conversation: { params: { id: string }; value: ProjectedView | null };
   // null: not a git repository.
   'git.status': { params: WorkspaceRef; value: GitStatus | null };
   'plan.usage': { params: Record<string, never>; value: PlanUsage };
