@@ -1,6 +1,6 @@
 import type { ConversationId } from '@earendil-works/pi-durable';
 
-import type { AgentId } from '@bica/shared/agents';
+import type { PickableAgent } from '@bica/shared/agents';
 import type {
   PullRequest,
   VoiceSettings,
@@ -31,7 +31,7 @@ import {
  * Switches the agent a session runs as: its tools now, its instructions with
  * the next prompt. Both are part of the prompt cache, so it is rebuilt once.
  */
-export async function setAgent(id: string, agent: AgentId) {
+export async function setAgent(id: string, agent: PickableAgent) {
   const conversation = await getConversation(id);
   await editSession(conversation.id, (meta) => void (meta.profile = agent));
   await conversation.configure(
