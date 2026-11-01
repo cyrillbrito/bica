@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 
 import type { SessionStatus } from '@bica/shared/protocol';
-import { age, elapsed, formatDuration } from '../ui/time';
+import { age, elapsed, formatDuration, formatShort } from '../ui/time';
 import { Tag, type Tone } from '../ui/Tag';
 
 /**
@@ -153,10 +153,14 @@ export function StatusTag(props: {
                     k === 'clock' ? 'text-running-ink' : 'text-muted',
                     fade && 'appear',
                   ]}
-                  title={k === 'clock' ? 'Running for' : undefined}
+                  title={
+                    k === 'clock'
+                      ? `Running for ${formatDuration(elapsed(props.since!))}`
+                      : undefined
+                  }
                 >
                   {k === 'clock'
-                    ? formatDuration(elapsed(props.since!))
+                    ? formatShort(elapsed(props.since!))
                     : age(props.updatedAt)}
                 </span>
               }

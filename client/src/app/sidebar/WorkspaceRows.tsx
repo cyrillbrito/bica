@@ -17,8 +17,18 @@ import { useSidebar } from './context';
 import { nameOf, type Group } from './groups';
 import SessionRow from './SessionRow';
 
-/** The one indent step under a project or list heading, with a guide line. */
+/** The one indent step under a project or branch, with a guide line. */
 export const INDENT = 'ml-2.5 border-l border-line pl-1';
+
+/** Alone, a plain main folder or one without git says nothing new. */
+export function plainWorkspace(g: Group) {
+  return (
+    !(g.branch || g.note) ||
+    (!g.folder &&
+      (g.note === 'no git' ||
+        (!g.note && ['main', 'master'].includes(g.branch!))))
+  );
+}
 
 // Hover-only actions on a workspace row; always shown on touch.
 const REVEAL =
@@ -82,7 +92,7 @@ export function ParkedRow(props: { group: Group; project?: boolean }) {
       {...contextMenu(() => rows.workspaceMenu(g()))}
     >
       <a
-        class="flex min-w-0 flex-1 items-center gap-2 py-1 pl-2 touch:py-3"
+        class="flex min-w-0 flex-1 items-center gap-2 py-[3px] pl-2 touch:py-3"
         href={workspaceHref({
           projectId: g().target!.projectId,
           cwd: g().target!.cwd!,
@@ -116,8 +126,8 @@ export function ParkedRow(props: { group: Group; project?: boolean }) {
 }
 
 /**
- * The workspace's branch and PR. Alone in its project, the project's name
- * sits on a line above, so the branch keeps the full width.
+ * The workspace's branch and PR, or, for a project's only and plain
+ * workspace, the project's name.
  */
 export function WorkspaceHeader(props: { group: Group; project?: string }) {
   const rows = useSidebar();
@@ -125,15 +135,12 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
   const g = () => props.group;
   const branchLine = () => (
     <div
-      class="flex min-w-0 flex-1 items-center gap-2"
+      class="flex min-w-0 flex-1 items-center gap-1.5"
       title={[g().path, g().note].filter(Boolean).join('\n')}
     >
-      <Show when={!props.project}>
-        {/* Centered on the status dots below it. */}
-        <span class="-ml-0.5 grid text-muted [&_svg]:size-3.5">
-          <BranchIcon />
-        </span>
-      </Show>
+      <span class="grid text-muted [&_svg]:size-3.5">
+        <BranchIcon />
+      </span>
       <WorkspaceLabel group={g()} class="text-meta text-muted" />
       <Show when={g().pr}>{(pr) => <PullRequestBadge pr={pr()} />}</Show>
     </div>
@@ -160,6 +167,8 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
       // The fill spans the whole row, + included, so it reads as one row.
       class={[
         'context-target flex items-center gap-1 rounded-md pr-0.5 transition-colors',
+        // A branch's fill starts under its project's name, never left of it.
+        !props.project && 'ml-2',
         href() && 'hover:bg-hover',
         open() && 'bg-active',
       ]}
@@ -172,7 +181,10 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
     >
       <a
         draggable="false"
-        class="flex min-w-0 flex-1 flex-col justify-center pl-2 pr-1"
+        class={[
+          'flex min-w-0 flex-1 flex-col justify-center pr-1',
+          props.project ? 'pl-2' : 'pl-1',
+        ]}
         href={href()}
         title={
           href() ? `Open ${nameOf(g())}: files, changes and Git` : undefined
@@ -186,20 +198,6 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
             </h2>
           </Show>
         </div>
-        {/* Alone, a plain main folder or one without git says nothing new. */}
-        <Show
-          when={
-            props.project &&
-            (g().branch || g().note) &&
-            !(
-              !g().folder &&
-              (g().note === 'no git' ||
-                (!g().note && ['main', 'master'].includes(g().branch!)))
-            )
-          }
-        >
-          <div class="-mt-1 flex pb-0.5">{branchLine()}</div>
-        </Show>
       </a>
       <NewSessionButton group={g()} />
     </div>
@@ -207,9 +205,9 @@ export function WorkspaceHeader(props: { group: Group; project?: string }) {
 }
 
 /** A workspace's terminals, kept files, and sessions. */
-export function WorkspaceRows(props: { group: Group; nested?: boolean }) {
+export function WorkspaceRows(props: { group: Group }) {
   return (
-    <ul class={!props.nested && INDENT}>
+    <ul class={INDENT}>
       <For each={props.group.terminals} keyed={(t) => t.id}>
         {(t) => <TerminalRow terminal={t()} />}
       </For>

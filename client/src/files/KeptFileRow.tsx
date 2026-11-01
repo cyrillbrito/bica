@@ -73,7 +73,7 @@ export default function KeptFileRow(p: { file: Kept; files: Kept[] }) {
       >
         <a
           class={[
-            'flex items-center gap-2 rounded-md py-1 pr-8 pl-2 transition-colors hover:bg-hover touch:py-3 touch:pr-11',
+            'flex items-center gap-2 rounded-md py-[3px] pr-8 pl-2 transition-colors hover:bg-hover touch:py-3 touch:pr-11',
             isOpenFile(k()) && 'bg-active',
           ]}
           href={workspaceHref(k(), k())}

@@ -38,7 +38,7 @@ export default function SessionRow(props: {
           >
             <a
               class={[
-                'flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-hover data-active:bg-active touch:py-3 touch:pr-11',
+                'flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover data-active:bg-active touch:py-3 touch:pr-11',
                 props.archived && 'text-muted hover:text-fg',
                 rows.isSelected(s().id) && 'bg-accent/15! hover:bg-accent/20!',
               ]}

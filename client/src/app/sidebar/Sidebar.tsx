@@ -44,8 +44,8 @@ import { createSidebarMenus } from './menus';
 import { createSelection } from './selection';
 import SessionRow from './SessionRow';
 import {
-  INDENT,
   ParkedRow,
+  plainWorkspace,
   WorkspaceHeader,
   WorkspaceRows,
 } from './WorkspaceRows';
@@ -332,7 +332,7 @@ export default function Sidebar() {
                 {(f) => (
                   <button
                     type="button"
-                    class={[segmentClass, 'flex-auto px-1.5 whitespace-nowrap']}
+                    class={[segmentClass, 'flex-1 px-1.5 whitespace-nowrap']}
                     data-on={filter() === f.id || undefined}
                     aria-pressed={filter() === f.id ? 'true' : 'false'}
                     onClick={() => setFilter(f.id)}
@@ -353,7 +353,7 @@ export default function Sidebar() {
         </Show>
         <div
           ref={(el) => (list = el)}
-          class="flex-1 overflow-y-auto overscroll-contain px-2 pb-[max(--spacing(2),env(safe-area-inset-bottom))]"
+          class="flex-1 overflow-y-auto overscroll-contain pr-1 pl-2 pb-[max(--spacing(2),env(safe-area-inset-bottom))]"
         >
           {/* Chats is always listed, so it doesn't count as a project here. */}
           <Show
@@ -378,7 +378,7 @@ export default function Sidebar() {
           </Show>
           {/* Always here, so the hub is one tap away even before it exists. */}
           <a
-            class="mt-2 flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
+            class="mt-2 flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
             href={paths.hub()}
             aria-current={
               location.pathname === paths.hub() ? 'page' : undefined
@@ -402,7 +402,7 @@ export default function Sidebar() {
                 // whole list fits and the drop line has short hops.
                 class={[
                   'relative',
-                  sortable.drag() ? 'my-2' : 'mt-2 mb-4',
+                  sortable.drag() ? 'my-2' : 'mt-1.5 mb-3',
                   sortable.drag()?.id === s().key && 'opacity-40',
                   drop()?.key === s().key &&
                     (drop()!.side === 'before'
@@ -410,8 +410,11 @@ export default function Sidebar() {
                       : DROP_LINE + ' before:-bottom-[5px]'),
                 ]}
               >
+                {/* A project's only workspace shares its line, unless its
+                  branch is worth naming: then it gets its own row, as with
+                  several, so every header is one line. */}
                 <Show
-                  when={s().groups.length > 1}
+                  when={s().groups.length > 1 || !plainWorkspace(s().groups[0])}
                   fallback={
                     <div class="group">
                       <WorkspaceHeader
@@ -431,22 +434,23 @@ export default function Sidebar() {
                     class="context-target flex min-h-7 items-center pl-2 font-semibold"
                     title={s().name}
                     {...contextMenu(() => {
-                      const main = s().groups.find(
-                        (g) => g.target && !g.worktree,
-                      );
+                      const main =
+                        s().groups.find((g) => g.target && !g.worktree) ??
+                        (s().groups.length === 1 ? s().groups[0] : undefined);
                       return main ? menus.workspaceMenu(main) : [];
                     })}
                   >
                     <span class="min-w-0 truncate">{s().name}</span>
                   </h2>
-                  {/* Branches add no indent of their own: each guide line, broken
-                    between branches, shows which sessions are whose. */}
+                  {/* Branches add no indent of their own: the icon and the
+                    lighter type set them apart, and the guide line under
+                    each shows which sessions are whose. */}
                   <Show when={!sortable.drag()}>
                     <For each={s().groups} keyed={(g) => g.key}>
                       {(g) => (
-                        <div class={['group', INDENT, 'mt-0.5 [&+&]:mt-2']}>
+                        <div class="group [&+&]:mt-1">
                           <WorkspaceHeader group={g()} />
-                          <WorkspaceRows group={g()} nested />
+                          <WorkspaceRows group={g()} />
                         </div>
                       )}
                     </For>

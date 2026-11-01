@@ -76,7 +76,7 @@ export default function TerminalRow(p: { terminal: TerminalInfo }) {
         {...contextMenu(() => terminalMenu(t()))}
       >
         <a
-          class="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3 touch:pr-11"
+          class="flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3 touch:pr-11"
           href={paths.t(t().id)}
           title={t().command ? `${state()}: ${t().command}` : state()}
           onClick={closeDrawer}

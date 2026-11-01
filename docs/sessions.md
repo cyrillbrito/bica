@@ -65,7 +65,7 @@ Each session in the sidebar shows its status:
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 
-The right end of a row shows a live clock while it runs, a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
+The right end of a row shows a live clock while it runs, in one unit like `3m` (hover for the exact time), a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
 
 Work is stuck when Pi Durable won't run it. Work that was cut off by crashes too many times in a row, such as a tool that runs Bica out of memory, is paused instead of crashing Bica again. Work whose code is gone from Bica, such as a removed extension's tool, can't run at all. A strip above the composer says which, with Retry for paused work. Stop ends either.
 

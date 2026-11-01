@@ -96,6 +96,14 @@ export function formatDuration(ms: number) {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
 }
 
+/** A duration in its largest unit, for tight spots like a sidebar row: "42s", "3m", "1h". */
+export function formatShort(ms: number) {
+  const s = Math.max(1, Math.floor(ms / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h`;
+}
+
 /**
  * A live timer like `formatDuration`, or nothing for the first 10s: most steps
  * end by then, and a count only helps once a wait gets long.

@@ -44,6 +44,7 @@ Each branch shows its pull request's number and state, and a click opens it on G
 The sidebar starts with the [hub](./hub.md), then groups sessions by project and workspace, with each workspace's terminals and kept files above its sessions. How it shows on each screen is in [layout.md](./layout.md).
 
 - A workspace's header opens its workspace page: the workspace card, files, and Git ([files.md](./files.md)).
+- Every header is one line. A project whose only workspace is its main folder on `main` shares that line; otherwise each branch gets its own line under the project's name, at the same indent, with its sessions on a guide line below it.
 - Drag a project's header to reorder projects.
 - Branch names drop their prefix, and a leading ticket key becomes a small tag that opens the ticket when the project has a tickets link.
 - Workspaces with nothing open drop into Parked, so a worktree waiting on review stays out of the way. Pin project keeps a main folder listed.
