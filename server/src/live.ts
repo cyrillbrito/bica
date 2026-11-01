@@ -13,9 +13,13 @@ export function live<T>(
   let stop: (() => void) | undefined;
   // One read at a time, so an older value never lands after a newer one.
   let reading = Promise.resolve();
+  // A read not yet started covers every refresh asked before it starts, so
+  // a read slower than its timer can't queue up more behind it.
+  let waiting: Promise<void> | undefined;
 
   const refresh = () =>
-    (reading = reading.then(async () => {
+    (waiting ??= reading = reading.then(async () => {
+      waiting = undefined;
       if (!listeners.size) return;
       try {
         const value = await read();
