@@ -761,8 +761,34 @@
   }
 }
 
+/* Registered, so they can glide with the panels (set on main, App.tsx). */
+@property --sidebar-w {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+@property --panel-w {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
 @utility chat-column {
   @apply mx-auto w-full max-w-180 px-3 md:px-6;
+  /* Opening or closing a panel moves the column half as far as re-centring
+     would: it is pulled back toward the window's centre by half the
+     difference of the panels, never past the free space around it. Panels
+     are columns from md (left) and xl (right). */
+  --l: 0px;
+  --r: 0px;
+  @media (width >= 48rem) {
+    --l: var(--sidebar-w);
+  }
+  @media (width >= 80rem) {
+    --r: var(--panel-w);
+  }
+  --room: max(0px, (100cqw - 45rem) / 2);
+  translate: clamp(-1 * var(--room), (var(--r) - var(--l)) / 4, var(--room)) 0;
 }
 
 /* Rendered Markdown (markdown/Markdown.tsx). Blocks are flex items,

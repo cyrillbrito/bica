@@ -195,7 +195,7 @@ What each screen size shows is in [layout.md](./layout.md): phone is below `md`,
 - Columns resize by dragging their inner edge (arrow keys when focused, double-click resets). Widths are bounded per column and by the window: the centre column always keeps 400px, and the rendered width is re-clamped when the window shrinks (`layout.ts`). Column wrappers are `shrink-0 min-w-0` and their contents `overflow-hidden`, so inner content can't push a column wider.
 - Overlays have a backdrop and make `main` inert. Navigating closes them.
 - Scrollbars that stay visible (a mouse, or macOS set to always show them) are a thin thumb with no track, from a base rule in `App.css`, so a panel never grows a grey gutter.
-- Transcript and composer share one centered column (`chat-column`, max 720px; 12px side padding on phone).
+- Transcript and composer share one centered column (`chat-column`, max 720px; 12px side padding on phone). When a panel opens or closes, the column moves half as far as re-centring would, so it holds roughly its place; it never shifts past the free space around it, and glides with the panel.
 - On phone, expanded tool output, thoughts and diffs have no height cap, wrap long lines and drop the indent: the transcript is the only scroller. Desktop caps them and scrolls inside.
 - Diffs are unified on phone, split allowed on desktop.
 

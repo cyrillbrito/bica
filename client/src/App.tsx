@@ -119,7 +119,20 @@ export default function App() {
             </Errored>
           </div>
 
-          <main class="flex min-w-0 flex-1 flex-col" inert={drawer() !== null}>
+          <main
+            class={[
+              '@container flex min-w-0 flex-1 flex-col',
+              // The panels' widths glide with the panels, so the chat column
+              // follows them frame by frame (chat-column in App.css).
+              sliding() &&
+                'motion-safe:transition-[--sidebar-w,--panel-w] motion-safe:duration-200 motion-safe:ease-out',
+            ]}
+            inert={drawer() !== null}
+            style={{
+              '--sidebar-w': `${sidebarHidden() ? 0 : sidebarW()}px`,
+              '--panel-w': `${noPanels() || sidePanelHidden() ? 0 : sidePanelW()}px`,
+            }}
+          >
             <Errored fallback={(error) => <Failed error={error()} />}>
               <Page>{props.children}</Page>
             </Errored>
