@@ -2,7 +2,7 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Project, SessionSummary, Workspace } from '@bica/shared/protocol';
-import { git as run } from '../git/run';
+import * as git from '../git/commands';
 import { removeWorktree } from '../sessions/meta';
 import { listSessions } from '../sessions/store';
 import { listProjects } from './projects';
@@ -80,19 +80,11 @@ async function reason(project: Project, w: Workspace, idle: number) {
   return null;
 }
 
-/** Git's output, trimmed; null when it fails. */
-function git(cwd: string, args: string[]) {
-  return run(cwd, args).then(
-    (out) => out.trim(),
-    () => null,
-  );
-}
-
 // Commits, checkouts, and resets touch the reflog; a fresh worktree's
 // folder says when it was made.
 async function lastGitUse(path: string) {
   const times = [(await stat(path)).birthtimeMs];
-  const dir = await git(path, ['rev-parse', '--absolute-git-dir']);
+  const dir = await git.gitDir(path);
   if (dir)
     await stat(join(dir, 'logs/HEAD')).then(
       (s) => times.push(s.mtimeMs),
@@ -102,20 +94,14 @@ async function lastGitUse(path: string) {
 }
 
 async function allInDefaultBranch(project: Project, path: string) {
-  if (await git(path, ['status', '--porcelain'])) return false;
-  const remote = await git(project.path, [
-    'symbolic-ref',
-    '--short',
-    'refs/remotes/origin/HEAD',
-  ]);
+  // A status that can't be read counts as clean; the merge check decides.
+  if ((await git.changedPaths(path).catch(() => [])).length) return false;
+  const remote = await git.originDefault(project.path);
   const main = project.workspaces.find((w) => w.main)?.branch;
   const bases = [remote, remote?.replace(/^origin\//, ''), main].filter(
     (b): b is string => !!b,
   );
   for (const base of new Set(bases))
-    if (
-      (await git(path, ['merge-base', '--is-ancestor', 'HEAD', base])) !== null
-    )
-      return true;
+    if (await git.isAncestor(path, 'HEAD', base)) return true;
   return false;
 }

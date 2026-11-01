@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
-import { git } from '../git/run';
+import { ignoredPaths } from '../git/commands';
 
 // A copied virtualenv still points at the main folder, so its editable
 // installs would run the main folder's code.
@@ -57,18 +57,7 @@ function cloner() {
  * Ones already there are left alone.
  */
 export async function copyIgnored(from: string, to: string) {
-  const stdout = await git(from, [
-    'ls-files',
-    '-z',
-    '--others',
-    '--ignored',
-    '--exclude-standard',
-    '--directory',
-  ]);
-  const listed = stdout
-    .split('\0')
-    .filter(Boolean)
-    .map((p) => p.replace(/\/$/, ''));
+  const listed = await ignoredPaths(from);
   // Git can list a folder and also folders inside it.
   const paths = listed.filter(
     (p) => !SKIP.has(basename(p)) && !listed.some((o) => p.startsWith(`${o}/`)),

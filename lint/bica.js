@@ -80,6 +80,33 @@ const radiusTokens = defineRule({
   },
 });
 
+// The server runs git only from server/src/git/commands.ts, so every git
+// command reads in one place, typed. Tests set up their repos with raw git.
+const gitCommands = defineRule({
+  meta: {
+    messages: {
+      raw: 'Run git through a function in server/src/git/commands.ts, not here.',
+    },
+  },
+  create(context) {
+    const file = context.filename;
+    if (/git\/commands\.ts$|\.test\.ts$|\/testing\//.test(file)) return {};
+    return {
+      // Bun.spawn(['git', ...]) and the like.
+      ArrayExpression(node) {
+        const first = node.elements[0];
+        if (first?.type === 'Literal' && first.value === 'git')
+          context.report({ node, messageId: 'raw' });
+      },
+      // Bun Shell: $`git ...`.
+      TaggedTemplateExpression(node) {
+        if (/^\s*git(\s|$)/.test(node.quasi.quasis[0].value.cooked))
+          context.report({ node, messageId: 'raw' });
+      },
+    };
+  },
+});
+
 // A named function at the top of a file reads as one: `function x()`, not
 // `const x = () =>`. A type on the constant is the real need for an arrow, as
 // it types the parameters; nested arrows are fine.
@@ -147,5 +174,6 @@ export default definePlugin({
     'type-tokens': typeTokens,
     'radius-tokens': radiusTokens,
     'top-level-functions': topLevelFunctions,
+    'git-commands': gitCommands,
   },
 });

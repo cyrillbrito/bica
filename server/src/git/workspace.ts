@@ -9,7 +9,7 @@ import type {
 } from '@bica/shared/protocol';
 import { live, type Live } from '../live';
 import { getProject } from '../projects/projects';
-import { remote, git as run } from './run';
+import * as git from './commands';
 
 const MAX_FILE = 2 * 1024 * 1024;
 // Media is shown as itself, not as text, so it gets a looser cap.
@@ -39,24 +39,6 @@ export function inside(cwd: string, path: string) {
   return full;
 }
 
-// --no-optional-locks: our polling must never block the agent's git.
-function git(cwd: string, args: string[]) {
-  return run(cwd, ['--no-optional-locks', ...args]);
-}
-
-/** Raw bytes, for files; 'too large' past `max`, null when git fails. */
-async function gitBytes(cwd: string, args: string[], max: number) {
-  const p = Bun.spawn(['git', ...args], {
-    cwd,
-    maxBuffer: max,
-    stderr: 'ignore',
-  });
-  const [bytes, code] = await Promise.all([p.stdout.bytes(), p.exited]);
-  // Killed only for going over `max`.
-  if (p.signalCode) return 'too large';
-  return code === 0 ? Buffer.from(bytes) : null;
-}
-
 function isRepo(dir: string) {
   return stat(join(dir, '.git')).then(
     () => true,
@@ -81,19 +63,9 @@ function within(cwd: string, dir: string, paths: string[]) {
   });
 }
 
+/** Submodules that are checked out. */
 async function submodulePaths(cwd: string) {
-  const out = await git(cwd, [
-    'config',
-    '--file',
-    '.gitmodules',
-    '-z',
-    '--get-regexp',
-    '^submodule\\..*\\.path$',
-  ]).catch(() => '');
-  const paths = out
-    .split('\0')
-    .filter(Boolean)
-    .map((r) => r.slice(r.indexOf('\n') + 1));
+  const paths = await git.submodulePaths(cwd);
   const found = await Promise.all(paths.map((p) => isRepo(join(cwd, p))));
   return paths.filter((_, i) => found[i]);
 }
@@ -171,95 +143,70 @@ async function readStatus(cwd: string, prefix = ''): Promise<GitStatus> {
 
 /** One repo's own status, without looking into its submodules. */
 async function readRepo(cwd: string, prefix = ''): Promise<GitStatus> {
-  const [out, stagedLines, unstagedLines, recent] = await Promise.all([
-    git(cwd, [
-      'status',
-      '--porcelain=v2',
-      '--branch',
-      '--untracked-files=all',
-      '-z',
-    ]),
-    numstat(cwd, true),
-    numstat(cwd, false),
-    recentCommits(cwd),
+  const [repo, stagedLines, unstagedLines, recent] = await Promise.all([
+    git.status(cwd),
+    git.lineCounts(cwd, true),
+    git.lineCounts(cwd, false),
+    git.recentCommits(cwd, RECENT),
   ]);
   const status: GitStatus = {
-    branch: null,
-    upstream: null,
-    ahead: 0,
-    behind: 0,
+    branch: repo.branch,
+    upstream: repo.upstream,
+    ahead: repo.ahead,
+    behind: repo.behind,
     staged: [],
     unstaged: [],
     recent,
     submodules: [],
   };
-  const records = out.split('\0');
   const worktreeVersion = async (path: string) => {
     const s = await stat(join(cwd, path)).catch(() => null);
     return s ? `${s.mtimeMs}:${s.size}` : 'gone';
   };
   // Changes whose new side is the file on disk, hashed once the list is known.
   const onDisk: { change: GitChange; old: string | null }[] = [];
-  for (let i = 0; i < records.length; i++) {
-    const r = records[i]!;
-    if (r.startsWith('# branch.head ')) {
-      const head = r.slice(14);
-      status.branch = head === '(detached)' ? null : head;
-    } else if (r.startsWith('# branch.upstream '))
-      status.upstream = r.slice(18);
-    else if (r.startsWith('# branch.ab ')) {
-      const [a, b] = r.slice(12).split(' ');
-      status.ahead = Number(a);
-      status.behind = -Number(b);
-    } else if (r.startsWith('? ')) {
-      const path = r.slice(2);
+  for (const e of repo.entries) {
+    if (e.kind === 'untracked') {
       const change: GitChange = {
-        path,
+        path: e.path,
         status: 'U',
-        version: await worktreeVersion(path),
+        version: await worktreeVersion(e.path),
       };
       status.unstaged.push(change);
       onDisk.push({ change, old: null });
-    } else if (r.startsWith('1 ') || r.startsWith('2 ')) {
-      // "1 XY sub mH mI mW hH hI path", renames add a score and "\0origPath".
-      const f = r.split(' ');
-      const xy = f[1]!;
-      // Submodules: "S<commit changed><modified><untracked>", else "N...".
-      const sub = f[2]!;
-      const renamed = r[0] === '2';
-      const path = f.slice(renamed ? 9 : 8).join(' ');
-      const oldPath = renamed ? records[++i] : undefined;
-      // A submodule's hashes are commits, not files.
-      const file = sub[0] !== 'S';
-      if (xy[0] !== '.')
+    } else if (e.kind === 'conflict')
+      status.unstaged.push({
+        path: e.path,
+        status: '!',
+        version: await worktreeVersion(e.path),
+      });
+    else {
+      const { path, oldPath, submodule } = e;
+      if (e.staged !== '.')
         status.staged.push({
           path,
           ...(oldPath ? { oldPath } : {}),
-          status: xy[0] as GitChange['status'],
-          version: f[7]!,
-          ...(file
-            ? { blobs: { old: stored(f[6]!), new: stored(f[7]!) } }
-            : {}),
+          status: e.staged as GitChange['status'],
+          version: e.indexHash ?? 'none',
+          ...(submodule
+            ? {}
+            : { blobs: { old: e.headHash, new: e.indexHash } }),
         });
       // A dirty submodule lists its files as its own repo; here it is a
       // change only when it points at another commit.
-      if (xy[1] !== '.' && (file || sub[1] === 'C' || xy[1] === 'D')) {
+      if (
+        e.unstaged !== '.' &&
+        (!submodule || submodule.movedCommit || e.unstaged === 'D')
+      ) {
         const change: GitChange = {
           path,
           // A: added with `git add -N`, tracked but with nothing staged.
-          status: xy[1] === 'D' || xy[1] === 'A' ? xy[1] : 'M',
+          status: e.unstaged === 'D' || e.unstaged === 'A' ? e.unstaged : 'M',
           version: await worktreeVersion(path),
         };
         status.unstaged.push(change);
-        if (file) onDisk.push({ change, old: stored(f[7]!) });
+        if (!submodule) onDisk.push({ change, old: e.indexHash });
       }
-    } else if (r.startsWith('u ')) {
-      const path = r.split(' ').slice(10).join(' ');
-      status.unstaged.push({
-        path,
-        status: '!',
-        version: await worktreeVersion(path),
-      });
     }
   }
   if (onDisk.length <= MAX_COUNTED)
@@ -269,7 +216,7 @@ async function readRepo(cwd: string, prefix = ''): Promise<GitStatus> {
         if (hash !== undefined) change.blobs = { old, new: hash };
       }),
     );
-  const count = (lines: Map<string, Lines>) => (c: GitChange) => {
+  const count = (lines: Map<string, git.LineCount>) => (c: GitChange) => {
     const n = lines.get(c.path);
     if (n) [c.added, c.removed] = n;
   };
@@ -290,11 +237,6 @@ async function readRepo(cwd: string, prefix = ''): Promise<GitStatus> {
       if (c.oldPath) c.oldPath = prefix + c.oldPath;
     }
   return status;
-}
-
-// Git writes all zeros for a side that has no file.
-function stored(hash: string) {
-  return /^0+$/.test(hash) ? null : hash;
 }
 
 /** Git's own hash of a blob, so a file on disk matches its staged copy. */
@@ -347,37 +289,15 @@ export async function readBlob(
   const disk = s?.isFile() && s.size <= MAX_MEDIA ? await fromDisk(full) : null;
   if (disk && blobHash(disk) === hash) return { bytes: disk, exact: true };
   const repo = await repoDir(cwd, repoPath);
-  const kept = await gitBytes(repo, ['cat-file', 'blob', hash], MAX_MEDIA);
+  const kept = await git.blob(repo, hash, MAX_MEDIA);
   if (kept === 'too large') return kept;
   if (kept) return { bytes: kept, exact: true };
   return disk && onDisk ? { bytes: disk, exact: false } : null;
 }
 
-type Lines = [added: number, removed: number];
 // Untracked files read per poll for their line counts, at most.
 const MAX_COUNTED = 200;
 const MAX_COUNTED_SIZE = 512 * 1024;
-
-/** Lines added and removed per path; binaries are left out. */
-async function numstat(cwd: string, cached: boolean) {
-  const out = await git(cwd, [
-    'diff',
-    '--numstat',
-    '-z',
-    '--no-ext-diff',
-    ...(cached ? ['--cached'] : []),
-  ]).catch(() => '');
-  const lines = new Map<string, Lines>();
-  const parts = out.split('\0');
-  for (let i = 0; i < parts.length; i++) {
-    const [added, removed, path] = parts[i]!.split('\t');
-    if (path === undefined) continue;
-    // Renames: "a\tr\t\0old\0new".
-    const target = path === '' ? ((i += 2), parts[i]!) : path;
-    if (added !== '-') lines.set(target, [Number(added), Number(removed)]);
-  }
-  return lines;
-}
 
 async function countLines(full: string) {
   const s = await stat(full).catch(() => null);
@@ -392,22 +312,6 @@ async function countLines(full: string) {
 
 const RECENT = 5;
 
-async function recentCommits(cwd: string) {
-  // Fails before the first commit: nothing to list.
-  const out = await git(cwd, [
-    'log',
-    `-n${RECENT}`,
-    '--format=%h%x1f%s%x1f%ct',
-  ]).catch(() => '');
-  return out
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const [hash, subject, time] = line.split('\x1f');
-      return { hash: hash!, subject: subject ?? '', time: Number(time) * 1000 };
-    });
-}
-
 // repo: a submodule's path, or absent for the workspace's own. Paths are
 // from the workspace; no paths means everything in the repo.
 export async function stage(
@@ -418,10 +322,7 @@ export async function stage(
   const { cwd } = await open(ref);
   const dir = await repoDir(cwd, repo);
   try {
-    await git(
-      dir,
-      paths ? ['add', '--', ...within(cwd, dir, paths)] : ['add', '--all'],
-    );
+    await git.stage(dir, paths && within(cwd, dir, paths));
   } finally {
     await poke(cwd);
   }
@@ -435,12 +336,7 @@ export async function unstage(
   const { cwd } = await open(ref);
   const dir = await repoDir(cwd, repo);
   try {
-    await git(dir, [
-      'restore',
-      '--staged',
-      '--',
-      ...(paths ? within(cwd, dir, paths) : ['.']),
-    ]);
+    await git.unstage(dir, paths && within(cwd, dir, paths));
   } finally {
     await poke(cwd);
   }
@@ -458,13 +354,8 @@ export async function commit(
   const { cwd } = await open(ref);
   try {
     const dir = await repoDir(cwd, repo);
-    if (all) await git(dir, ['add', '--all']);
-    await git(dir, [
-      'commit',
-      '--quiet',
-      ...(amend ? ['--amend'] : []),
-      ...(message ? ['-m', message] : ['--no-edit']),
-    ]);
+    if (all) await git.stage(dir);
+    await git.commit(dir, { message, amend });
   } finally {
     await poke(cwd);
   }
@@ -487,45 +378,30 @@ export async function discard(
 }
 
 async function discardIn(cwd: string, paths: string[]) {
-  const untracked = new Set(
-    (
-      await git(cwd, [
-        'ls-files',
-        '-z',
-        '--others',
-        '--exclude-standard',
-        '--',
-        ...paths,
-      ])
-    )
-      .split('\0')
-      .filter(Boolean),
-  );
+  const untracked = await git.untrackedAmong(cwd, paths);
   const tracked = paths.filter((p) => !untracked.has(p));
-  if (tracked.length)
-    await git(cwd, ['restore', '--worktree', '--', ...tracked]);
-  if (untracked.size)
-    await git(cwd, ['clean', '--force', '--quiet', '--', ...untracked]);
+  if (tracked.length) await git.restore(cwd, tracked);
+  if (untracked.size) await git.deleteUntracked(cwd, [...untracked]);
 }
 
 export async function push(ref: WorkspaceRef, repo?: string) {
   const { cwd } = await open(ref);
   const dir = await repoDir(cwd, repo);
   const status = await readRepo(dir);
-  if (status.upstream) await remote(dir, ['push']);
+  if (status.upstream) await git.push(dir);
   else {
     if (!status.branch) throw new Error('Not on a branch');
-    const remotes = (await git(dir, ['remote'])).split('\n').filter(Boolean);
+    const remotes = await git.remotes(dir);
     const name = remotes.includes('origin') ? 'origin' : remotes[0];
     if (!name) throw new Error('No remote to push to');
-    await remote(dir, ['push', '--set-upstream', name, status.branch]);
+    await git.push(dir, { remote: name, branch: status.branch });
   }
   await poke(cwd);
 }
 
 export async function pull(ref: WorkspaceRef, repo?: string) {
   const { cwd } = await open(ref);
-  await remote(await repoDir(cwd, repo), ['pull', '--ff-only']);
+  await git.pullFastForward(await repoDir(cwd, repo));
   await poke(cwd);
 }
 
@@ -553,11 +429,10 @@ export async function pendingChanges(
   const status = await readRepo(cwd);
   const changes = all ? [...status.staged, ...status.unstaged] : status.staged;
   const hasHead = status.recent.length > 0;
-  const base = all ? (hasHead ? ['HEAD'] : []) : ['--cached'];
-  const diffArgs = ['diff', '--no-color', '--no-ext-diff', ...base];
+  const of = all ? (hasHead ? 'all' : 'unstaged') : 'staged';
   const [summary, patch] = await Promise.all([
-    git(cwd, [...diffArgs, '--stat=100']).catch(() => ''),
-    git(cwd, diffArgs).catch(() => ''),
+    git.diffText(cwd, of, true),
+    git.diffText(cwd, of),
   ]);
   const parts = patch
     .split(/^(?=diff --git )/m)
@@ -612,14 +487,7 @@ export async function pendingChanges(
     files: changes.map((c) => `${c.status} ${c.path}`),
     stat: summary.trim(),
     diff: diffText,
-    recentSubjects: await git(cwd, [
-      'log',
-      '-n12',
-      '--no-merges',
-      '--format=%s',
-    ])
-      .then((o) => o.split('\n').filter(Boolean))
-      .catch(() => [] as string[]),
+    recentSubjects: await git.commitSubjects(cwd, 12),
     lastCommit,
   };
 }
@@ -691,9 +559,9 @@ function fromDisk(full: string) {
   return readFile(full).catch(() => null);
 }
 
-// "HEAD:path" or ":path" (the index); null when that side has no such file.
-async function fromGit(cwd: string, spec: string) {
-  const bytes = await gitBytes(cwd, ['show', spec], MAX_MEDIA * 2);
+// Null when that side has no such file.
+async function fromGit(cwd: string, path: string, side: 'HEAD' | 'index') {
+  const bytes = await git.fileAt(cwd, path, side, MAX_MEDIA * 2);
   return bytes === 'too large' ? null : bytes;
 }
 
@@ -718,12 +586,9 @@ export async function diff(
   ];
   // A submodule itself: show which commit it points at, as git diff does.
   if (await isRepo(full)) {
-    const head = pointer(repo, ['ls-tree', 'HEAD', '--', before]);
-    const index = pointer(repo, ['ls-files', '--stage', '--', rel]);
-    const disk = git(full, ['rev-parse', 'HEAD']).then(
-      (o) => o.trim(),
-      () => null,
-    );
+    const head = git.submoduleCommit(repo, before, 'HEAD');
+    const index = git.submoduleCommit(repo, rel, 'index');
+    const disk = git.head(full);
     const [a, b] = staged ? [head, index] : [index, disk];
     const text = async (hash: Promise<string | null>) =>
       toText(
@@ -733,24 +598,9 @@ export async function diff(
     return { old: await text(a), new: await text(b) };
   }
   const [a, b] = staged
-    ? [fromGit(repo, `HEAD:${before}`), fromGit(repo, `:${rel}`)]
-    : [fromGit(repo, `:${rel}`), fromDisk(full)];
+    ? [fromGit(repo, before, 'HEAD'), fromGit(repo, rel, 'index')]
+    : [fromGit(repo, rel, 'index'), fromDisk(full)];
   return { old: toText(await a, before), new: toText(await b, path) };
-}
-
-/**
- * The commit a submodule entry points at, from "160000 commit <hash>"
- * (ls-tree) or "160000 <hash> 0" (ls-files); null if it isn't one there.
- */
-function pointer(cwd: string, args: string[]) {
-  return git(cwd, args).then(
-    (o) => {
-      if (!o.startsWith('160000 ')) return null;
-      const [, a, b] = o.split(/\s/);
-      return a === 'commit' ? b! : a!;
-    },
-    () => null,
-  );
 }
 
 export async function watchFiles(
@@ -764,26 +614,10 @@ export async function watchFiles(
 }
 
 async function gitFiles(cwd: string): Promise<string[]> {
-  const list = (args: string[]) =>
-    git(cwd, ['ls-files', '-z', ...args]).then((o) =>
-      o.split('\0').filter(Boolean),
-    );
-  const [staged, untracked, deleted] = await Promise.all([
-    list(['--cached', '--stage']),
-    list(['--others', '--exclude-standard']),
-    list(['--deleted']),
-  ]);
-  // "<mode> <hash> <stage>\t<path>"; mode 160000 is a submodule, which
-  // would otherwise show up as a file. List its own files instead.
-  const tracked: string[] = [];
-  const submodules: string[] = [];
-  for (const entry of staged) {
-    const tab = entry.indexOf('\t');
-    const path = entry.slice(tab + 1);
-    (entry.startsWith('160000 ') ? submodules : tracked).push(path);
-  }
+  const { files, submodules, untracked, deleted } = await git.fileList(cwd);
+  // A submodule would otherwise show up as a file; list its own files instead.
   const nested = await Promise.all(
-    [...new Set(submodules)].map((sub) =>
+    submodules.map((sub) =>
       // Not checked out (no .git inside): nothing to show.
       stat(join(cwd, sub, '.git'))
         .then(() => gitFiles(join(cwd, sub)))
@@ -792,7 +626,7 @@ async function gitFiles(cwd: string): Promise<string[]> {
     ),
   );
   const gone = new Set(deleted);
-  return [...new Set([...tracked, ...untracked])]
+  return [...new Set([...files, ...untracked])]
     .filter((p) => !gone.has(p))
     .concat(...nested)
     .sort();

@@ -22,6 +22,7 @@ export default defineConfig({
       files: ['client/**', 'server/**', 'shared/**'],
       rules: { 'import/no-cycle': ['error', { ignoreTypes: true }] },
     },
+    { files: ['server/**'], rules: { 'bica/git-commands': 'error' } },
   ],
   options: {
     typeAware: true,

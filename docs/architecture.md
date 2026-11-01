@@ -30,7 +30,7 @@ Bica is a Bun server on the dev machine and a web app that talks to it over one 
 The repo is three Bun workspace packages, one per side, so each runs and type-checks on its own:
 
 - `client`: the Solid app, built by Vite, which runs in the browser. Its types have the DOM and no Bun or Node. `vite.config.ts` runs in Node, so `tsconfig.node.json` checks it apart, with Node's types.
-- `server`: plain Bun, with the socket, the agents, git, and the shells. Its types have Bun and no DOM. It reaches for Bun's own APIs before Node's: git runs through Bun Shell in `git/run.ts`, other commands through `Bun.spawn` (which has `timeout` and `maxBuffer`), timed jobs through `Bun.cron`, and outside calls through Bun's `WebSocket`, which takes headers. Paths, files, and logs stay on `node:fs` and `node:path`, where Bun has nothing better.
+- `server`: plain Bun, with the socket, the agents, git, and the shells. Its types have Bun and no DOM. It reaches for Bun's own APIs before Node's: git runs only through `git/commands.ts`, one typed function per git command, with network ones under a timeout and never prompting (lint fails on raw git elsewhere), other commands through `Bun.spawn` (which has `timeout` and `maxBuffer`), timed jobs through `Bun.cron`, and outside calls through Bun's `WebSocket`, which takes headers. Paths, files, and logs stay on `node:fs` and `node:path`, where Bun has nothing better.
 - `shared`: the code both run, imported as `@bica/shared/...`: the message types, the agents' names, and the transcript projection.
 
 The client can't import the server, because its `package.json` doesn't list it.

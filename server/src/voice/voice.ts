@@ -3,7 +3,7 @@ import type { EntryId } from '@earendil-works/pi-durable';
 
 import type { PromptImage } from '@bica/shared/protocol';
 import { withCallWords, type VoiceLine } from '@bica/shared/transcript';
-import { git } from '../git/run';
+import { currentBranch, trackedFiles } from '../git/commands';
 import { models } from '../models/registry';
 import { voiceLog } from './log';
 import { voiceSession } from './session';
@@ -492,12 +492,12 @@ async function projectWords(folder: () => Promise<string>) {
   try {
     const cwd = await folder();
     const [files, branch] = await Promise.all([
-      git(cwd, ['ls-files']),
-      git(cwd, ['branch', '--show-current']),
+      trackedFiles(cwd),
+      currentBranch(cwd),
     ]);
     const names = new Set<string>();
-    if (branch.trim()) names.add(branch.trim());
-    for (const path of files.split('\n')) {
+    if (branch) names.add(branch);
+    for (const path of files) {
       for (const part of path.split('/').slice(0, -1)) names.add(part);
       // Without the extension: people say "CommitBox", not "CommitBox dot tsx".
       const name = basename(path).replace(/\.[^.]+$/, '');
