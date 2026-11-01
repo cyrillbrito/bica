@@ -11,7 +11,7 @@ During the call, the composer becomes the call panel: a level meter, what is bei
      ◀─speech──                     ◀── result ───             ◀─ reply ──
 ```
 
-GPT-Live is only the voice. It listens, talks, can be interrupted, and decides when something needs the agent. The session does the work with its own model and tools. Handoffs arrive as ordinary prompts, so everything stays in the transcript.
+GPT-Live is only the voice. It listens, talks, can be interrupted, and decides when something needs the agent. The session does the work with its own model and tools. Handoffs arrive as ordinary prompts, so everything stays in the transcript, and they act as typed ones: they bring an archived session back, a session held for tonight refuses them, and they end the agent's wait in `terminal_read`.
 
 - A handoff carries your own words: the voice is asked not to rephrase you, and Bica adds what was said in the call since the last handoff. The transcript shows those lines once, in the call.
 - A handoff while the agent works joins the run at once, so "no, the other branch" lands before the wrong thing is done. Handoffs that joined the same run share one reply, spoken once.

@@ -33,6 +33,11 @@ export function onSteer(id: string, fn: () => void) {
   };
 }
 
+/** Every path that steers calls this, or a waiting tool hides the steer. */
+function steered(id: ConversationId) {
+  for (const fn of steerWatchers.get(String(id)) ?? []) fn();
+}
+
 /** Who sends a prompt: the user, Bica's own notes, or another session's id. */
 export type Sender = 'user' | 'bica' | (string & {});
 
@@ -64,12 +69,12 @@ export async function submit(
   await keepModel(conversation.id);
   await recordSender(conversation.id, from);
   // Pi Durable returns the existing submission for a repeated requestId.
-  await conversation.submit(
+  const submission = await conversation.submit(
     { type: 'input', content: input(prompt, images), requestId, whenBusy },
     context,
   );
-  if (whenBusy === 'steer')
-    for (const fn of steerWatchers.get(String(conversation.id)) ?? []) fn();
+  if (whenBusy === 'steer') steered(conversation.id);
+  return submission;
 }
 
 /** Notes who sent the newest prompt, for session_read and notes. */
@@ -175,6 +180,7 @@ export async function push(id: string, submissionId: number) {
     { type: 'input', content: taken.item.content as never, whenBusy: 'steer' },
     context,
   );
+  steered(taken.conversation.id);
   return true;
 }
 

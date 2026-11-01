@@ -13,12 +13,7 @@ import {
 } from '@bica/shared/transcript';
 import { context, getHarness } from '../harness';
 import { VOICE_TITLE, retitle } from '../sessions/names';
-import {
-  input,
-  keepCopies,
-  keepModel,
-  recordSender,
-} from '../sessions/prompts';
+import { submit } from '../sessions/prompts';
 import { textOf } from '../sessions/read';
 import {
   getConversation,
@@ -102,12 +97,13 @@ export async function voiceSession(sessionId: string) {
         named = true;
         void retitle(id, title, VOICE_TITLE);
       }
-      await keepCopies(id);
-      await keepModel(id);
-      await recordSender(id, 'user');
-      const submission = await conversation.submit(
-        { type: 'input', content: input(request, images), whenBusy: 'steer' },
-        context,
+      const submission = await submit(
+        sessionId,
+        request,
+        images,
+        crypto.randomUUID(),
+        'user',
+        'steer',
       );
       const settled = await submission.wait(context);
       const answer = settled.answer;

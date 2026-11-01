@@ -127,6 +127,46 @@ test('a long terminal_read wait ends at its text, when a message arrives, or whe
   });
   await done(second);
 
+  // Send now on a queued prompt steers too.
+  bica.reply(read(stuck), fauxAssistantMessage('Stopped waiting'));
+  const { id: queuer } = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Wait for the job',
+    requestId: crypto.randomUUID(),
+  });
+  await reading(queuer);
+  await tab.request('session.submit', {
+    id: queuer,
+    prompt: 'Never mind',
+    requestId: crypto.randomUUID(),
+    whenBusy: 'followUp',
+  });
+  const view = await tab
+    .watch('conversation', { id: queuer })
+    .until(
+      (c) =>
+        (c?.docs['pi.inbox'] as { items?: unknown[] } | undefined)?.items
+          ?.length,
+    );
+  const [item] = (view!.docs['pi.inbox'] as { items: { id: unknown }[] }).items;
+  await tab.request('session.push', {
+    id: queuer,
+    submission: Number(item!.id),
+  });
+  await done(queuer);
+
+  // So does a voice call's handoff.
+  bica.reply(read(stuck), fauxAssistantMessage('Stopped waiting'));
+  const { id: caller } = await tab.request('session.create', {
+    projectId: ref.projectId,
+    prompt: 'Wait for the job',
+    requestId: crypto.randomUUID(),
+  });
+  await reading(caller);
+  const { voiceSession } = await import('../voice/session');
+  const call = await voiceSession(caller);
+  expect((await call.ask('Never mind')).text).toBe('Stopped waiting');
+
   const stopped = await tab.request('terminal.create', {
     ...ref,
     command: 'sleep 600',
