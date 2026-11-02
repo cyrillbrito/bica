@@ -572,6 +572,8 @@ export function fixtureSettings(): Settings {
     hubFolder: null,
     hubModel: null,
     nightStart: '01:00',
+    telemetry: true,
+    replays: true,
     fromEnv: { model: false, fastModel: false },
   };
 }

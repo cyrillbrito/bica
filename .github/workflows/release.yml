@@ -45,6 +45,9 @@ jobs:
       - name: Build
         env:
           BICA_VERSION: ${{ steps.version.outputs.next }}
+          # Telemetry's PostHog project (docs/telemetry.md); unset, the binaries send nothing.
+          BICA_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+          BICA_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
         run: |
           bun run build:bica --target bun-darwin-arm64 --target bun-darwin-x64 --target bun-linux-x64 --target bun-linux-arm64
           cd dist/bica

@@ -7,18 +7,29 @@ import { startWorktreeCleanup } from './projects/cleanup';
 import { serveAttachment } from './sessions/attachments';
 import { startHousekeeping } from './sessions/housekeeping';
 import { upgrade, websocket } from './socket';
+import type { InstallKind } from '@bica/shared/protocol';
+import { startHeartbeat } from './telemetry/heartbeat';
+import { relay } from './telemetry/relay';
+import { startTelemetry } from './telemetry/telemetry';
 
 /**
- * Bica's HTTP server: the socket, and the files it hands out links to.
- * `fallback` answers every other URL with the built app in production; in
- * dev, Vite serves the app and forwards the rest here, and anything else is
- * a 404. GET routes answer HEAD too, and other methods get a 404. Bica's
- * background work starts only once the port is taken, so a port in use
- * fails before any run resumes.
+ * Bica's HTTP server: the socket, the files it hands out links to, and the
+ * telemetry relay. `fallback` answers every other URL with the built app in
+ * production; in dev, Vite serves the app and forwards the rest here, and
+ * anything else is a 404. GET routes answer HEAD too, and other methods get
+ * a 404. Bica's background work starts only once the port is taken, so a
+ * port in use fails before any run resumes. `build` says which Bica this
+ * is; without it, a dev run.
  */
 export function serve(
   port: number,
-  fallback?: (req: Request) => Response | Promise<Response>,
+  {
+    fallback,
+    build,
+  }: {
+    fallback?: (req: Request) => Response | Promise<Response>;
+    build?: { version: string; installKind: InstallKind };
+  } = {},
 ) {
   const server = Bun.serve({
     hostname: '127.0.0.1',
@@ -28,10 +39,13 @@ export function serve(
       '/download/:token/*': { GET: serveDownload },
       '/blob/:hash': { GET: serveBlob },
       '/attachment/:name': { GET: serveAttachment },
+      '/relay/*': relay,
     },
     fetch: fallback,
     websocket,
   });
+  startTelemetry(build);
+  startHeartbeat();
   // Before the harness opens: it finds the agents' extensions by name.
   installAgents();
   startHousekeeping();

@@ -35,6 +35,12 @@ import { openHub, updateHub } from './hub/hub';
 import { cancelTonight, runTonight, saveTonight } from './night-runs/night';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
+import {
+  captureError,
+  isBug,
+  refreshTelemetry,
+  watchTelemetry,
+} from './telemetry/telemetry';
 import { wsLogger } from './ws-log';
 import {
   addAccount,
@@ -108,11 +114,14 @@ const calls: Handlers = {
     return '';
   },
   'session.configure': async ({ id, ...choice }) => configure(id, choice),
-  // Here because the hub reads settings, so settings can't call it.
+  // Here because the hub and telemetry read settings, so settings can't
+  // call them.
   'settings.update': async (change) => {
     await updateSettings(change);
     if (change.hubModel !== undefined || change.hubFolder !== undefined)
       await updateHub();
+    if (change.telemetry !== undefined || change.replays !== undefined)
+      await refreshTelemetry();
   },
   'project.add': async ({ path }) => addProject(path),
   'project.reorder': async ({ ids }) => reorderProjects(ids),
@@ -246,6 +255,7 @@ const topics: {
   projects: (_params, sink) => watchProjects(sink.snapshot),
   models: (_params, sink) => watchModels(sink.snapshot),
   settings: (_params, sink) => watchSettings(sink.snapshot),
+  telemetry: (_params, sink) => watchTelemetry(sink.snapshot),
   accounts: (_params, sink) => watchAccounts(sink.snapshot),
   'plan.usage': (_params, sink) => watchPlanUsage(sink.snapshot),
   conversation: ({ id }, sink, have) => watchConversation(id, sink, have),
@@ -311,6 +321,7 @@ function connect(ws: Socket) {
       const value = (await run(String(id), call, args ?? {})) ?? null;
       send({ type: 'reply', id, ok: true, value });
     } catch (error) {
+      if (isBug(error)) captureError(error, { source: 'socket_request', call });
       send({ type: 'reply', id, ok: false, error: messageOf(error) });
     }
   }
@@ -366,6 +377,8 @@ function connect(ws: Socket) {
       });
     } catch (error) {
       subs.delete(sub);
+      if (isBug(error))
+        captureError(error, { source: 'socket_topic', call: topic });
       if (live) send({ type: 'error', sub, error: messageOf(error) });
     }
   }

@@ -515,6 +515,13 @@ function Surfaces() {
           checked={on()}
           onChange={setOn}
         />
+        <Toggle
+          label="Disabled toggle"
+          hint="Something else holds it, such as the environment."
+          checked={false}
+          disabled
+          onChange={setOn}
+        />
       </Card>
       <div class="flex h-56 rounded-card border border-line">
         <Empty

@@ -55,6 +55,8 @@ export default defineConfig({
       '/download/': `http://127.0.0.1:${port + 1}`,
       '/blob/': `http://127.0.0.1:${port + 1}`,
       '/attachment/': `http://127.0.0.1:${port + 1}`,
+      // posthog-js, relayed to PostHog (docs/telemetry.md).
+      '/relay/': `http://127.0.0.1:${port + 1}`,
     },
   },
   build: {

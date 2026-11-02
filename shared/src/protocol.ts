@@ -122,6 +122,11 @@ export interface Settings extends ModelChoice {
   hubModel: ModelChoice | null;
   // When night runs start, as local "HH:MM" (docs/night-runs.md).
   nightStart: string;
+  // Usage data and Bica's own errors go to PostHog (docs/telemetry.md).
+  telemetry: boolean;
+  // Screen recordings of the app with all text hidden; nothing without
+  // `telemetry`.
+  replays: boolean;
   // Which defaults still come from the server's env (PI_MODEL, PI_FAST_MODEL)
   // because nothing was picked in Settings.
   fromEnv: { model: boolean; fastModel: boolean };
@@ -129,6 +134,31 @@ export interface Settings extends ModelChoice {
 
 /** What the Settings page changes; the rest stays as saved. */
 export type SettingsChange = Partial<Omit<Settings, 'fromEnv'>>;
+
+/** How this Bica runs: the `bica` binary, `bun run start`, or `bun run dev`. */
+export type InstallKind = 'binary' | 'source' | 'dev';
+
+/**
+ * What the browser needs to send usage data and replays (docs/telemetry.md).
+ * While it's off, `key`, `uiHost`, and `installId` are null.
+ */
+export interface TelemetryConfig {
+  // null: on. Otherwise why it's off: this build has no PostHog key, an
+  // environment variable on the server, or the setting.
+  off: null | 'no-key' | 'DO_NOT_TRACK' | 'BICA_TELEMETRY' | 'setting';
+  // The PostHog project key, public by design.
+  key: string | null;
+  // Where posthog-js sends, on Bica's own origin: the server relays it.
+  relay: string;
+  // PostHog's app, for links such as the toolbar's.
+  uiHost: string | null;
+  // The PostHog person: one per data folder, shared with the server's events.
+  installId: string | null;
+  // Replays may record: telemetry is on, and so is the replays setting.
+  replays: boolean;
+  version: string;
+  installKind: InstallKind;
+}
 
 /** The providers with a key on the server, and the models they reach. */
 export interface ModelCatalog {
@@ -658,6 +688,7 @@ export interface Topics {
   projects: { params: Record<string, never>; value: Project[] };
   models: { params: Record<string, never>; value: ModelCatalog };
   settings: { params: Record<string, never>; value: Settings };
+  telemetry: { params: Record<string, never>; value: TelemetryConfig };
   accounts: { params: Record<string, never>; value: Accounts };
   // null: no such conversation.
   conversation: { params: { id: string }; value: ProjectedView | null };

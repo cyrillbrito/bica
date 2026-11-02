@@ -47,8 +47,9 @@ const UNSET = Symbol('unset');
 // back shows it at once while the live value loads. This many at most.
 const KEEP = 12;
 // A terminal's output is gone once its shell is, so it isn't saved.
-// Presence carries nothing.
-const UNSAVED: ReadonlySet<Topic> = new Set(['terminal']);
+// Presence carries nothing. Telemetry's switch is read fresh, so a copy from
+// before it was turned off can't start sending.
+const UNSAVED: ReadonlySet<Topic> = new Set(['terminal', 'telemetry']);
 
 interface Pending {
   message: ClientMessage;

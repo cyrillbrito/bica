@@ -7,9 +7,13 @@ import { homedir, platform } from 'node:os';
 import { dirname, extname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 
+import { TELEMETRY_DOCS } from '@bica/shared/telemetry';
+
 /** The server and the built app, and in the binary the paths of codemode's embedded files. */
 export interface Build {
   version: string;
+  /** The `bica` binary, or `bun run start` from the repo. */
+  kind: 'binary' | 'source';
   /** The server, server/src/serve.ts. */
   load: () => Promise<typeof import('../src/serve')>;
   /** URL path, such as `/assets/app.js`, to the file of Vite's build, dist/client. */
@@ -25,6 +29,13 @@ const HELP = `Usage: bica [--port <port>]
   -h, --help     show this
 
 Data lives in ~/.bica/data, or in BICA_DATA_DIR.`;
+
+// Printed once per data folder, the first time telemetry is on.
+const NOTICE = `  Bica sends anonymous usage data and its own errors, to see what to fix
+  and build next: counts, durations, and which features run. Never your
+  prompts, code, file names, or paths.
+  Turn it off in Settings, or set DO_NOT_TRACK=1. More: ${TELEMETRY_DOCS}
+`;
 
 const mac = platform() === 'darwin';
 const CHROME_STATE = mac
@@ -50,9 +61,14 @@ export async function run(build: Build) {
   if (build.worker) process.env.BICA_CODEMODE_WORKER = build.worker;
 
   const { serve } = await build.load();
+  // Loaded here, not at the top: it reads BICA_DATA_DIR as it loads.
+  const telemetry = await import('../src/telemetry/telemetry');
   let server: ReturnType<typeof serve>;
   try {
-    server = serve(port, (req) => sendClient(build.client, req));
+    server = serve(port, {
+      fallback: (req) => sendClient(build.client, req),
+      build: { version: build.version, installKind: build.kind },
+    });
   } catch (error) {
     return fail(
       (error as NodeJS.ErrnoException).code === 'EADDRINUSE'
@@ -62,11 +78,17 @@ export async function run(build: Build) {
   }
   const url = `http://localhost:${port}`;
   console.log(`\n  Bica ${build.version} running\n\n  Local:  ${url}\n`);
+  if (await telemetry.noticeDue()) console.log(NOTICE);
   if (process.stdin.isTTY) keys(url, join(data, 'chrome.json'));
 
-  const quit = () => {
+  let quitting = false;
+  const quit = async () => {
+    // A second Ctrl-C doesn't wait for the flush.
+    if (quitting) process.exit(0);
+    quitting = true;
     if (process.stdin.isTTY) process.stdin.setRawMode(false);
     void server.stop();
+    await telemetry.shutdownTelemetry();
     // Shells and agent runs end with the process; Pi Durable resumes runs on the next start.
     process.exit(0);
   };

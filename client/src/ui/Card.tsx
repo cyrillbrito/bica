@@ -65,15 +65,21 @@ export function Setting(props: {
   );
 }
 
-/** An on/off setting: the whole row toggles it. */
+/** An on/off setting: the whole row toggles it, unless it's `disabled`. */
 export function Toggle(props: {
   label: JSX.Element;
   hint?: JSX.Element;
   checked: boolean;
   onChange: (on: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
-    <label class="flex items-start gap-3 px-3.5 py-3 transition-colors first:rounded-t-sheet last:rounded-b-sheet hover:bg-hover">
+    <label
+      class={[
+        'flex items-start gap-3 px-3.5 py-3 transition-colors first:rounded-t-sheet last:rounded-b-sheet',
+        { 'hover:bg-hover': !props.disabled },
+      ]}
+    >
       <span class="flex min-w-0 flex-1 flex-col gap-0.5">
         <span>{props.label}</span>
         <Show when={props.hint}>
@@ -83,6 +89,7 @@ export function Toggle(props: {
       <Switch
         class="mt-0.5"
         checked={props.checked}
+        disabled={props.disabled}
         onChange={props.onChange}
       />
     </label>

@@ -205,3 +205,15 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 **Action**: Something the command palette can do, as opposed to a place it can go.
 
 **Second page**: The list an action ending in "…" opens inside the palette. _Avoid_: submenu
+
+## Telemetry
+
+[telemetry.md](./telemetry.md)
+
+**Telemetry**: The usage data, Bica's own errors, and screen recordings Bica sends to PostHog, while it's on. _Avoid_: analytics, tracking, metrics
+
+**Install id**: The random id of one data folder, the one PostHog person its server and browsers report as. _Avoid_: user id, device id, machine id
+
+**Relay**: The server's `/relay` route, which forwards the browser's PostHog traffic so nothing in the browser talks to PostHog. _Avoid_: proxy (that is Vite's dev forwarding)
+
+**Replay**: A screen recording of the app with all text hidden. The setting says "Screen recordings". _Avoid_: session recording (a session is an agent conversation)

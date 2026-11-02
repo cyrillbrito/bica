@@ -46,7 +46,7 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)). On the server, `worktrees.ts` makes and removes worktrees, and `workspace.ts` checks a workspace ref before file or git code touches its folder.
 - `files/` and `git/`: file and diff views, reading files, the file list, and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)). Git's diffs read file contents through `server/src/files/files.ts`, so what counts as text, media, or too large is decided once.
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).
-- `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
+- `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`, `telemetry/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
 
 A file goes to the feature that owns it, not the one that uses it first. Features import each other freely, with no layering between them. The pieces every feature touches stay in one place each: `shared/src/protocol.ts`, the socket's table of calls in `server/src/socket.ts`, the sidebar in `client/src/app/sidebar/`, and ⌘K in `client/src/app/palette/`. A piece of one moves into its feature only when it owns state there, as terminal and kept-file rows did.
 
@@ -76,6 +76,7 @@ Bica's data sits in the repo's `.data/`. The browser keeps small preferences per
 | Sessions, transcripts, queues | `harness.sqlite` |
 | Projects | `projects.json` |
 | Settings | `settings.json` |
+| The install id, and whether the telemetry notice was shown | `telemetry.json` |
 | Keys and sign-ins | `auth.json`, readable only by you |
 | Plan accounts' emails and order | `accounts.json` |
 | Plan limits for the meters | `plan-usage.json` |

@@ -46,14 +46,14 @@ In a terminal it prints its address and a few keys, the way Vite does:
 
 Without a terminal, as a background service, it only logs. See [server/cli/bica.ts](../server/cli/bica.ts), the entry both start through, and [server/cli/build.ts](../server/cli/build.ts), which embeds the files and compiles it.
 
-`bica --version` prints the version, which comes from `BICA_VERSION` at build time. A local build without it says `0.0.0-dev`. `bun run build:bica --target bun-linux-x64` cross-compiles, into `dist/bica/linux-x64/bica`, and takes several `--target` flags at once.
+`bica --version` prints the version, which comes from `BICA_VERSION` at build time. A local build without it says `0.0.0-dev`. `BICA_POSTHOG_KEY` and `BICA_POSTHOG_HOST` at build time set where its telemetry goes, and a build without the key sends nothing ([telemetry.md](./telemetry.md)). `bun run build:bica --target bun-linux-x64` cross-compiles, into `dist/bica/linux-x64/bica`, and takes several `--target` flags at once.
 
 ## Releases
 
 A release is a draft GitHub release with `bica` for macOS arm64 and x64 and Linux x64 and arm64, plus a `SHA256SUMS` file. The version lives only in its `vX.Y.Z` tag, never in `package.json`.
 
 1. Start the `release` workflow: on GitHub, Actions → release → Run workflow, pick `patch`, `minor`, or `major`. From a terminal: `gh workflow run release -f bump=minor`.
-2. The workflow raises the latest tag's version by that part, starting from `v0.0.0`, builds, pushes the tag, and creates the draft. A failed build leaves no tag.
+2. The workflow raises the latest tag's version by that part, starting from `v0.0.0`, builds with the repo variables `POSTHOG_KEY` and `POSTHOG_HOST` (Settings → Secrets and variables → Actions → Variables) as the telemetry key and host, pushes the tag, and creates the draft. A failed build leaves no tag.
 3. Review the draft under Releases. Its notes list the commit subjects since the previous tag and a compare link. Edit them there or with `gh release edit`, then publish.
 
 It runs on macOS so `codesign --sign -` can sign the macOS binaries, which Apple Silicon needs to run them. See [release.yml](../.github/workflows/release.yml).

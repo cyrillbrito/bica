@@ -49,6 +49,8 @@ export function settings(): Settings {
     hubFolder: saved.hubFolder ?? null,
     hubModel: saved.hubModel ?? null,
     nightStart: saved.nightStart ?? '01:00',
+    telemetry: saved.telemetry ?? true,
+    replays: saved.replays ?? true,
     fromEnv: {
       model: !saved.model,
       fastModel: saved.fastModel === undefined && !!env.PI_FAST_MODEL,
@@ -79,6 +81,8 @@ export async function updateSettings(change: SettingsChange) {
     if (change.longCache !== undefined) next.longCache = !!change.longCache;
     if (change.stageOnView !== undefined)
       next.stageOnView = !!change.stageOnView;
+    if (change.telemetry !== undefined) next.telemetry = !!change.telemetry;
+    if (change.replays !== undefined) next.replays = !!change.replays;
     if (change.hubFolder !== undefined) {
       const path = (change.hubFolder ?? '')
         .trim()

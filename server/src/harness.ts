@@ -12,6 +12,7 @@ import { settings } from './settings';
 import { announceRuns } from './tools/tool-ran';
 import { timeTools } from './tools/tool-time';
 import { claimDataDir, dataPath } from './storage';
+import { captureError } from './telemetry/telemetry';
 
 export const context = BACKGROUND_CONTEXT;
 
@@ -48,7 +49,16 @@ async function open(): Promise<Harness> {
       models,
       registry,
       env: ({ cwd }) => new NodeExecutionEnv({ cwd: cwd ?? process.cwd() }),
-      onReport: (error, info) => console.error('[harness]', info.type, error),
+      onReport: (error, info) => {
+        console.error('[harness]', info.type, error);
+        captureError(error, {
+          source: 'harness',
+          report_type: info.type,
+          task_kind: 'task' in info ? info.task?.kind : undefined,
+          extension: 'extension' in info ? info.extension : undefined,
+          callback: 'callback' in info ? info.callback : undefined,
+        });
+      },
       // Steers are corrections: every one waiting lands at the next step.
       // Follow-ups stay one per run.
       settings: {

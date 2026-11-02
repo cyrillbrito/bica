@@ -30,9 +30,13 @@ export type Tab = Awaited<ReturnType<typeof connect>>;
 
 /**
  * Starts Bica on a free port. `root` holds its data and home folders; pass
- * the same one again to restart it on the same data.
+ * the same one again to restart it on the same data. Telemetry is off
+ * unless `env` turns it on, against a fake PostHog (`testing/posthog.ts`).
  */
-export async function startBica({ root }: { root?: string } = {}) {
+export async function startBica({
+  root,
+  env = {},
+}: { root?: string; env?: Record<string, string> } = {}) {
   const owned = !root;
   root ??= await realpath(await mkdtemp(join(tmpdir(), 'bica-test-')));
   // Before any server module loads: they read these once, on import.
@@ -49,11 +53,20 @@ export async function startBica({ root }: { root?: string } = {}) {
   });
   // Unset, sessions are named from the prompt without a model call.
   delete process.env.PI_FAST_MODEL;
+  for (const name of [
+    'BICA_POSTHOG_KEY',
+    'BICA_POSTHOG_HOST',
+    'DO_NOT_TRACK',
+    'BICA_TELEMETRY',
+  ])
+    delete process.env[name];
+  Object.assign(process.env, env);
 
   const faux = fauxProvider({ tokensPerSecond: 0 });
   const { models } = await import('../models/registry');
   models.setProvider(faux.provider);
   const { serve } = await import('../serve');
+  const { shutdownTelemetry } = await import('../telemetry/telemetry');
 
   const server = serve(0);
   const port = server.port!;
@@ -140,9 +153,11 @@ export async function startBica({ root }: { root?: string } = {}) {
         cwd,
       };
     },
+    /** Stops it, sending what telemetry still holds, as quitting does. */
     async stop() {
       for (const ws of sockets) ws.close();
       await server.stop(true);
+      await shutdownTelemetry();
       if (owned) await rm(root!, { recursive: true, force: true });
     },
   };

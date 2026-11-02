@@ -23,12 +23,23 @@ import { motion, setMotion, type Motion } from '../ui/motion';
 import { setSoundOn, soundOn } from '../ui/sound';
 import { setTheme, theme, type Theme } from '../ui/theme';
 import { hideThinking, setHideThinking } from '../sessions/thinking';
+import { useTelemetry } from '../telemetry/telemetry';
+import { TELEMETRY_DOCS } from '@bica/shared/telemetry';
+import type { TelemetryConfig } from '@bica/shared/protocol';
 
 const THEMES: { value: Theme; label: string }[] = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ];
+
+// Why telemetry is off when the switch can't turn it on.
+const FORCED_OFF: Partial<Record<NonNullable<TelemetryConfig['off']>, string>> =
+  {
+    'no-key': 'Off: this build of Bica has no PostHog key, so nothing is sent.',
+    DO_NOT_TRACK: 'Off: the server runs with DO_NOT_TRACK set.',
+    BICA_TELEMETRY: 'Off: the server runs with BICA_TELEMETRY=0.',
+  };
 
 const MOTIONS: { value: Motion; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -39,6 +50,8 @@ const MOTIONS: { value: Motion; label: string }[] = [
 export default function Settings() {
   const catalog = useModels();
   const settings = useSettings();
+  const telemetry = useTelemetry();
+  const forcedOff = () => FORCED_OFF[telemetry()?.off ?? 'setting'];
   const hasKey = () =>
     catalog().providers.some((p) => p.id === settings().model.provider);
 
@@ -258,6 +271,40 @@ export default function Settings() {
               hint="Opening a diff under Changes stages the file. Staged is what you reviewed; whatever the agent writes after shows up under Changes again."
               checked={settings().stageOnView}
               onChange={(on) => void updateSettings({ stageOnView: on })}
+            />
+          </Card>
+
+          <Card
+            title="Telemetry"
+            footer={
+              <>
+                <Show when={forcedOff()}>{(why) => <>{why()} </>}</Show>
+                <a
+                  class="underline hover:text-fg"
+                  href={TELEMETRY_DOCS}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  What's sent, and what never is
+                </a>
+              </>
+            }
+          >
+            <Toggle
+              label="Usage data and errors"
+              hint="Counts and timings of what you use in Bica, and its own crashes, to see what to fix and build next. Never your prompts, code, file names, or paths."
+              checked={settings().telemetry && !forcedOff()}
+              disabled={!!forcedOff()}
+              onChange={(on) => void updateSettings({ telemetry: on })}
+            />
+            <Toggle
+              label="Screen recordings"
+              hint="Recordings of the app with every text, input, and image hidden, to see where it gets in the way. Only with usage data on."
+              checked={
+                settings().replays && settings().telemetry && !forcedOff()
+              }
+              disabled={!!forcedOff() || !settings().telemetry}
+              onChange={(on) => void updateSettings({ replays: on })}
             />
           </Card>
 

@@ -9,6 +9,7 @@ const dir = join(import.meta.dir, '../client/dist/client');
 
 await run({
   version: '0.0.0-dev',
+  kind: 'source',
   load: () => import('./src/serve.ts'),
   client: Object.fromEntries(
     [...new Glob('**/*').scanSync(dir)].map((path) => [
