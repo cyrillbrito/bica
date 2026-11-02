@@ -31,6 +31,32 @@ The browser never talks to PostHog. posthog-js sends to `/relay` on Bica's own o
 
 The browser learns whether telemetry is on, and why not, from the `telemetry` topic: the key, the relay path, the PostHog app host for toolbar links, the install id, whether replays may record, the version, and the install kind. The topic is never cached on the device, so an old copy can't start sending after it was turned off. See [server/src/telemetry/telemetry.ts](../server/src/telemetry/telemetry.ts).
 
+## The browser app
+
+The app loads posthog-js only once the `telemetry` topic says on, after the page is up, so an install with telemetry off never downloads it. It uses the build that bundles its extensions and never fetches a script, so no code from PostHog's servers runs in the app, and the replay recorder loads only while replays may record. The moment the topic says off, posthog-js stops: it opts out, the recording stops, and any request it still holds, such as a queued batch or a replay's last chunk, is dropped. Turning it on again resumes without a reload. Its state is kept in `localStorage` per install id, with no cookies.
+
+What the app sends:
+
+- `$pageview` for each page, with the address rewritten to its route, such as `http://bica/s/:id`, and a `page_kind` such as `session`, `workspace`, or `settings`. A file opened over a page isn't a new page. `$pageleave` when the tab closes or reloads.
+- Clicks through autocapture with every text and attribute masked, so a click is its element's tag and place in the page, and rage clicks, dead clicks, and heatmaps of clicks and pointer moves from the same.
+- Web vitals, without naming the slow element.
+- Its own events, listed in [client/src/telemetry/events.ts](../client/src/telemetry/events.ts): `palette_open`, `command_run` (the action's id, or the kind of row for sessions, workspaces, and terminals), `shortcut_use`, `side_panel_tab_open`, `file_open` and `diff_open` (the page kind, and staged or changes), `setting_change` (the setting's name, with its value only for a switch or a fixed choice, and never for the telemetry switch itself), `theme_change`, and `dictation_start`. Prompts are counted on the server.
+- `$exception` for uncaught errors, unhandled rejections, and errors an error boundary catches. An error the server answered with, a permission the user denied, and a cancelled request are not bugs and stay home.
+
+Before any event leaves, every property at every depth is scrubbed: addresses become route patterns on `http://bica`, the host becomes `bica`, referrers become `$direct`, page titles and element texts go, and text such as an error's message loses the home folder, tailnet names, emails, and keys, the way the server's does. See [client/src/telemetry/scrub.ts](../client/src/telemetry/scrub.ts).
+
+### Replays
+
+While replays are on, posthog-js records the page as rrweb does: the DOM, then each change, with mouse moves, clicks, scrolls, and the window size. Settings chosen in the app win over the PostHog project's, which can't turn on what's below.
+
+- Every text shows as asterisks, and every input's value is masked.
+- Attributes that can hold a name, a path, or a title (links, labels, titles, placeholders, ids, and data fields) show as `*`. Classes, inline styles, roles, and states such as selected or expanded stay, so the replay keeps its layout.
+- Images, video, canvases, and frames are blocked and show as empty boxes of the same size. Terminals draw on canvas, so they show as boxes too.
+- No console logs and no network requests are recorded.
+- The page's address in the replay's events is its route pattern, and the host is taken out of the recorded styles and posthog-js's own config.
+
+What a replay still shows: the app's layout and styles, where things sit and how big they are, how long each masked text is, where the pointer goes and what it clicks, and which states change. Text lengths can hint at a title's shape, but not at its words.
+
 ## What is never sent
 
 - Prompt, reply, thinking, or note text; tool arguments or output; terminal content.
@@ -51,7 +77,7 @@ A crash still ends the server as it did, printing the error and exiting with cod
 
 ## Events
 
-Each side keeps its events and their properties in one typed catalog: [server/src/telemetry/events.ts](../server/src/telemetry/events.ts) for the server. Names follow [PostHog's guide](https://posthog.com/docs/product-analytics/best-practices): lowercase `object_verb` in the present tense, `is_` and `has_` for booleans, `_ms`, `_count`, and `_usd` suffixes.
+Each side keeps its events and their properties in one typed catalog: [server/src/telemetry/events.ts](../server/src/telemetry/events.ts) for the server, and [client/src/telemetry/events.ts](../client/src/telemetry/events.ts) for the browser, whose events are listed under [The browser app](#the-browser-app). Names follow [PostHog's guide](https://posthog.com/docs/product-analytics/best-practices): lowercase `object_verb` in the present tense, `is_` and `has_` for booleans, `_ms`, `_count`, and `_usd` suffixes.
 
 The server sends these. Each answers one question.
 

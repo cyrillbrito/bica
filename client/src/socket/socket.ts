@@ -40,6 +40,15 @@ interface Entry {
   ready: PromiseWithResolvers<unknown>;
 }
 
+/**
+ * What the server answered instead of a value. Its own bugs it reports
+ * itself, and the rest are the user's world, such as a missing file, so the
+ * browser never reports one as a bug of its own.
+ */
+export class ServerError extends Error {
+  override name = 'ServerError';
+}
+
 // The value before the first snapshot; `undefined` can be a real value.
 const UNSET = Symbol('unset');
 
@@ -115,7 +124,7 @@ function receive(message: ServerMessage) {
     const request = pending.get(message.id);
     pending.delete(message.id);
     if (message.ok) request?.resolve(message.value);
-    else request?.reject(new Error(message.error));
+    else request?.reject(new ServerError(message.error));
     return;
   }
   const entry = bySub.get(message.sub);
@@ -139,8 +148,9 @@ function receive(message: ServerMessage) {
   } else {
     console.error(`[socket] ${entry.key}:`, message.error);
     // Before any data, the view can't render: let its error boundary show it.
-    if (entry.value() === UNSET) entry.first.reject(new Error(message.error));
-    entry.ready.reject(new Error(message.error));
+    if (entry.value() === UNSET)
+      entry.first.reject(new ServerError(message.error));
+    entry.ready.reject(new ServerError(message.error));
   }
 }
 

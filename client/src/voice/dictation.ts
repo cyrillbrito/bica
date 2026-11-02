@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js';
 
 import { request } from '../socket/socket';
+import { track } from '../telemetry/telemetry';
 
 export type DictationPhase = 'idle' | 'recording' | 'transcribing';
 
@@ -33,6 +34,7 @@ export function createDictation(onText: (text: string) => void) {
     rec.ondataavailable = (e) => chunks.push(e.data);
     const done = new Promise<void>((resolve) => (rec.onstop = () => resolve()));
     rec.start();
+    track('dictation_start');
     setStarted(Date.now());
     setPhase('recording');
     await done;

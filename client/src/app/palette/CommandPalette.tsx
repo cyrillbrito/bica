@@ -15,14 +15,30 @@ import { useCommands } from './pages';
 import { keyLabel, matches, search, type Command, type Page } from './commands';
 import { createActiveOption } from '../../ui/listKeys';
 import { NoMatches, OptionGroup, optionClass } from '../../ui/Option';
+import { track } from '../../telemetry/telemetry';
 
 let dialog: HTMLDialogElement | undefined;
 let input: HTMLInputElement | undefined;
 const [stack, setStack] = createSignal<Page[]>([], { name: 'paletteStack' });
 const [query, setQuery] = createSignal('', { name: 'paletteQuery' });
 
+// Rows for the user's own sessions, workspaces, and terminals go by their
+// kind: their ids hold names and paths.
+const ROW_KINDS: Record<string, string> = {
+  s: 'session',
+  w: 'workspace',
+  t: 'new_session_in',
+  term: 'terminal',
+  theme: 'theme',
+};
+
+function commandName(id: string) {
+  return ROW_KINDS[id.split(':')[0]!] ?? id;
+}
+
 /** Opens the palette at its root page. */
 export function openPalette() {
+  if (!dialog?.open) track('palette_open');
   setStack([]);
   setQuery('');
   if (input) input.value = '';
@@ -49,6 +65,7 @@ export default function CommandPalette() {
 
   const choose = (c: Command | undefined) => {
     if (!c) return;
+    if (c.page || c.run) track('command_run', { command: commandName(c.id) });
     if (c.page) {
       setStack((s) => [...s, c.page!()]);
       setQuery('');
@@ -73,6 +90,7 @@ export default function CommandPalette() {
       if (matches(e, { code: 'KeyK', mod: true })) {
         e.preventDefault();
         e.stopPropagation();
+        track('shortcut_use', { shortcut: 'k:palette' });
         if (dialog?.open) closePalette();
         else openPalette();
         return;
@@ -80,6 +98,7 @@ export default function CommandPalette() {
       if (matches(e, { code: 'Slash', mod: true })) {
         e.preventDefault();
         e.stopPropagation();
+        track('shortcut_use', { shortcut: 'a:shortcuts' });
         openPalette();
         setStack([shortcutsPage()]);
         return;
@@ -88,6 +107,7 @@ export default function CommandPalette() {
       if (!c) return;
       e.preventDefault();
       e.stopPropagation();
+      track('shortcut_use', { shortcut: c.id });
       if (dialog?.open) closePalette();
       c.run!();
     };

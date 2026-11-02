@@ -21,6 +21,7 @@ import Failed from '../ui/Failed';
 import { CloseIcon } from '../ui/icons';
 import { closeDrawer } from '../ui/layout';
 import { moveFocus } from '../ui/listKeys';
+import { reportError, track } from '../telemetry/telemetry';
 
 /** What a tab's content gets: where the panel stands. */
 type PanelTabProps = {
@@ -68,6 +69,7 @@ export default function SidePanel() {
   // In the URL, so a reload or a link opens the same tab; replaced, so
   // switching tabs doesn't fill Back.
   const pick = (id: string) => {
+    if (id !== shown().id) track('side_panel_tab_open', { tab: id });
     setLastPicked(id);
     setSearch({ panel: id }, { replace: true });
   };
@@ -129,7 +131,7 @@ export default function SidePanel() {
           </IconButton>
         </div>
       </header>
-      <Errored fallback={(error) => <Failed error={error()} />}>
+      <Errored fallback={(error) => <Failed error={reportError(error())} />}>
         {/* Keyed so a new page's or tab's data blanks the panel instead of
             holding the old one (see Page in App.tsx). */}
         <Loading

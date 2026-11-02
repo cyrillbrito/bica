@@ -33,6 +33,7 @@ import {
   sliding,
 } from './ui/layout';
 import { Router, pageOf } from './router';
+import { Telemetry, reportError } from './telemetry/telemetry';
 import './App.css';
 
 // Without `on`, a navigation holds the old page until the new one's data
@@ -111,7 +112,9 @@ export default function App() {
               onResize={setSidebarW}
             />
             {/* Blank until the data arrives: it is quick, a spinner would only flash. */}
-            <Errored fallback={(error) => <Failed error={error()} />}>
+            <Errored
+              fallback={(error) => <Failed error={reportError(error())} />}
+            >
               <Loading fallback={<nav class="flex-1 bg-panel" />}>
                 <Sidebar />
                 <HoldMusic />
@@ -133,7 +136,9 @@ export default function App() {
               '--panel-w': `${noPanels() || sidePanelHidden() ? 0 : sidePanelW()}px`,
             }}
           >
-            <Errored fallback={(error) => <Failed error={error()} />}>
+            <Errored
+              fallback={(error) => <Failed error={reportError(error())} />}
+            >
               <Page>{props.children}</Page>
             </Errored>
           </main>
@@ -187,6 +192,7 @@ export default function App() {
           <CommandPalette />
           <ContextMenu />
           <Toaster />
+          <Telemetry />
           {import.meta.env.DEV && <DataToggle />}
 
           <Show when={drawer()}>
