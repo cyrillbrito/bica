@@ -1,4 +1,4 @@
-// Runs and tools as `run_end`, `tool_use`, and `$ai_generation`
+// Runs and tools as `run_end` and `tool_use`
 // (docs/telemetry.md), counted from what the harness commits: its entries say
 // every model response and tool result, the ones Pi Durable writes itself
 // (invalid arguments, unknown tools, interrupted calls) too, and `pi.live`
@@ -145,15 +145,14 @@ function entry(record: EntryRecord) {
   if (!run) return;
   if (AssistantEntry.is(record)) {
     const message = record.model?.[0] as AssistantMessage | undefined;
-    if (message?.role === 'assistant')
-      answered(record.conversationId, run, message);
+    if (message?.role === 'assistant') answered(run, message);
   } else if (ToolResultEntry.is(record)) {
     const message = record.model?.[0] as ToolResultMessage | undefined;
     if (message?.role === 'toolResult') toolDone(run, message);
   } else if (CompactionEntry.is(record)) run.compactions++;
 }
 
-function answered(id: ConversationId, run: Run, message: AssistantMessage) {
+function answered(run: Run, message: AssistantMessage) {
   run.turns++;
   const usage: Partial<Usage> = message.usage ?? {};
   run.usage.input += usage.input ?? 0;
@@ -173,29 +172,6 @@ function answered(id: ConversationId, run: Run, message: AssistantMessage) {
         name: block.name,
         repeat: repeatKey(block.name, JSON.stringify(block.arguments ?? {})),
       });
-  const model = publicModel(message.provider, message.model);
-  const runHash = hashId(run.key);
-  void agentOf(id)
-    .then((agent) =>
-      track('$ai_generation', {
-        $ai_trace_id: runHash,
-        $ai_session_id: hashId(String(id)),
-        $ai_model: model.id,
-        $ai_provider: model.provider,
-        $ai_input_tokens: usage.input ?? 0,
-        $ai_output_tokens: usage.output ?? 0,
-        $ai_cache_read_input_tokens: usage.cacheRead ?? 0,
-        $ai_cache_creation_input_tokens: usage.cacheWrite ?? 0,
-        ...(message.durationMs !== undefined && {
-          $ai_latency: message.durationMs / 1000,
-        }),
-        $ai_stop_reason: message.stopReason,
-        $ai_is_error: message.stopReason === 'error',
-        $ai_total_cost_usd: usage.cost?.total ?? 0,
-        agent,
-      }),
-    )
-    .catch((error) => console.error('[telemetry]', error));
 }
 
 function toolDone(run: Run, message: ToolResultMessage) {

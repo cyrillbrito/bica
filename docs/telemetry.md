@@ -90,7 +90,6 @@ The server sends these. Each answers one question.
 | `prompt_send` | Who sends prompts (the user, another session, or Bica's notes), as a new prompt, a steer, or queued, with images or not, and roughly how long. |
 | `run_end` | How runs go: model, effort, outcome (done, error, stopped, or waiting on `ask`), duration, turns, tool calls and errors, the longest error streak, the most repeated call, tokens, cost, and compactions. |
 | `tool_use` | Which tools make agents flail: once per tool per run, its calls, errors, durations, longest error streak, and most repeated call. |
-| `$ai_generation` | Tokens, latency, cost, and stop reason of each model response, for PostHog's LLM analytics, never with its input or output. |
 | `worktree_create`, `worktree_remove` | How often worktrees are made, and removed with or without force. |
 | `commit_create` | How often the Git tab commits, and amends. |
 | `terminal_start` | How often the user or an agent opens a terminal. |
@@ -105,5 +104,4 @@ Runs and tools are counted from what the harness saves, so a call the model got 
 
 - [PostHog's event naming guide](https://posthog.com/docs/product-analytics/best-practices).
 - [PostHog's reverse proxy guide](https://posthog.com/docs/advanced/proxy), which the relay follows.
-- [PostHog's LLM analytics manual capture](https://posthog.com/docs/llm-analytics/manual-capture) for `$ai_generation`.
 - [Console Do Not Track](https://consoledonottrack.com) for `DO_NOT_TRACK`.

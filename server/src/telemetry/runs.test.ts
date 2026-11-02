@@ -109,21 +109,6 @@ test("runs reach PostHog as counts of turns, tools, errors, and repeats, without
   expect(tools.other).toMatchObject({ call_count: 1, error_count: 1 });
   expect(tools.codemode).toMatchObject({ call_count: 1, error_count: 0 });
 
-  const generations = events.filter(
-    (e) =>
-      e.event === '$ai_generation' &&
-      e.properties.$ai_trace_id === done.run_hash,
-  );
-  expect(generations).toHaveLength(5);
-  expect(generations[0]!.properties).toMatchObject({
-    $ai_session_id: done.session_hash,
-    $ai_is_error: false,
-  });
-  for (const e of generations) {
-    expect(e.properties.$ai_input).toBeUndefined();
-    expect(e.properties.$ai_output_choices).toBeUndefined();
-  }
-
   const sent = JSON.stringify(posthog.requests);
   expect(sent).not.toContain('zebra');
   expect(sent).not.toContain(cwd);

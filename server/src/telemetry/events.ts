@@ -87,26 +87,6 @@ export interface Events {
     run_outcome: RunOutcome;
     run_hash: Hash;
   };
-  // One per model response, for PostHog's LLM analytics, in privacy mode:
-  // never `$ai_input` or `$ai_output_choices`.
-  // https://posthog.com/docs/llm-analytics/manual-capture
-  $ai_generation: {
-    $ai_trace_id: Hash;
-    $ai_session_id: Hash;
-    $ai_model: string;
-    $ai_provider: string;
-    $ai_input_tokens: number;
-    $ai_output_tokens: number;
-    $ai_cache_read_input_tokens?: number;
-    $ai_cache_creation_input_tokens?: number;
-    // Seconds, when the response measured it.
-    $ai_latency?: number;
-    $ai_stop_reason?: string;
-    $ai_is_error: boolean;
-    $ai_total_cost_usd: number;
-    agent: AgentId;
-  };
-
   worktree_create: Record<string, never>;
   worktree_remove: { is_forced: boolean };
   commit_create: { is_amend: boolean };
