@@ -1,0 +1,56 @@
+---
+// PostHog web analytics in every page's head, only in builds with a project key,
+// see Analytics in docs/website.md.
+import { posthogHosts, relayPath } from './hosts';
+
+const key: string | undefined = import.meta.env.PUBLIC_POSTHOG_KEY;
+const hosts = posthogHosts(import.meta.env.PUBLIC_POSTHOG_HOST);
+// The deployed site goes through the Worker on bica.sh (relay.ts), which
+// astro dev doesn't run.
+const apiHost = import.meta.env.DEV ? hosts.ingest : relayPath;
+const uiHost = hosts.app;
+---
+
+{
+  key && (
+    <script is:inline define:vars={{ key, apiHost, uiHost }}>
+      // PostHog's respect_dnt has no effect in cookieless mode, so a visitor
+      // asking not to be tracked doesn't even load it.
+      if (navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl) {
+        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagResult reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+
+        posthog.init(key, {
+          api_host: apiHost,
+          ui_host: uiHost,
+          defaults: '2026-08-30',
+          // No cookies or storage, so the site needs no cookie banner. PostHog
+          // counts visitors with a daily hash on its servers instead.
+          cookieless_mode: 'always',
+          disable_session_recording: true,
+          capture_performance: { web_vitals: true },
+        });
+        posthog.register({ app: 'site' });
+
+        // Signs that a visitor wants to install: copying an install command on the
+        // home page or the docs, and following a link to the repo.
+        document.addEventListener('click', (event) => {
+          const el = event.target instanceof Element ? event.target : null;
+          const link = el?.closest('a[href^="https://github.com/cyrillbrito/bica"]');
+          if (link) posthog.capture('github_link_click', { link_url: link.href });
+
+          const copy = el?.closest('.term .copy-btn, .expressive-code .copy button');
+          if (!copy) return;
+          const code = copy.dataset.code ?? copy.closest('.term')?.textContent ?? '';
+          const method = code.includes('/releases/latest/download')
+            ? 'binary'
+            : /git clone \S+\/bica/.test(code)
+              ? 'source'
+              : null;
+          if (!method) return;
+          const platform = /bica-((darwin|linux)-(arm64|x64))/.exec(code)?.[1] ?? null;
+          posthog.capture('install_command_copy', { method, platform });
+        });
+      }
+    </script>
+  )
+}

@@ -3,9 +3,13 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "bica-site",
   "compatibility_date": "2026-11-01",
+  // Only for the PostHog relay; every other path is a static file.
+  "main": "./src/analytics/relay.ts",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
+    "run_worker_first": ["/relay/*"],
   },
   "routes": [{ "pattern": "bica.sh", "custom_domain": true }],
 }

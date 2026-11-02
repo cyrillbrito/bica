@@ -1,6 +1,7 @@
 ---
 import Cup from '../home/Cup.astro';
 import Shot from '../home/Shot.astro';
+import PostHog from '../analytics/PostHog.astro';
 import '../home/home.css';
 
 import heroLight from '../assets/home/hero-light.png';
@@ -57,6 +58,7 @@ const phrases = [
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       })();
     </script>
+    <PostHog />
   </head>
   <body>
     <header class="top wrap">

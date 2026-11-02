@@ -37,6 +37,7 @@ export default defineConfig({
       logo: { src: './public/favicon.svg' },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/d2.css'],
+      components: { Head: './src/analytics/Head.astro' },
       social: [
         {
           icon: 'github',

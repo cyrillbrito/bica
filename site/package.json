@@ -8,7 +8,7 @@
     "typecheck": "bun check",
     "pdf": "astro build && bun scripts/pdf.ts",
     "links": "bun scripts/check-links.mjs",
-    "deploy": "astro build && bun scripts/check-links.mjs && wrangler deploy"
+    "deploy": "astro build && bun scripts/check-links.mjs && wrangler deploy --var POSTHOG_HOST:$PUBLIC_POSTHOG_HOST"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.8",

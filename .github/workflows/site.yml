@@ -21,3 +21,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          # Analytics stay off until the repo has the POSTHOG_KEY variable.
+          PUBLIC_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+          PUBLIC_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
