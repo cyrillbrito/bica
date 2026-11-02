@@ -12,6 +12,7 @@ import {
   listSessions,
   sessions,
 } from '../sessions/store';
+import { hashId, track } from '../telemetry/telemetry';
 
 // The hub (docs/hub.md): one session of the Hub agent, in the folder from
 // Settings → Hub, on the model picked there.
@@ -73,6 +74,13 @@ export async function openHub() {
     },
     context,
   );
+  track('session_create', {
+    agent: 'hub',
+    session_hash: hashId(String(conversation.id)),
+    is_child: false,
+    origin: 'user',
+    is_worktree: false,
+  });
   await sessions.refresh();
   return String(conversation.id);
 }

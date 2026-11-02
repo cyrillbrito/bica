@@ -5,6 +5,7 @@ import type { PromptImage } from '@bica/shared/protocol';
 import { withCallWords, type VoiceLine } from '@bica/shared/transcript';
 import { currentBranch, trackedFiles } from '../git/commands';
 import { models } from '../models/registry';
+import { hashId, track } from '../telemetry/telemetry';
 import { voiceLog } from './log';
 import { voiceSession } from './session';
 
@@ -429,6 +430,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
     } else if (event.type === 'error') log('error', { event });
   });
 
+  const connected = Date.now();
   const call: Call = {
     socket,
     photos: (images) => {
@@ -449,9 +451,14 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       stopSteps();
       calls.delete(callId);
       if (socket.readyState <= WebSocket.OPEN) socket.close(1000, 'done');
+      track('voice_call_end', {
+        session_hash: hashId(sessionId),
+        duration_ms: Date.now() - connected,
+      });
     },
   };
   calls.set(callId, call);
+  track('voice_call_start', { session_hash: hashId(sessionId) });
   socket.addEventListener('close', ({ code, reason }) => {
     log('sideband closed', { code, reason });
     call.stop('sideband');

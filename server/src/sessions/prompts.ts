@@ -3,6 +3,7 @@ import {
   type ConversationId,
   InboxDoc,
   type InboxItem,
+  LiveDoc,
 } from '@earendil-works/pi-durable';
 
 import { contextUsage, pruneBlocked } from '@bica/shared/context-usage';
@@ -14,6 +15,8 @@ import { getAgent } from '../agents/registry';
 import { loadMemory, projectList } from '../agents/common';
 import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
+import { lengthBucket } from '../telemetry/events';
+import { hashId, track } from '../telemetry/telemetry';
 import { readSession } from './read';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
@@ -49,6 +52,7 @@ export async function submit(
   from: Sender,
   whenBusy: 'followUp' | 'steer' = 'followUp',
 ) {
+  const length = prompt.length;
   const conversation = await getConversation(id);
   const meta = await sessionMeta(conversation.id);
   // Its one prompt waits for tonight (docs/night-runs.md); a second would run now.
@@ -68,11 +72,22 @@ export async function submit(
   await keepCopies(conversation.id);
   await keepModel(conversation.id);
   await recordSender(conversation.id, from);
+  const busy = !!(
+    await (await getHarness()).snapshot(LiveDoc, conversation.id, context)
+  )?.run;
   // Pi Durable returns the existing submission for a repeated requestId.
   const submission = await conversation.submit(
     { type: 'input', content: input(prompt, images), requestId, whenBusy },
     context,
   );
+  track('prompt_send', {
+    agent: agentIdOf(meta),
+    session_hash: hashId(id),
+    sender: from === 'user' ? 'user' : from === 'bica' ? 'bica' : 'agent',
+    mode: whenBusy === 'steer' ? 'steer' : busy ? 'queue' : 'prompt',
+    has_images: images.length > 0,
+    length_bucket: lengthBucket(length),
+  });
   if (whenBusy === 'steer') steered(conversation.id);
   return submission;
 }

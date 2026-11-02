@@ -10,6 +10,7 @@ import type {
 } from '@bica/shared/protocol';
 import { getProject } from '../projects/projects';
 import { dataPath } from '../storage';
+import { track } from '../telemetry/telemetry';
 
 /**
  * Shells and long-running processes (dev servers, game servers) in a
@@ -283,6 +284,7 @@ export async function createTerminal(
   terminals.set(id, t);
   spawn(t);
   announce();
+  track('terminal_start', { by: options.startedBy ? 'agent' : 'user' });
   return id;
 }
 

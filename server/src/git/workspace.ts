@@ -13,6 +13,7 @@ import {
 import { polled } from '../live';
 import { inside, isRepo, open } from '../projects/workspace';
 import { onToolRan } from '../tools/tool-ran';
+import { track } from '../telemetry/telemetry';
 import * as git from './commands';
 
 // No file watcher: open views poll, and only while someone looks.
@@ -308,6 +309,7 @@ export async function commit(
     const dir = await repoDir(cwd, repo);
     if (all) await git.stage(dir);
     await git.commit(dir, { message, amend });
+    track('commit_create', { is_amend: amend });
   } finally {
     await poke(cwd);
   }

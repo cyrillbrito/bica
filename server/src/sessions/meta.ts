@@ -11,7 +11,9 @@ import { context } from '../harness';
 import { getAgent, selection } from '../agents/registry';
 import { getProject } from '../projects/projects';
 import { allTerminals, removeTerminal } from '../terminals/terminals';
+import { hashId, track } from '../telemetry/telemetry';
 import {
+  agentIdOf,
   editSession,
   getConversation,
   listSessions,
@@ -116,13 +118,17 @@ export async function archive(
   archived: boolean,
 ): Promise<WorkspaceRef | null> {
   const { id: conversationId } = await getConversation(id);
-  await editSession(conversationId, (meta) => {
+  const newly = await editSession(conversationId, (meta) => {
+    const was = !!meta.archivedAt;
     // Done with, so nobody watches it any more.
     if (archived) {
       meta.archivedAt ||= Date.now();
       delete meta.watchedBy;
     } else delete meta.archivedAt;
+    return archived && !was && agentIdOf(meta);
   });
+  if (newly)
+    track('session_archive', { agent: newly, session_hash: hashId(id) });
   if (!archived) return null;
   // The dev servers and shells it leads go with it; detached ones stay.
   await Promise.all(

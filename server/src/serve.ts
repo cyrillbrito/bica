@@ -10,6 +10,7 @@ import { upgrade, websocket } from './socket';
 import type { InstallKind } from '@bica/shared/protocol';
 import { startHeartbeat } from './telemetry/heartbeat';
 import { relay } from './telemetry/relay';
+import { watchRunTelemetry } from './telemetry/runs';
 import { startTelemetry } from './telemetry/telemetry';
 
 /**
@@ -54,5 +55,8 @@ export function serve(
   // Opens the harness, which resumes runs a restart left unfinished, and
   // follows them at once: a parent hears when one ends, open tab or not.
   void watchRuns().catch((error) => console.error('[sessions]', error));
+  void watchRunTelemetry().catch((error) =>
+    console.error('[telemetry]', error),
+  );
   return server;
 }

@@ -53,19 +53,27 @@ A crash still ends the server as it did, printing the error and exiting with cod
 
 Each side keeps its events and their properties in one typed catalog: [server/src/telemetry/events.ts](../server/src/telemetry/events.ts) for the server. Names follow [PostHog's guide](https://posthog.com/docs/product-analytics/best-practices): lowercase `object_verb` in the present tense, `is_` and `has_` for booleans, `_ms`, `_count`, and `_usd` suffixes.
 
-The server sends `server_start`, `server_heartbeat`, and `$exception` itself. The others are declared in the catalog for the features to send.
+The server sends these. Each answers one question.
 
-| Event | When |
+| Event | The question it answers |
 | --- | --- |
-| `server_start` | The server starts, and whether the install id is new. |
-| `server_heartbeat` | Once a day: counts of projects, worktrees, open sessions, and sessions active that day. |
-| `session_create`, `session_archive` | A session starts or is archived: its agent, whether it's a child, where it came from. |
-| `prompt_send` | A prompt is sent: who sent it, steer or queue, images, a length bucket. |
-| `run_end` | Each run: model, effort, outcome, duration, turns, tool calls and errors, repeated calls, tokens, cost. |
-| `tool_use` | Each tool used in a run, once: calls, errors, durations, error streaks, repeated calls. |
-| `$ai_generation` | Each model response, for PostHog's LLM analytics, with tokens, latency, and cost but never its input or output. |
-| `worktree_create`, `worktree_remove`, `commit_create`, `terminal_start`, `voice_call_start`, `voice_call_end`, `provider_connect`, `night_run_start` | The main action of each feature. |
-| `$exception` | One of Bica's own bugs, scrubbed. |
+| `server_start` | How many installs start, and how many are new. |
+| `server_heartbeat` | Which installs are still in use: once a day, counts of projects, worktrees, open sessions, and sessions active that day. |
+| `session_create` | How many sessions start, as which agent, and from where: the user, another session, the hub, a night run, or a fork. |
+| `session_archive` | How many sessions get archived, by agent. |
+| `prompt_send` | Who sends prompts (the user, another session, or Bica's notes), as a new prompt, a steer, or queued, with images or not, and roughly how long. |
+| `run_end` | How runs go: model, effort, outcome (done, error, stopped, or waiting on `ask`), duration, turns, tool calls and errors, the longest error streak, the most repeated call, tokens, cost, and compactions. |
+| `tool_use` | Which tools make agents flail: once per tool per run, its calls, errors, durations, longest error streak, and most repeated call. |
+| `$ai_generation` | Tokens, latency, cost, and stop reason of each model response, for PostHog's LLM analytics, never with its input or output. |
+| `worktree_create`, `worktree_remove` | How often worktrees are made, and removed with or without force. |
+| `commit_create` | How often the Git tab commits, and amends. |
+| `terminal_start` | How often you or an agent open a terminal. |
+| `voice_call_start`, `voice_call_end` | How many voice calls there are, and how long they last. |
+| `provider_connect` | Which providers people connect, by key or sign-in. |
+| `night_run_start` | How many night runs start, at the start time or by Run now. |
+| `$exception` | Which of Bica's own bugs people hit, scrubbed. |
+
+Runs and tools are counted from what the harness saves, so a call the model got wrong, such as one with bad arguments or to a tool that doesn't exist, counts as an error too. A code mode script's calls count under their own tools, and as nested. Two calls repeat when they have the same tool and the same arguments; the arguments are only compared on the machine and never sent. A tool name Bica doesn't define goes as `other`, and a provider or model outside pi-ai's own list goes as `custom`, since its name could be private. A run that a restart cut off is sent once it ends, marked as resumed, with only what came after the restart. See [server/src/telemetry/runs.ts](../server/src/telemetry/runs.ts).
 
 ## Sources
 

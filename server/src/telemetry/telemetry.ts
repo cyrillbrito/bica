@@ -53,6 +53,11 @@ export function telemetryOn() {
   return !off();
 }
 
+/** Off until a restart: no key, or the environment said no. */
+export function offForGood() {
+  return !!fixedOff;
+}
+
 // One random id per data folder: the PostHog person for this install.
 const file = jsonFile<{ installId?: string; noticeShown?: boolean }>(
   'telemetry.json',
@@ -76,6 +81,9 @@ function installId() {
 
 /** What a session or run id becomes before it's sent, so it can't be matched to the data. */
 export function hashId(raw: string) {
+  // Callers hash before `track` drops the event, and an install id is only
+  // made while telemetry is on.
+  if (off()) return '';
   return new Bun.CryptoHasher('sha256')
     .update(`${installId()}:${raw}`)
     .digest('hex')

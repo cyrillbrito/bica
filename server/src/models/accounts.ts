@@ -17,6 +17,7 @@ import {
 import { EXA, exaAccount, exaSignIn } from './exa';
 import { GUIDES } from './known-providers';
 import { accountsOf, baseOf, forgetLimits, isExtra } from './plans';
+import { track } from '../telemetry/telemetry';
 import { refreshPlanUsage } from './usage';
 
 // Only what's saved here counts: Bica reads no keys from the environment.
@@ -238,6 +239,10 @@ export async function signIn(id: string, type: AuthType) {
         await learn(id, true, () => void feed.refresh());
         await refuseTwin(id);
       }
+      track('provider_connect', {
+        provider: baseOf(id),
+        method: type === 'oauth' ? 'sign_in' : 'key',
+      });
       if (current === run) current = undefined;
       await dropUnsigned();
     } catch (error) {

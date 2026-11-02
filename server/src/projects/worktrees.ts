@@ -8,6 +8,7 @@ import { named } from '../sessions/read';
 import { listSessions } from '../sessions/store';
 import { removeTerminal, terminalsIn } from '../terminals/terminals';
 import { copyIgnored } from './copy-ignored';
+import { track } from '../telemetry/telemetry';
 import { getProject, refreshProjects, slugify } from './projects';
 
 /**
@@ -52,6 +53,7 @@ export async function createWorktree(projectId: string, title: string) {
     console.warn(`Copying ignored files into ${path} failed:`, e),
   );
   await refreshProjects();
+  track('worktree_create', {});
   return { path, warning };
 }
 
@@ -107,6 +109,7 @@ export async function removeWorktree(
   await git.removeWorktree(project.path, cwd);
   if (w.branch) await git.deleteBranch(project.path, w.branch).catch(() => {});
   await refreshProjects();
+  track('worktree_remove', { is_forced: force });
   return null;
 }
 

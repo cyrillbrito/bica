@@ -6,6 +6,7 @@ import { context, getHarness } from '../harness';
 import { accountsOf, openWindows } from '../models/plans';
 import { models } from '../models/registry';
 import { settings } from '../settings';
+import { hashId, track } from '../telemetry/telemetry';
 import { setAgent } from '../sessions/meta';
 import { stop, submit } from '../sessions/prompts';
 import {
@@ -120,7 +121,7 @@ async function hasRoom(id: string) {
 export async function runTonight(id: string, prompt?: string) {
   const held = await takePrompt(id);
   if (!held) throw new Error('Nothing is waiting for tonight');
-  await send(id, prompt?.trim() || held);
+  await send(id, prompt?.trim() || held, false);
 }
 
 /** Replaces the held prompt, while it still waits. */
@@ -136,10 +137,10 @@ export async function saveTonight(id: string, prompt: string) {
 
 async function run(id: string) {
   const prompt = await takePrompt(id);
-  if (prompt) await send(id, prompt);
+  if (prompt) await send(id, prompt, true);
 }
 
-async function send(id: string, prompt: string) {
+async function send(id: string, prompt: string, scheduled: boolean) {
   starting.add(id);
   try {
     // As its parent, so a session the hub planned stays the hub's.
@@ -151,6 +152,10 @@ async function send(id: string, prompt: string) {
     await hold(id, prompt).catch(() => {});
     throw error;
   }
+  track('night_run_start', {
+    session_hash: hashId(id),
+    is_scheduled: scheduled,
+  });
   const conversation = await getConversation(id);
   void conversation
     .waitForIdle(context)

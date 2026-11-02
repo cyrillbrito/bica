@@ -22,6 +22,7 @@ import {
 import { createWorktree } from '../projects/worktrees';
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
+import { hashId, track } from '../telemetry/telemetry';
 import { VOICE_TITLE, nameSession, promptTitle, retitle } from './names';
 import { setAgent } from './meta';
 import { submit } from './prompts';
@@ -126,6 +127,20 @@ export async function createSession({
     },
     context,
   );
+  const starter =
+    startedBy &&
+    agentIdOf(await sessionMeta(Number(startedBy) as ConversationId));
+  track('session_create', {
+    agent: agentId,
+    session_hash: hashId(String(conversation.id)),
+    is_child: !detached && !!startedBy,
+    origin: !starter
+      ? 'user'
+      : starter === 'hub' || starter === 'night'
+        ? starter
+        : 'agent',
+    is_worktree: !!worktree,
+  });
   // Nothing to send: started for a voice call, whose first handoff names it.
   if (!tonight && (prompt || images.length))
     await submit(
@@ -244,8 +259,15 @@ export async function fork(id: string, at?: number) {
   );
   // A running Night session counts as tonight's run (night-runs/night.ts),
   // and the user's fork isn't one.
-  if (agentIdOf(await sessionMeta(conversation.id)) === 'night')
-    await setAgent(String(forked.id), 'coding');
+  const agent = agentIdOf(await sessionMeta(conversation.id));
+  if (agent === 'night') await setAgent(String(forked.id), 'coding');
+  track('session_create', {
+    agent: agent === 'night' ? 'coding' : agent,
+    session_hash: hashId(String(forked.id)),
+    is_child: false,
+    origin: 'fork',
+    is_worktree: false,
+  });
   await sessions.refresh();
   return String(forked.id);
 }

@@ -41,18 +41,24 @@ export interface Events {
     length_bucket: LengthBucket;
   };
 
-  // One per run.
+  // One per run, from runs.ts. Counts include the calls code mode scripts
+  // make, which `nested_tool_call_count` counts apart.
   run_end: {
     agent: AgentId;
     session_hash: Hash;
     run_hash: Hash;
+    // Pi-ai's provider and model ids; 'custom' for any other, whose name
+    // could be private.
     model_provider: string;
     model_id: string;
-    thinking_level: ThinkingLevel;
+    thinking_level?: ThinkingLevel;
     outcome: RunOutcome;
+    // The run began before this process started, so its counts are partial.
+    is_resumed: boolean;
     duration_ms: number;
     turn_count: number;
     tool_call_count: number;
+    nested_tool_call_count: number;
     tool_error_count: number;
     max_consecutive_tool_errors: number;
     // The most calls with the same tool and the same arguments in the run.
@@ -62,13 +68,15 @@ export interface Events {
     cache_read_tokens: number;
     cache_write_tokens: number;
     cost_usd: number;
-    compaction_count?: number;
+    compaction_count: number;
   };
   // One per tool per run, not per call, to keep the volume low.
   tool_use: {
     // Bica's own tool names; any other name is sent as 'other'.
     tool_name: string;
     call_count: number;
+    // Of those, the calls a code mode script made.
+    nested_call_count: number;
     error_count: number;
     duration_ms_total: number;
     duration_ms_max: number;
@@ -91,12 +99,11 @@ export interface Events {
     $ai_output_tokens: number;
     $ai_cache_read_input_tokens?: number;
     $ai_cache_creation_input_tokens?: number;
-    // Seconds.
-    $ai_latency: number;
+    // Seconds, when the response measured it.
+    $ai_latency?: number;
     $ai_stop_reason?: string;
     $ai_is_error: boolean;
-    $ai_http_status?: number;
-    $ai_total_cost_usd?: number;
+    $ai_total_cost_usd: number;
     agent: AgentId;
   };
 
@@ -105,9 +112,11 @@ export interface Events {
   commit_create: { is_amend: boolean };
   terminal_start: { by: 'user' | 'agent' };
   voice_call_start: { session_hash: Hash };
+  // Hung up by either side, or dropped.
   voice_call_end: { session_hash: Hash; duration_ms: number };
   provider_connect: { provider: string; method: 'key' | 'sign_in' };
-  night_run_start: { session_hash: Hash };
+  // At the start time, or the user's Run now.
+  night_run_start: { session_hash: Hash; is_scheduled: boolean };
 }
 
 export type EventName = keyof Events;
