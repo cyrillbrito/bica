@@ -140,7 +140,7 @@ export default function Accounts() {
   return (
     <Card
       title="Providers"
-      description="Plans you sign in to, and API keys. A plan with more than one account uses the first until it passes 90% of a limit, then the next."
+      description="Plans you sign in to, and API keys. A plan with more than one account uses the first until it passes 98% of a limit, then the next."
       footer={
         <>
           Kept in <code>.data/auth.json</code>.

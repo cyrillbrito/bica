@@ -20,7 +20,7 @@ import { limitWindows } from './known-providers';
  */
 
 // Past this share of any window, requests move to the next account.
-export const SWITCH_AT = 0.9;
+export const SWITCH_AT = 0.98;
 // An account that failed without telling its limits is skipped this long.
 const COOL_DOWN_MS = 5 * 60_000;
 
