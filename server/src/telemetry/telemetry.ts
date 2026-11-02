@@ -146,8 +146,12 @@ function cleanException(properties: Record<string, unknown> = {}) {
       stacktrace: exception.stacktrace && {
         ...exception.stacktrace,
         frames: exception.stacktrace.frames?.map(
-          ({ pre_context: _, context_line: __, post_context: ___, ...frame }) =>
-            frame,
+          ({
+            pre_context: _pre,
+            context_line: _line,
+            post_context: _post,
+            ...frame
+          }) => frame,
         ),
       },
     })),

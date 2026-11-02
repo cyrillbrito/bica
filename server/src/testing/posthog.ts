@@ -35,11 +35,8 @@ export async function fakePostHog(
     async fetch(req) {
       const url = new URL(req.url);
       let bytes = new Uint8Array(await req.arrayBuffer());
-      if (
-        req.headers.get('content-encoding') === 'gzip' ||
-        url.searchParams.get('compression') === 'gzip-js'
-      )
-        bytes = gunzipSync(bytes);
+      // posthog-js gzips without saying so in a header or the query.
+      if (bytes[0] === 0x1f && bytes[1] === 0x8b) bytes = gunzipSync(bytes);
       const text = new TextDecoder().decode(bytes);
       let body: unknown = text;
       try {

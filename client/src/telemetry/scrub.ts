@@ -1,3 +1,5 @@
+import { scrubSecrets, TAILNET_HOST } from '@bica/shared/telemetry';
+
 import { pageOf } from '../router';
 
 // What PostHog sees instead of this Bica's address, which is often the
@@ -61,19 +63,6 @@ function scrubPath(path: string) {
   return pageInfo(clean).path;
 }
 
-// Mirrors server/src/telemetry/scrub.ts: whose folder it is, tailnet names,
-// emails, and keys never leave the machine (docs/telemetry.md).
-const RULES: [RegExp, string][] = [
-  [/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b/gi, '<email>'],
-  [/\/(?:Users|home)\/[^/\s'"`:)]+/g, '~'],
-  [/\b[a-z]:\\Users\\[^\\\s'"`:)]+/gi, '~'],
-  [/\b(?:[\w-]+\.)+ts\.net\b/gi, '<host>'],
-  [
-    /\b(?:sk|phc|phx|phs|ghp|gho|ghs|github_pat|xox[abpr])[-_][\w-]{12,}/g,
-    '<key>',
-  ],
-];
-
 function escape(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -94,8 +83,7 @@ export function scrubText(text: string, max = 2000) {
     /http:\/\/bica(\/[^\s"'`<>)]*)?/g,
     (_, path: string | undefined) => `${ORIGIN}${path ? scrubPath(path) : ''}`,
   );
-  for (const [pattern, to] of RULES) out = out.replace(pattern, to);
-  return out.length > max ? `${out.slice(0, max)}…` : out;
+  return scrubSecrets(out, max);
 }
 
 // What autocapture may keep of a clicked element: where it sits, never
@@ -144,7 +132,7 @@ function scrubReplay(value: unknown): unknown {
           .join(ORIGIN)
           .split(location.host)
           .join(HOST)
-          .replace(/\b(?:[\w-]+\.)+ts\.net\b/gi, '<host>')
+          .replace(TAILNET_HOST, '<host>')
       : value;
   if (Array.isArray(value)) return value.map(scrubReplay);
   if (value && typeof value === 'object')

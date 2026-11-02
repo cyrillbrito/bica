@@ -24,6 +24,14 @@ export default defineConfig({
       rules: { 'import/no-cycle': ['error', { ignoreTypes: true }] },
     },
     { files: ['server/**'], rules: { 'bica/git-commands': 'error' } },
+    {
+      // PostHog's minified snippet, pasted as they ship it.
+      files: ['site/src/analytics/PostHog.astro'],
+      rules: {
+        'no-unused-expressions': 'off',
+        'oxc/number-arg-out-of-range': 'off',
+      },
+    },
   ],
   options: {
     typeAware: true,
