@@ -1,0 +1,60 @@
+---
+title: 'Telemetry'
+description: 'What Bica sends to its author, what it never sends, what screen recordings show, and how to turn it all off.'
+sidebar:
+  order: 5
+---
+
+The `bica` binary sends PostHog, an analytics service, anonymous usage data, its own errors, and screen recordings with every text hidden. Its author uses them to see how many people run Bica, which features and tools get used, and what breaks. It never includes your prompts, code, or file names, and you can turn it all off.
+
+## Turn it off
+
+- In Settings → Telemetry, turn off Usage data and errors, and Bica sends nothing at all. Screen recordings turns off only the recordings.
+- Set `DO_NOT_TRACK=1` or `BICA_TELEMETRY=0` in the shell that starts `bica`, and it sends nothing, whatever Settings says. Settings then shows both switches off and says why.
+- Bica run from source, or a binary you build yourself, sends nothing unless you give it a PostHog project key of your own. Only the released binaries carry one.
+
+Off means nothing leaves the machine: no events, no errors, no recordings, and no PostHog script in the app. The first time `bica` starts with telemetry on, it prints a short notice with a link to this page.
+
+## What is sent
+
+Each install gets a random id, kept in `telemetry.json` in [the data folder](/docs/reference/cli/#the-data-folder). Sessions and runs go as scrambled ids that can be counted but not traced back to anything on your machine. Every event says which version of Bica sent it, how it was installed, and the system and processor.
+
+Bica sends an event when:
+
+- it starts, and once a day while it runs, with how many projects, worktrees, and sessions you have
+- a session is created or archived, with its agent and where it came from, such as you, another session, or a night run
+- a prompt is sent: by whom, whether it steers or waits in the queue, whether it has images, and roughly how long it is
+- a run ends: the model and effort, how it ended, how long it took, its turns, tool calls and errors, tokens, and cost
+- a run used a tool: how often, how many calls failed, how long they took, and how often the same call repeated
+- a model answers: its tokens, how long it took, its cost, and why it stopped
+- you create or remove a worktree, commit, open a terminal, start or end a voice call, connect a provider, or a night run starts
+- you open a page in the app, sent as its kind, such as a session or Settings, with how fast it loaded
+- you click something (without its text), open the command palette or run a command, use a shortcut, open a side panel tab, a file, or a diff, change a setting (by its name), change the theme, or start dictation
+- Bica hits one of its own bugs, with home folders, machine names, emails, and keys taken out of the error
+
+The app sends through your own Bica server, which forwards it without cookies or your browser's address. PostHog sees the requests come from your dev machine's internet address, as any web request does.
+
+## What is never sent
+
+- What you and the agents write: prompts, replies, thinking, notes, tool input and output, and terminal content.
+- Names from your work: file paths and names, projects, worktrees, folders, branches, session titles, commit messages, and pull request titles.
+- Bica's address, page titles, and links with ids or paths in them.
+- Account names, emails, keys, environment values, skill names, and your instructions.
+- Error messages from tools, git, providers, or the shell. A failed tool call is counted, never described.
+
+## What screen recordings show
+
+A recording replays the app's page as it changed: the layout and styles, where each part sits and how big it is, the pointer's moves and clicks, scrolling, the window size, and what opens or gets selected.
+
+Every text shows as asterisks, every input as masked, and links, titles, and labels lose their values. Images, video, and canvases show as empty boxes, and terminals draw on canvas, so they do too. No console logs or network requests are recorded.
+
+Recordings can't hide the length of each text, so a hidden title still shows how long it is, and they show how many rows a list has. If that's more than you want to share, turn off Screen recordings and keep the rest.
+
+## The website
+
+bica.sh counts visits with PostHog in cookieless mode: no cookies, no banner, and no recordings. Browsers with Do Not Track or Global Privacy Control on don't load it at all.
+
+## Next
+
+- [Settings](/docs/setup/settings/): every card, including Telemetry.
+- [CLI](/docs/reference/cli/#environment-variables): the environment variables `bica` reads.

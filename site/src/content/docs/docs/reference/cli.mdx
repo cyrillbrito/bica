@@ -46,6 +46,7 @@ Set them in the shell that starts `bica`, such as `PI_FAST_MODEL=anthropic/claud
 | `PI_FAST_MODEL` | The fast model, as `provider/model`, until you pick one in Settings → Models. | None |
 | `SHELL` | The shell each [terminal](/docs/basics/terminals/) runs. | `/bin/bash` |
 | `VISUAL`, `EDITOR` | The editor Open in editor starts. Only GUI editors such as VS Code or Sublime work. | |
+| `DO_NOT_TRACK`, `BICA_TELEMETRY` | `DO_NOT_TRACK=1` or `BICA_TELEMETRY=0` turns off [telemetry](/docs/reference/telemetry/), whatever Settings says. | |
 
 A model picked in Settings always wins over `PI_MODEL` and `PI_FAST_MODEL`. They pick a model, never a key: its provider still has to be connected in [Settings → Providers](/docs/setup/providers/). A value without a `/` stops `bica` at start.
 
@@ -70,6 +71,7 @@ Bica keeps everything in `~/.bica`. Your own files sit at the top, and Bica's st
     - auth.json keys and sign-ins, readable only by you
     - accounts.json plan accounts and their order
     - plan-usage.json plan limits for the usage meters
+    - telemetry.json the random id telemetry sends
     - attachments/ images sent with prompts
     - chrome.json the Chrome profile the `p` key picked
     - server.pid the running server, so a second one won't start
