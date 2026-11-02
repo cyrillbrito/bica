@@ -10,6 +10,7 @@ import {
   pruneBlocked,
 } from '@bica/shared/context-usage';
 import { isLongLived } from '@bica/shared/agents';
+import { SentEntry } from '@bica/shared/transcript';
 import { context, getHarness } from '../harness';
 import { getCatalog } from '../models/models';
 import { markSeen } from './meta';
@@ -25,7 +26,7 @@ import { listSessions } from './store';
 const MINUTE = 60_000;
 const WARM_MARGIN = 5 * MINUTE;
 
-const SAVE_NOTE = '[Note from Bica, not from the user] Memory save:';
+const SAVE_NOTE = 'Memory save:';
 const SAVE_PROMPT = `${SAVE_NOTE} this session is about to be compacted, and older turns will shrink to a summary. Save what should outlast it to the memory files, as your memory rules and the project's instructions say. Look for what was said but never written down. Then reply with one line. Start nothing else.`;
 
 // Taelin's compaction rules (OptChat), trimmed.
@@ -71,9 +72,11 @@ async function housekeep(id: string, unread: boolean) {
     // Past BLOATED, at the first idle minute: reads cost enough, and quality
     // drops, so waiting for a long pause isn't worth it.
     if (size <= BLOATED && idle < usage.cache.ttl - WARM_MARGIN) return;
-    const at = view.entries.findLastIndex((e) => e.kind === 'pi.user');
+    const at = view.entries.findLastIndex(
+      (e) => e.kind === 'pi.user' || SentEntry.is(e),
+    );
     const save = view.entries[at];
-    if (save && JSON.stringify(save.model ?? '').includes(SAVE_NOTE)) {
+    if (SentEntry.is(save) && save.data.text.startsWith(SAVE_NOTE)) {
       // Compacted since, with nothing new: compacting again would loop
       // hourly. Not compacted: a restart or an error cut in after the save.
       const done = view.entries

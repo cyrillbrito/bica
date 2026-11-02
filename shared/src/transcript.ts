@@ -66,22 +66,31 @@ export type Message = { key: string } & (
 /** Who sent a prompt you didn't type; `session` links to the sender. */
 export type Sender = { label: string; session?: string };
 
-// The labels server/src/sessions/ (tell) and session-tools.ts
-// (session_send) put in front. The model reads a plain user message, which
-// is the only kind that starts a run; only the transcript tells them apart.
-const NOTE = '[Note from Bica, not from the user] ';
-const SENT = /^\[Message from session (\d+) "(.*?)"\] /;
+/**
+ * A prompt from Bica or another session (server/src/sessions/prompts.ts).
+ * The model reads it as a user message with a label in front, saying who
+ * wrote it; the transcript reads the sender and the words from `data`.
+ */
+export type Sent = { label: string; session: string | null; text: string };
+export const SentEntry = entryKind<Sent>('bica.sent');
 
-/** The sender and the text without its label, for a prompt sent by Bica. */
-export function senderOf(text: string): { from?: Sender; text: string } {
+// Sessions from before SentEntry stored these prompts as plain user
+// messages, so their label is read back from the text.
+const NOTE = '[Note from Bica, not from the user] ';
+const SENT =
+  /^\[Message from (?:"(.*?)" \(session (\d+)\)[^\]]*|session (\d+) "(.*?)")\] /;
+
+function senderOf(text: string): { from?: Sender; text: string } {
   if (text.startsWith(NOTE))
     return { from: { label: 'Bica' }, text: text.slice(NOTE.length) };
   const sent = SENT.exec(text);
-  if (sent)
+  if (sent) {
+    const session = (sent[2] ?? sent[3])!;
     return {
-      from: { label: sent[2] || `Session ${sent[1]}`, session: sent[1] },
+      from: { label: (sent[1] ?? sent[4]) || `Session ${session}`, session },
       text: text.slice(sent[0].length),
     };
+  }
   return { text };
 }
 
@@ -201,14 +210,22 @@ export function toMessages(
 
   type Flat = { key: string } & (Exclude<Message, Activity> | Step);
   const messages: Flat[] = [];
-  const add = (message: PiMessage, key: string) => {
+  const add = (message: PiMessage, key: string, sent?: Sent) => {
     if (message.role === 'user') {
       const content = message.content;
       const { text, images } =
         typeof content === 'string'
           ? { text: content, images: [] }
           : promptOf(content);
-      const sender = senderOf(withoutCallWords(text));
+      const sender = sent
+        ? {
+            from: {
+              label: sent.label,
+              ...(sent.session && { session: sent.session }),
+            },
+            text: sent.text,
+          }
+        : senderOf(withoutCallWords(text));
       // Whatever you send next answers the questions, card or composer. It
       // moves past the answer's end, so the prompt row's place stays the same.
       const end = messages.at(-1);
@@ -312,7 +329,8 @@ export function toMessages(
   };
   let measured: number | undefined;
   view.entries.forEach((entry, n) => {
-    if (entry.kind === 'pi.user') end(view.entries[n - 1]?.id);
+    if (entry.kind === 'pi.user' || SentEntry.is(entry))
+      end(view.entries[n - 1]?.id);
     if (entry.id > forkedAt!) divider();
     if (VoiceEntry.is(entry)) {
       const line = entry.data;
@@ -361,7 +379,7 @@ export function toMessages(
     entry.model?.forEach((m, i) => {
       if (m.role === 'assistant' && calculateContextTokens(m.usage) > 0)
         measured = calculateContextTokens(m.usage);
-      add(m, `${entry.id}:${i}`);
+      add(m, `${entry.id}:${i}`, SentEntry.is(entry) ? entry.data : undefined);
     });
   });
   if (!live?.run) end(view.entries.at(-1)?.id);

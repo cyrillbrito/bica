@@ -2,6 +2,7 @@ import type { InboxItem } from '@earendil-works/pi-durable';
 import { For, Show, createMemo, createSignal, onCleanup } from 'solid-js';
 
 import type { ProjectedView } from '@bica/shared/projection';
+import { SentEntry, type Sent } from '@bica/shared/transcript';
 import { pushQueued, withdrawQueued } from './sessions';
 import type { ComposerApi } from './Composer';
 import { IconButton } from '../ui/Button';
@@ -58,7 +59,15 @@ export default function Queue(props: {
       <ul class="flex flex-col pt-0.5 pb-1">
         <For each={items()} keyed={(i) => i.id}>
           {(item) => {
-            const text = () => textOf(item().content);
+            // From Bica or another session: its words without the label.
+            const sent = () =>
+              item().entry?.kind === SentEntry.kind
+                ? (item().entry!.data as Sent)
+                : undefined;
+            const text = () => {
+              const s = sent();
+              return s ? `${s.label} · ${s.text}` : textOf(item().content);
+            };
             const images = () => imageCount(item().content);
             const steer = () => item().mode === 'steer';
             const pending = () => busy().includes(Number(item().id));

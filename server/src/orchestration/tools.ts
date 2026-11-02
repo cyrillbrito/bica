@@ -127,14 +127,9 @@ function sessionTools(hub: boolean): ToolRegistration[] {
       api,
     ) => {
       if (!prompt.trim()) throw new Error('The prompt is empty');
-      const me = named(await readSession(String(api.conversationId)));
       const { id, warning } = await spawnSession(
         api.conversationId,
-        `${prompt}\n\n(${
-          detached
-            ? `${me} started this session and handed it off: it hears nothing of your turns, so work for the user and answer them in your replies. Message it with session_send only if this task asks you to.`
-            : `${me} started this session and is in charge of it: it reads each turn you end, so report in your replies, and ask it things with session_send. The user may write to you too: answer them in your replies, and their words come before its plan.`
-        })`,
+        prompt,
         `start_session:${api.callId}`,
         folder,
         worktree,
@@ -292,11 +287,9 @@ function sessionTools(hub: boolean): ToolRegistration[] {
           `${named(target)} is archived, so nothing reads it. Say it in your reply instead, or ask the user to bring the session back.`,
         );
       checkInCharge(target, me.id, user_asked);
-      // A sender that reads its turns anyway needs no answer by message.
-      const hears = target.parent === me.id || target.watchedBy.includes(me.id);
       await submit(
         id,
-        `[Message from ${named(me)}${hears ? ', which reads your replies' : ". It doesn't see your replies: if it asks for something, answer with session_send, and don't answer a reply that needs none"}] ${message}`,
+        message,
         [],
         `session_send:${api.callId}`,
         me.id,

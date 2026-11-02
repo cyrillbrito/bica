@@ -14,7 +14,8 @@ import { getAgent } from '../agents/registry';
 import { loadMemory, projectList } from '../agents/common';
 import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
-import { readSession } from './read';
+import { SentEntry, type Sent } from '@bica/shared/transcript';
+import { lastSender, named, readSession } from './read';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
 
@@ -61,20 +62,63 @@ export async function submit(
     await editSession(conversation.id, (m) => {
       delete m.archivedAt;
     });
-  // Anything sent here starts a run, and agents took a note or another
-  // session's message for the end of their questions.
-  if (from !== 'user' && (await readSession(id)).status === 'waiting')
-    prompt += `\n\n(This isn't the user's answer: your questions to them are still open.)`;
+  const sent = from === 'user' ? undefined : await label(id, prompt, from);
   await keepCopies(conversation.id);
   await keepModel(conversation.id);
   await recordSender(conversation.id, from);
   // Pi Durable returns the existing submission for a repeated requestId.
   const submission = await conversation.submit(
-    { type: 'input', content: input(prompt, images), requestId, whenBusy },
+    {
+      type: 'input',
+      content: input(sent?.prompt ?? prompt, images),
+      requestId,
+      whenBusy,
+      ...(sent && { entry: { kind: SentEntry.kind, data: sent.data } }),
+    },
     context,
   );
   if (whenBusy === 'steer') steered(conversation.id);
   return submission;
+}
+
+/**
+ * A prompt from Bica or another session: what the model reads, with a label
+ * in front saying who wrote it and whether they read the replies, as Claude
+ * Code's teammate messages and Codex's agent messages carry their sender;
+ * and the entry data the transcript shows instead.
+ */
+async function label(id: string, prompt: string, from: Sender) {
+  const [target, sender, first] = await Promise.all([
+    readSession(id),
+    from === 'bica' ? undefined : readSession(from),
+    lastSender(id).then((last) => last === undefined),
+  ]);
+  let head = '[Note from Bica, not from the user]';
+  let aside = '';
+  if (sender) {
+    // A sender that reads its turns anyway needs no answer by message.
+    const hears =
+      target.parent === sender.id || target.watchedBy.includes(sender.id);
+    head = `[Message from ${named(sender)}${hears ? ', which reads your replies' : ". It doesn't see your replies: if it asks for something, answer with session_send, and don't answer a reply that needs none"}]`;
+    // The task from session_start: the session learns who it works for.
+    if (first && target.startedBy === sender.id)
+      aside =
+        target.parent === sender.id
+          ? `\n\n(${named(sender)} started this session and is in charge of it: it reads each turn you end, so report in your replies, and ask it things with session_send. The user may write to you too: answer them in your replies, and their words come before its plan.)`
+          : `\n\n(${named(sender)} started this session and handed it off: it hears nothing of your turns, so work for the user and answer them in your replies. Message it with session_send only if this task asks you to.)`;
+  }
+  // Anything sent here starts a run, and agents took a note or another
+  // session's message for the end of their questions.
+  if (target.status === 'waiting')
+    aside += `\n\n(This isn't the user's answer: your questions to them are still open.)`;
+  const data: Sent = sender
+    ? {
+        label: sender.title || `Session ${sender.id}`,
+        session: sender.id,
+        text: prompt,
+      }
+    : { label: 'Bica', session: null, text: prompt };
+  return { prompt: `${head} ${prompt}${aside}`, data };
 }
 
 /** Notes who sent the newest prompt, for session_read and notes. */

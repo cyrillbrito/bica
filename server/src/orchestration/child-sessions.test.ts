@@ -20,6 +20,11 @@ function firstPrompt(context: Context) {
   return typeof first === 'string' ? first : JSON.stringify(first ?? '');
 }
 
+// A child session's task comes with its parent's label in front.
+function task(context: Context) {
+  return firstPrompt(context).replace(/^\[Message from [^\]]*\] /, '');
+}
+
 let script: Record<string, unknown[]> = {};
 
 /**
@@ -28,9 +33,7 @@ let script: Record<string, unknown[]> = {};
  * they run out, the session answers "Noted".
  */
 function route(context: Context) {
-  const key = Object.keys(script).find((k) =>
-    firstPrompt(context).startsWith(k),
-  );
+  const key = Object.keys(script).find((k) => task(context).startsWith(k));
   const next = key ? script[key]!.shift() : undefined;
   if (next === undefined) return fauxAssistantMessage('Noted');
   if (typeof next === 'function') return next(context);
@@ -78,6 +81,10 @@ test('a child session reports each turn to its parent, with what the user told i
     l.some((s) => s.parent === parent),
   );
   const child = list.find((s) => s.parent === parent)!.id;
+  // Shown as a message from the parent, not as the user's prompt.
+  await tab
+    .watch('conversation', { id: child })
+    .until((c) => shows(c, 'bica.sent'));
   const parentChat = tab.watch('conversation', { id: parent });
   await parentChat.until((c) => shows(c, 'First pick: red'));
 

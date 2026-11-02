@@ -34,6 +34,8 @@ Bica tells sessions about each other with notes: prompts from Bica itself, sent 
 
 A message from `session_send` is one prompt to the receiver. The sender hears back only when the receiver answers with a message of its own, or when it would get a note anyway, and the message tells the receiver which.
 
+Every prompt you didn't type, a note, a message, or the task from `session_start`, goes through one place, `submit` in `server/src/sessions/prompts.ts`. It's stored as a `bica.sent` entry with the sender and the words, which the transcript and the queue show as a quiet row with the sender's name. The model still reads a user message, with a label in front: `[Note from Bica, not from the user]`, or `[Message from "Title" (session 12), which reads your replies]`. The first task a session gets from the session that started it also says who leads it. Sessions from before the entry kind read the label back from the text.
+
 ## Watching
 
 The [hub](./hub.md) can watch a session it doesn't lead, such as one you started or one it messaged for you. While it watches, it hears each run that session ends, as it does for its child sessions. The session shows a "Hub watching" strip, and Stop there ends the watch and tells the hub. The hub stops a watch itself once that thread closes, and archiving ends it too.
@@ -55,6 +57,7 @@ The tools name sessions by title, then id, and agents are told to name them to y
 ## Sources
 
 - Claude Code's `SendMessage`, and Codex's `send_input` and `wait_agent`, which the session tools follow.
+- Pi's custom messages, with a `customType` for the renderer and `content` for the model ([extensions](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)), and Pi Durable's input `entry`, which `bica.sent` uses. Claude Code wraps teammate messages in a `<teammate-message>` tag that its UI parses, and a missed parse shows the raw tag ([#52554](https://github.com/anthropics/claude-code/issues/52554)); Codex sends a typed `agent_message` with its author ([#28368](https://github.com/openai/codex/pull/28368)). Bica keeps a label for the model and the sender in structured data, as Codex does.
 - Claude's desktop app, whose nested sessions report each turn to the session that started them ([changelog](https://claude.com/docs/cowork/changelog)). Its `detach_session` is the model for Detach. Users asked to keep the nesting but stop the reports ([#104683](https://github.com/anthropics/claude-code/issues/104683)), which a detached start covers.
 - Zendesk and Intercom stop their bot once a human takes a conversation, and [`pi-cmux-orchestrator`](https://www.npmjs.com/package/@mporenta/pi-cmux-orchestrator) holds back the orchestrator once you type in one of its sessions.
 - Claude Projects, [a coordinator with threads](https://support.claude.com/en/articles/9517075-what-are-projects), hears only from the threads it started, which is why the hub can watch others too.

@@ -1,8 +1,8 @@
+import type { Sent } from '@bica/shared/transcript';
 import { context, getHarness } from '../harness';
 import { queued, submit, type QueuedInput } from './prompts';
 import { getConversation, sessionMeta } from './store';
 
-const NOTE = '[Note from Bica, not from the user]';
 // Notes' request ids start with it, so a queued note can be found and merged.
 const NOTE_REQUEST = 'note:';
 
@@ -17,7 +17,7 @@ export async function tell(id: string, text: string) {
     const conversation = await getConversation(id);
     const meta = await sessionMeta(conversation.id);
     if (!meta || meta.archivedAt) return;
-    let note = `${NOTE} ${text}`;
+    let note = text;
     const harness = await getHarness();
     let waiting: QueuedInput | undefined;
     for (const item of (await queued(conversation.id)).toReversed()) {
@@ -34,7 +34,7 @@ export async function tell(id: string, text: string) {
       (await harness.abortSubmission(waiting.id, context, conversation.id)) ===
         'aborted'
     )
-      note = `${waiting.content as string}\n\n---\n\n${note}`;
+      note = `${(waiting.entry?.data as Sent | undefined)?.text}\n\n---\n\n${note}`;
     await submit(
       id,
       note,

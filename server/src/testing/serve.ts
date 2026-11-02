@@ -43,7 +43,7 @@ else if (mode === 'start-child')
       const asked = lastAsked(context);
       if (asked.role === 'toolResult')
         return fauxAssistantMessage('Started the child.');
-      if (asked.text.startsWith('Child task')) {
+      if (asked.text.includes('] Child task')) {
         console.log('working');
         return new Promise<never>(() => {});
       }

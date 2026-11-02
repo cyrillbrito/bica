@@ -31,7 +31,7 @@ const STOP_AT = WRAP_UP_AT + 20 * MINUTE;
 // Above this much of the week used, nothing new starts: tomorrow needs it.
 const WEEK_RESERVE = 0.8;
 
-const WRAP_UP = `[Note from Bica, not from the user] This night run has gone on for ${WRAP_UP_AT / HOUR} hours. Finish the step you are on, stop the terminals you started, and write your final report now. Bica stops the run in ${(STOP_AT - WRAP_UP_AT) / MINUTE} minutes.`;
+const WRAP_UP = `This night run has gone on for ${WRAP_UP_AT / HOUR} hours. Finish the step you are on, stop the terminals you started, and write your final report now. Bica stops the run in ${(STOP_AT - WRAP_UP_AT) / MINUTE} minutes.`;
 
 // Runs started from here whose end hasn't come yet. Their status can lag a
 // moment behind the submit.
