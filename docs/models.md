@@ -6,6 +6,8 @@ Providers are where models come from. Settings → Providers connects any provid
 
 Connect a provider with a plan sign-in, such as Claude Max or ChatGPT Plus, or with an API key. Plans are meant for the provider's own apps, so they may refuse Bica at any time. Keys and sign-ins come only from Settings, never from environment variables or other apps' logins, so Bica never uses an account it doesn't list.
 
+When a plan's sign-in expires or is revoked and no other account can take the request, the transcript asks you to sign in again in Settings → Providers, then resend your prompt. Open Providers takes you there. Saved errors from earlier runs get the same explanation, with the original error under Full response. The server log keeps the provider's full error. A temporary refresh failure keeps its original error so it can be retried.
+
 A ChatGPT plan can sign in two ways: Sign in with ChatGPT under OpenAI, or the older OpenAI Codex (legacy). [Voice calls and dictation](./voice.md) need the legacy one.
 
 Exa isn't a model provider. Its key turns on the agent's web search and fetch ([tools.md](./tools.md)), and the free plan is enough.

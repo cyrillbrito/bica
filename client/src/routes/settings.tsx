@@ -1,5 +1,6 @@
 import { Title } from '@solidjs/meta';
-import { For, Show } from 'solid-js';
+import { useLocation } from '@solidjs/router';
+import { For, Show, createEffect } from 'solid-js';
 
 import Accounts from '../models/Accounts';
 import { Card, Setting, Toggle } from '../ui/Card';
@@ -37,6 +38,14 @@ const MOTIONS: { value: Motion; label: string }[] = [
 ];
 
 export default function Settings() {
+  const location = useLocation();
+  createEffect(
+    () => location.hash,
+    (hash) => {
+      document.getElementById(hash.slice(1))?.scrollIntoView();
+    },
+    { name: 'settingsSection' },
+  );
   const catalog = useModels();
   const settings = useSettings();
   const hasKey = () =>
@@ -115,7 +124,9 @@ export default function Settings() {
             />
           </Card>
 
-          <Accounts />
+          <div id="providers">
+            <Accounts />
+          </div>
 
           <Card title="Models">
             <Show when={!hasKey()}>

@@ -4,6 +4,8 @@ import { CopyButton } from '../ui/CopyButton';
 import Summary from '../ui/Summary';
 import { AlertIcon } from '../ui/icons';
 import Chevron from '../ui/Chevron';
+import { buttonClass } from '../ui/Button';
+import { paths } from '../router';
 
 /** A failed turn: the readable reason up front, the raw response folded away. */
 export default function ErrorReply(props: { text: string }) {
@@ -19,11 +21,26 @@ export default function ErrorReply(props: { text: string }) {
         </span>
         <div class="min-w-0 flex-1">
           <div class="text-meta font-medium text-danger">
-            {error().status ? `Error ${error().status}` : 'Error'}
+            {error().signIn
+              ? 'Sign-in expired'
+              : error().status
+                ? `Error ${error().status}`
+                : 'Error'}
           </div>
           <p class="mt-0.5 text-ui text-pretty whitespace-pre-wrap wrap-anywhere text-fg">
             <Linked text={error().message} />
           </p>
+          <Show when={error().signIn}>
+            <a
+              href={`${paths.settings()}#providers`}
+              class={[
+                buttonClass({ variant: 'outline', size: 'sm' }),
+                'mt-2 w-fit',
+              ]}
+            >
+              Open Providers
+            </a>
+          </Show>
         </div>
         <CopyButton
           title="Copy error"
