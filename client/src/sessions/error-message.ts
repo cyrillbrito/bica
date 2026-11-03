@@ -1,3 +1,5 @@
+import { isExpiredSignIn } from '@bica/shared/model-errors';
+
 /**
  * Provider errors arrive as one string, often a status and a raw JSON body:
  * `402 {"error":{"message":"…"}}`. This pulls out the line worth reading and
@@ -7,8 +9,19 @@ export function readError(raw: string): {
   status?: string;
   message: string;
   details?: string;
+  signIn?: boolean;
 } {
   const text = raw.trim();
+  if (isExpiredSignIn(text)) {
+    const readable = /sign-in expired or was revoked/i.test(text);
+    return {
+      signIn: true,
+      message: readable
+        ? text
+        : 'The provider sign-in expired or was revoked. Sign in again in Settings → Providers, then resend your prompt.',
+      details: readable ? undefined : text,
+    };
+  }
   const start = text.search(/[{[]/);
   const body = start < 0 ? undefined : parse(text.slice(start));
   const prefix = (start < 0 ? text : text.slice(0, start)).trim();

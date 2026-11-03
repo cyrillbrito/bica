@@ -138,6 +138,12 @@ function finished(): Turn[] {
       error:
         '429 {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 80,000 output tokens per minute. Try again later, or see https://docs.anthropic.com/en/api/rate-limits"}}',
     },
+    { user: 'Try again with the same model.' },
+    {
+      agent: [],
+      error:
+        'OAuth refresh failed for anthropic: Anthropic token refresh request failed. status=400; body={"error":"invalid_grant","error_description":"Refresh token expired"}; stack=Error: HTTP request failed\n    at refreshAnthropicToken (node_modules/pi-ai/dist/auth/oauth/anthropic.js:209:30)',
+    },
   ];
 }
 

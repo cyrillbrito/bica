@@ -18,7 +18,7 @@ function failure(errorMessage: string) {
  */
 async function ask(
   id: string,
-  replies: Record<'first' | 'second', AssistantMessage | null>,
+  replies: Record<'first' | 'second', AssistantMessage | Error | null>,
   order: 'base first' | 'extra first',
 ) {
   const faux = fauxProvider({ provider: id, tokensPerSecond: 0 });
@@ -29,10 +29,11 @@ async function ask(
     auth: {
       apiKey: {
         name: 'Faux',
-        resolve: async () =>
-          replies[order === 'base first' ? 'second' : 'first']
-            ? { auth: { apiKey: 'extra' } }
-            : undefined,
+        resolve: async () => {
+          const reply = replies[order === 'base first' ? 'second' : 'first'];
+          if (reply instanceof Error) throw reply;
+          return reply ? { auth: { apiKey: 'extra' } } : undefined;
+        },
       },
     },
   });
@@ -74,6 +75,39 @@ test('a request the first account cannot take goes out on the next one', async (
   expect(await ask('gone', { first: null, second }, 'extra first')).toEqual(
     answered('gone'),
   );
+  expect(
+    await ask(
+      'expired',
+      { first: new Error('OAuth refresh failed: invalid_grant'), second },
+      'extra first',
+    ),
+  ).toEqual(answered('expired'));
+});
+
+test('an expired sign-in tells the user how to recover without a stack trace', async () => {
+  const faux = fauxProvider({ provider: 'expired-single', tokensPerSecond: 0 });
+  const models = createModels();
+  models.setProvider({ ...faux.provider, name: 'Test plan' });
+  routeAccounts(models);
+  for (const detail of [
+    'invalid_grant: Refresh token expired',
+    'invalid_grant: Refresh token revoked',
+    '503 Service unavailable',
+  ]) {
+    const raw = `OAuth refresh failed for expired-single: ${detail}; stack=Error at refresh`;
+    faux.setResponses([failure(raw)]);
+    const stream = models.streamSimple(faux.getModel(), {
+      messages: [{ role: 'user', content: 'hi', timestamp: Date.now() }],
+    });
+    const errors: string[] = [];
+    for await (const event of stream)
+      if (event.type === 'error') errors.push(event.error.errorMessage ?? '');
+    const expected = detail.startsWith('invalid_grant')
+      ? 'Test plan sign-in expired or was revoked. Sign in again in Settings → Providers, then resend your prompt.'
+      : raw;
+    expect(errors).toEqual([expected]);
+    expect((await stream.result()).errorMessage).toBe(expected);
+  }
 });
 
 test('an error the account is not to blame for stays on it', async () => {

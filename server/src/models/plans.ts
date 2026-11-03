@@ -8,6 +8,7 @@ import {
 } from '@earendil-works/pi-ai';
 
 import type { PlanWindow } from '@bica/shared/protocol';
+import { isExpiredSignIn } from '@bica/shared/model-errors';
 import { limitWindows } from './known-providers';
 
 /*
@@ -184,8 +185,8 @@ export function routeAccounts(models: MutableModels) {
   };
 
   models.streamSimple = (model, context, options) => {
-    const order = pickOrder(models, model.provider);
-    if (order.length < 2) return send(model.provider, model, context, options);
+    const picked = pickOrder(models, model.provider);
+    const order = picked.length ? picked : [model.provider];
     const out = createAssistantMessageEventStream();
     void (async () => {
       for (const [i, id] of order.entries()) {
@@ -195,6 +196,7 @@ export function routeAccounts(models: MutableModels) {
         // that can still move to the next account without the reader noticing.
         const held: Parameters<typeof out.push>[0][] = [];
         let flowing = false;
+        let failure: AssistantMessage | undefined;
         for await (const event of source) {
           if (!flowing) {
             if (
@@ -217,10 +219,21 @@ export function routeAccounts(models: MutableModels) {
             for (const e of held) out.push(e);
             flowing = true;
           }
-          out.push(event);
+          if (
+            event.type === 'error' &&
+            isExpiredSignIn(event.error.errorMessage ?? '')
+          ) {
+            console.error('[accounts]', id, event.error.errorMessage);
+            const name = models.getProvider(id)?.name ?? id;
+            failure = {
+              ...event.error,
+              errorMessage: `${name} sign-in expired or was revoked. Sign in again in Settings → Providers, then resend your prompt.`,
+            };
+            out.push({ ...event, error: failure });
+          } else out.push(event);
         }
         if (!flowing) continue;
-        out.end(await source.result());
+        out.end(failure ?? (await source.result()));
         return;
       }
     })().catch(async (error) => {
