@@ -33,9 +33,9 @@ The repo is a Bun workspace with every package under `packages/`. Three of them 
 - `server`: plain Bun, with the socket, the agents, git, and the shells. Its types have Bun and no DOM. It reaches for Bun's own APIs before Node's: git runs only through `git/commands.ts`, one typed function per git command, with network ones under a timeout and never prompting (lint fails on raw git elsewhere), other commands through `Bun.spawn` (which has `timeout` and `maxBuffer`), timed jobs through `Bun.cron`, and outside calls through Bun's `WebSocket`, which takes headers. Paths, files, and logs stay on `node:fs` and `node:path`, where Bun has nothing better.
 - `shared`: the code both run, imported as `@bica/shared/...`: the message types, the agents' names, what a session's status means (`status.ts`), and the transcript projection.
 
-The fourth, `site`, is the website ([website.md](./website.md)).
+The fourth, `site`, is the website ([website.md](./website.md)). The fifth, `web`, is the UI's move to React and BoardUI, a mock in progress: every screen on fake data, with routing and no server, next to the Solid client until it can replace it ([React record](./records/react.md), [README](../packages/web/README.md)).
 
-The client can't import the server, because its `package.json` doesn't list it. The client and server reach `shared` only as `@bica/shared/...`, never by a relative path into its folder. A version that more than one package uses, plus the Pi packages and the Vite and Tailwind toolchain, sits once in the `catalog` of the root `package.json`, and the packages ask for it as `catalog:`. Lint, format, and the shared TypeScript options stay at the root.
+The client can't import the server, because its `package.json` doesn't list it. The client and server reach `shared` only as `@bica/shared/...`, never by a relative path into its folder. A version that more than one package uses, plus the Pi packages and the Vite and Tailwind toolchain, sits once in the `catalog` of the root `package.json`, and the packages ask for it as `catalog:`. Lint, format, and the shared TypeScript options stay at the root. Lint scopes the Solid rules and the Solid app's token rules to `client` and `site`, and the React hook rules to `web`.
 
 ## Feature folders
 

@@ -36,9 +36,10 @@ There is no time to prove every idea here, so borrow from people who already bui
 
 - Bun 1.4.3 or newer runs the server, installs packages, type-checks, and runs the tests. Vite runs on Node, its tested runtime, and `bun run` falls back to Bun when Node isn't installed.
 - Server, scripts, and tests use Bun's own APIs before Node's or a package: `Bun.spawn`, `Bun.sleep`, `Bun.file`, `Bun.serve`, `bun:sqlite`, and so on. The client runs in the browser, so it has none of them.
-- A Bun workspace with every package under `packages/`: `client` (the Solid app), `server` (plain Bun), and `shared` (the code both run, as `@bica/shared/...`). Versions more than one package uses sit in the root `package.json`'s `catalog`. See [architecture.md](docs/architecture.md#packages).
+- A Bun workspace with every package under `packages/`: `client` (the Solid app), `server` (plain Bun), `shared` (the code both run, as `@bica/shared/...`), and `web` (the React mock, below). Versions more than one package uses sit in the root `package.json`'s `catalog`. See [architecture.md](docs/architecture.md#packages).
 - `site` is the website at bica.sh: an Astro home page plus the user docs at `/docs` in Starlight, with D2 diagrams through `astro-d2`, deployed to Cloudflare. See [website.md](docs/website.md).
 - Solid 2 (release candidate) through `@solidjs/vite-plugin` in client start mode: the app renders only in the browser, with no server-side rendering. This is not SolidStart.
+- `web` is the UI's move to React ([React record](docs/records/react.md)), a mock in progress: React 19 on Vite, TanStack Router, and BoardUI's free components copied in as source, on fake data with no server. BoardUI's design rules apply there instead of `docs/UI.md`, and the Solid sections below don't. See [its README](packages/web/README.md).
 - Pi Durable, with `pi-ai` for models, runs the agent and stores it in SQLite.
 - Tailwind v4 with no component library, see [docs/UI.md](docs/UI.md).
 - Pierre for diffs, file views, and the file tree, through their plain JavaScript entries, not the React ones.
@@ -55,9 +56,10 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - `bun run test` runs the behavior tests with `bun test`, each file in its own process. `bun test <path>` runs one file. See [docs/testing.md](docs/testing.md) before writing a test.
 - `bun run dev` is the dev server: Vite on port 3142, forwarding the socket to the server on 3143. It usually runs already, see Verifying UI below.
 - `bun run dev:site`, `bun run build:site`, and `bun run deploy:site` run, build, and deploy the website.
+- `bun run dev:web` runs the React mock on port 3145.
 - `bun run build` and `bun run start` run a built copy, see [docs/deploy.md](docs/deploy.md).
 - `bun run build:bica` compiles the `bica` binary into `dist/bica/bica`, and the `release` workflow publishes it as a draft GitHub release, see the same doc.
-- Ports: 3141 for `bica` and `bun run start`, 3142 for Vite in dev, 3143 for the dev server, 3144 for the website. `BICA_PORT` moves the dev pair.
+- Ports: 3141 for `bica` and `bun run start`, 3142 for Vite in dev, 3143 for the dev server, 3144 for the website, 3145 for the React mock. `BICA_PORT` moves the dev pair.
 
 ## Next
 
@@ -124,6 +126,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 
 - [extensibility.md](docs/records/extensibility.md): why features aren't extensions.
 - [naming.md](docs/records/naming.md): why the name is Bica and the domain is bica.sh.
+- [react.md](docs/records/react.md): why the UI moves from Solid to React and BoardUI.
 
 `docs/inspiration/` holds screenshots of other agent UIs, as ideas, not specs.
 
