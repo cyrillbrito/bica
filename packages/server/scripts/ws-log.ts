@@ -1,5 +1,5 @@
 // Summarizes ~/.bica/ws-log.jsonl: where the bytes go, by topic and by path.
-// bun server/scripts/ws-log.ts [file] [--top N]
+// bun packages/server/scripts/ws-log.ts [file] [--top N]
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';

@@ -2,7 +2,7 @@
 // thinking, single and parallel tool calls (read, bash, write, edit),
 // a failing tool, and an error. Tools run for real in a scratch folder.
 //
-//   bun server/scripts/demo-session.ts
+//   bun packages/server/scripts/demo-session.ts
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import {

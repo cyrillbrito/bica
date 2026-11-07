@@ -1,6 +1,6 @@
 {
   // The app, which runs in the browser: DOM types, no Bun or Node.
-  "extends": "../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "@solidjs/web",

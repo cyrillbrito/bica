@@ -12,7 +12,7 @@
         "oxlint-tsgolint": "^7.0.2005",
       },
     },
-    "client": {
+    "packages/client": {
       "name": "@bica/client",
       "dependencies": {
         "@bica/shared": "workspace:*",
@@ -43,7 +43,7 @@
         "vite": "^8.3.5",
       },
     },
-    "server": {
+    "packages/server": {
       "name": "@bica/server",
       "dependencies": {
         "@bica/shared": "workspace:*",
@@ -57,7 +57,7 @@
         "@types/bun": "^1.4.4",
       },
     },
-    "shared": {
+    "packages/shared": {
       "name": "@bica/shared",
       "dependencies": {
         "@earendil-works/chord": "^1.4.0",
@@ -65,7 +65,7 @@
         "@earendil-works/pi-durable": "^1.4.0",
       },
     },
-    "site": {
+    "packages/site": {
       "name": "@bica/site",
       "dependencies": {
         "@astrojs/starlight": "^0.42.8",
@@ -208,13 +208,13 @@
 
     "@babel/types": ["@babel/types@7.29.11", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.11", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-WCsemW40Cpc6gouC1SrY6PBaZ+oLRlEVY9XBvZBI7il/HyUrb2nJ505wE1MHEFyDZNnrWDEuy4jL50WVHfTTSQ=="],
 
-    "@bica/client": ["@bica/client@workspace:client"],
+    "@bica/client": ["@bica/client@workspace:packages/client"],
 
-    "@bica/server": ["@bica/server@workspace:server"],
+    "@bica/server": ["@bica/server@workspace:packages/server"],
 
-    "@bica/shared": ["@bica/shared@workspace:shared"],
+    "@bica/shared": ["@bica/shared@workspace:packages/shared"],
 
-    "@bica/site": ["@bica/site@workspace:site"],
+    "@bica/site": ["@bica/site@workspace:packages/site"],
 
     "@braintree/sanitize-url": ["@braintree/sanitize-url@7.1.2", "", {}, "sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA=="],
 

@@ -1,6 +1,6 @@
 // Prints the built docs site (site/dist) to one PDF for reading on paper:
 // a cover, a table of contents with page numbers, then every docs page in
-// sidebar order, each starting on a new sheet. Run `bun run pdf` in site/.
+// sidebar order, each starting on a new sheet. Run `bun run pdf` in packages/site/.
 //
 // Each page prints on its own, in the real page, so diagrams, Tabs, and the
 // Solid demos render exactly as on the site. pdf-lib then merges the pages
@@ -18,7 +18,9 @@ const MM = 72 / 25.4;
 const margin = { top: '22mm', bottom: '25mm', left: '25mm', right: '25mm' };
 
 if (!fs.existsSync(path.join(dist, 'docs', 'index.html')))
-  throw new Error('No site/dist yet: run `bun run build` in site/ first.');
+  throw new Error(
+    'No site/dist yet: run `bun run build` in packages/site/ first.',
+  );
 
 const server = Bun.serve({
   port: 0,

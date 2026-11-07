@@ -5,7 +5,7 @@
     "file-routes.d.ts",
     ".agents/skills",
     "docs/explorations/*.html",
-    "site/src/content/**/*.mdx"
+    "packages/site/src/content/**/*.mdx"
   ],
   "overrides": [
     {

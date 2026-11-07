@@ -3,23 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "client",
-    "server",
-    "shared",
-    "site"
+    "packages/*"
   ],
   "type": "module",
   "scripts": {
     "dev": "bun run --parallel --filter @bica/server --filter @bica/client dev",
-    "dev:site": "bun run --cwd site dev",
-    "build": "bun run --cwd client build",
-    "build:site": "bun run --cwd site build",
-    "deploy:site": "bun run --cwd site deploy",
-    "build:bica": "bun run --cwd server build:bica",
-    "start": "bun run --cwd server start",
-    "test": "bun run --cwd server test",
+    "dev:site": "bun run --cwd packages/site dev",
+    "build": "bun run --cwd packages/client build",
+    "build:site": "bun run --cwd packages/site build",
+    "deploy:site": "bun run --cwd packages/site deploy",
+    "build:bica": "bun run --cwd packages/server build:bica",
+    "start": "bun run --cwd packages/server start",
+    "test": "bun run --cwd packages/server test",
     "typecheck": "bun run --workspaces typecheck",
-    "lint": "oxlint client server shared site",
+    "lint": "oxlint packages",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "checks": "bun run typecheck && bun run lint && bun run fmt:check && bun run test"

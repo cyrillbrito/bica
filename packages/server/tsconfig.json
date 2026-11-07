@@ -1,6 +1,6 @@
 {
   // The server, which runs in Bun: no DOM types.
-  "extends": "../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["bun"]
   },

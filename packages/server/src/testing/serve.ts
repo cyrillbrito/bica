@@ -1,5 +1,5 @@
 // Bica in a process of its own, for tests that kill it:
-//   bun server/src/testing/serve.ts <root> <hang | answer text | start-child>
+//   bun packages/server/src/testing/serve.ts <root> <hang | answer text | start-child>
 // Prints its port once it listens, `working` once a held answer starts, and
 // `asked: <prompt>` for each answer.
 import type { Context } from '@earendil-works/pi-ai';

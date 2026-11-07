@@ -4,7 +4,7 @@ name: site
 on:
   push:
     branches: [main]
-    paths: [site/**, client/src/**, bun.lock]
+    paths: [packages/site/**, packages/client/src/**, bun.lock]
   workflow_dispatch:
 
 jobs:

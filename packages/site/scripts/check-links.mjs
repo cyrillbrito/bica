@@ -1,5 +1,5 @@
 // Checks every internal link and anchor in the built site (site/dist).
-// Run after `bun run --filter @bica/site build`: bun site/scripts/check-links.mjs
+// Run after `bun run --filter @bica/site build`: bun packages/site/scripts/check-links.mjs
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 

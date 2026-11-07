@@ -20,10 +20,10 @@ export default defineConfig({
     {
       // Features import each other freely, so a cycle is the one mistake left
       // in the layout (docs/architecture.md).
-      files: ['client/**', 'server/**', 'shared/**'],
+      files: ['packages/client/**', 'packages/server/**', 'packages/shared/**'],
       rules: { 'import/no-cycle': ['error', { ignoreTypes: true }] },
     },
-    { files: ['server/**'], rules: { 'bica/git-commands': 'error' } },
+    { files: ['packages/server/**'], rules: { 'bica/git-commands': 'error' } },
   ],
   options: {
     typeAware: true,

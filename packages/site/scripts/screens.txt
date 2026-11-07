@@ -1,5 +1,5 @@
 # name          path                              device   theme
-# Regenerate with site/scripts/screens.sh; see docs/website.md.
+# Regenerate with packages/site/scripts/screens.sh; see docs/website.md.
 home            /?data=demo                       desktop  light
 session         /s/demo-shortcuts?data=demo       phone    light
 workspace       /p/bica?w=%2FUsers%2Faleksandra%2FRepos%2Fbica-shortcuts&data=demo  desktop  light

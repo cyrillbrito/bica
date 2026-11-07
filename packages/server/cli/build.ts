@@ -12,7 +12,7 @@ const { values } = parseArgs({
 const version = process.env.BICA_VERSION || '0.0.0-dev';
 
 const server = join(import.meta.dir, '..');
-const root = join(server, '..');
+const root = join(server, '../..');
 const out = join(root, 'dist/bica');
 
 await $`bun run build`.cwd(root);
@@ -28,7 +28,7 @@ function embed(path: string) {
 }
 
 // Vite's own manifest in .vite/ isn't served; the glob skips dot folders.
-const dist = join(root, 'client/dist/client');
+const dist = join(server, '../client/dist/client');
 const client = [...new Glob('**/*').scanSync({ cwd: dist })].map(
   (path) => `${JSON.stringify(`/${path}`)}: ${embed(join(dist, path))}`,
 );

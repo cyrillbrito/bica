@@ -1,5 +1,5 @@
 {
   // Code both sides run: neither DOM nor Bun types.
-  "extends": "../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "include": ["src"]
 }

@@ -2,13 +2,13 @@
 # Screenshots of the dev app on test data, for the docs. Needs the dev server
 # (`bun run dev`, port 3142) and the global `agent-browser` CLI.
 #
-#   site/scripts/screens.sh                         every shot in screens.txt
-#   site/scripts/screens.sh <name> <path> [desktop|phone] [light|dark] [js]
+#   packages/site/scripts/screens.sh                         every shot in screens.txt
+#   packages/site/scripts/screens.sh <name> <path> [desktop|phone] [light|dark] [js]
 #
 # The optional js runs in the page just before the shot, to open a drawer,
 # a menu, or the palette, or to scroll.
 #
-# Saves site/src/assets/screens/<name>-<device>-<theme>.png at 2x.
+# Saves packages/site/src/assets/screens/<name>-<device>-<theme>.png at 2x.
 # Paths must carry `?data=` (test data) or be the /ui playground, so a shot
 # never shows real sessions. Test data holds back every command, so clicking
 # around while shooting can't reach the server.
