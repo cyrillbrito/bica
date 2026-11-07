@@ -10,29 +10,29 @@
   "dependencies": {
     "@bica/shared": "workspace:*",
     "@dnd-kit/dom": "^0.5.1",
-    "@earendil-works/chord": "^1.4.0",
-    "@earendil-works/pi-ai": "^1.4.0",
-    "@earendil-works/pi-durable": "^1.4.0",
+    "@earendil-works/chord": "catalog:",
+    "@earendil-works/pi-ai": "catalog:",
+    "@earendil-works/pi-durable": "catalog:",
     "@pierre/diffs": "1.6.2",
     "@pierre/trees": "1.0.0-beta.6",
     "@solidjs/meta": "^1.0.0-next.2",
     "@solidjs/router": "^2.0.0-next.43",
-    "@solidjs/web": "^2.0.0-rc.20",
+    "@solidjs/web": "catalog:",
     "@tanstack/markdown": "^1.0.0",
     "ghostty-web": "^0.4.0",
     "lucide": "^1.61.0",
     "mermaid": "^12.2.0",
-    "solid-js": "^2.0.0-rc.20"
+    "solid-js": "catalog:"
   },
   "devDependencies": {
     "@solidjs/diagnostics": "^2.0.0-rc.20",
-    "@solidjs/vite-plugin": "^3.0.0-next.54",
-    "@tailwindcss/vite": "^4.3.3",
+    "@solidjs/vite-plugin": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "@types/compression": "^1.8.1",
-    "@types/node": "^26.6.6",
+    "@types/node": "catalog:",
     "compression": "^1.8.2",
     "filesystem-routing": "0.4.2",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.3.5"
+    "tailwindcss": "catalog:",
+    "vite": "catalog:"
   }
 }

@@ -2,9 +2,25 @@
   "name": "bica",
   "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "catalog": {
+      "@earendil-works/chord": "^1.4.0",
+      "@earendil-works/pi-ai": "^1.4.0",
+      "@earendil-works/pi-codemode": "^1.4.0",
+      "@earendil-works/pi-durable": "^1.4.0",
+      "@solidjs/vite-plugin": "^3.0.0-next.54",
+      "@solidjs/web": "^2.0.0-rc.20",
+      "@tailwindcss/vite": "^4.3.3",
+      "@types/bun": "^1.4.4",
+      "@types/node": "^26.6.6",
+      "solid-js": "^2.0.0-rc.20",
+      "tailwindcss": "^4.3.3",
+      "vite": "^8.3.5"
+    }
+  },
   "type": "module",
   "scripts": {
     "dev": "bun run --parallel --filter @bica/server --filter @bica/client dev",
