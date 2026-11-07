@@ -8,15 +8,35 @@ export default defineConfig({
   ignorePatterns: ['**/*.gen.*', '**/dist', '**/node_modules'],
   settings: solidV2.settings,
   rules: {
-    ...solidV2.rules,
-    // Pierre's `subscribe` calls back on every change, like an event handler.
-    'solid/reactivity': ['warn', { customReactiveFunctions: ['subscribe'] }],
-    'bica/type-tokens': 'error',
-    'bica/radius-tokens': 'error',
-    'bica/color-tokens': 'error',
     'bica/top-level-functions': 'error',
   },
   overrides: [
+    {
+      // The Solid app and site. The token rules check the type scale, radii,
+      // and colors of the Solid app's own design (docs/UI.md).
+      files: ['packages/client/**', 'packages/site/**'],
+      rules: {
+        ...solidV2.rules,
+        // Pierre's `subscribe` calls back on every change, like an event handler.
+        'solid/reactivity': [
+          'warn',
+          { customReactiveFunctions: ['subscribe'] },
+        ],
+        'bica/type-tokens': 'error',
+        'bica/radius-tokens': 'error',
+        'bica/color-tokens': 'error',
+      },
+    },
+    {
+      // The React mock, on BoardUI's tokens instead (packages/web/README.md).
+      files: ['packages/web/**'],
+      plugins: ['unicorn', 'typescript', 'oxc', 'import', 'react'],
+      rules: {
+        'react/rules-of-hooks': 'error',
+        'react/exhaustive-deps': 'warn',
+        'react/jsx-key': 'error',
+      },
+    },
     {
       // Features import each other freely, so a cycle is the one mistake left
       // in the layout (docs/architecture.md).

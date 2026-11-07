@@ -1,0 +1,32 @@
+{
+  "name": "@bica/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3145",
+    "build": "vite build",
+    "typecheck": "bun check && bun check -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@pierre/diffs": "catalog:",
+    "@pierre/trees": "catalog:",
+    "@remixicon/react": "^4.9.0",
+    "@tanstack/react-router": "^1.170.0",
+    "motion": "^12.42.2",
+    "react": "^19.2.4",
+    "react-aria-components": "^1.17.0",
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "tailwindcss": "catalog:",
+    "vite": "catalog:"
+  }
+}

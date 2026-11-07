@@ -1,0 +1,12 @@
+{
+  // The app, which runs in the browser: DOM types, no Bun or Node.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    // BoardUI's components import each other through `@/`.
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src"]
+}

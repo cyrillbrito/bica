@@ -11,6 +11,8 @@
       "@earendil-works/pi-ai": "^1.4.0",
       "@earendil-works/pi-codemode": "^1.4.0",
       "@earendil-works/pi-durable": "^1.4.0",
+      "@pierre/diffs": "1.6.2",
+      "@pierre/trees": "1.0.0-beta.6",
       "@solidjs/vite-plugin": "^3.0.0-next.54",
       "@solidjs/web": "^2.0.0-rc.20",
       "@tailwindcss/vite": "^4.3.3",
@@ -25,6 +27,7 @@
   "scripts": {
     "dev": "bun run --parallel --filter @bica/server --filter @bica/client dev",
     "dev:site": "bun run --cwd packages/site dev",
+    "dev:web": "bun run --cwd packages/web dev",
     "build": "bun run --cwd packages/client build",
     "build:site": "bun run --cwd packages/site build",
     "deploy:site": "bun run --cwd packages/site deploy",
