@@ -22,15 +22,15 @@ The dev-only `/lab` page shows the same moments in calm and warm side by side. I
 
 ## Stack
 
-- Tailwind v4 is configured in `client/src/App.css` (`@theme`), with no config file. Design tokens live there, and reusable class groups as `@utility`.
+- Tailwind v4 is configured in `packages/client/src/App.css` (`@theme`), with no config file. Design tokens live there, and reusable class groups as `@utility`.
 - There is no component library. Platform features come first: `<dialog>`, `popover`, CSS anchor positioning, `<details>`, `field-sizing: content`, view transitions.
-- Components live in their feature's folder, such as `client/src/sessions/`, and building blocks with no app knowledge (buttons, inputs, menus, toasts, icons) in `client/src/ui/`.
-- Every building block shows in light and dark side by side at `/ui` in development (`client/src/playground/`). Add a new one there too.
-- Third-party views (`@pierre/diffs`, `@pierre/trees`) are themed through their CSS variables, not Tailwind classes. Files and diffs take their options from `client/src/files/pierre.ts`, so a diff splits, numbers its lines, and themes the same everywhere, Markdown's code blocks included.
+- Components live in their feature's folder, such as `packages/client/src/sessions/`, and building blocks with no app knowledge (buttons, inputs, menus, toasts, icons) in `packages/client/src/ui/`.
+- Every building block shows in light and dark side by side at `/ui` in development (`packages/client/src/playground/`). Add a new one there too.
+- Third-party views (`@pierre/diffs`, `@pierre/trees`) are themed through their CSS variables, not Tailwind classes. Files and diffs take their options from `packages/client/src/files/pierre.ts`, so a diff splits, numbers its lines, and themes the same everywhere, Markdown's code blocks included.
 
 ## Building blocks
 
-Everything in `client/src/ui/`, by job. Reach for these before styling a raw `<button>` or `<input>`. If two places style the same control by hand, it belongs here.
+Everything in `packages/client/src/ui/`, by job. Reach for these before styling a raw `<button>` or `<input>`. If two places style the same control by hand, it belongs here.
 
 | Job | Parts |
 | --- | --- |
@@ -74,7 +74,7 @@ One look per kind of wait, so a wait reads the same everywhere.
 
 ## Tokens
 
-Tokens are defined once with `light-dark()`. Light and dark follow the system unless Settings → Appearance forces one (per device, `client/src/ui/theme.ts`). Forcing sets `data-theme` on `<html>`, which pins `color-scheme`, and an inline script in `Document.tsx` applies it before first paint. Anything themed must follow `color-scheme` (`light-dark()`), never `prefers-color-scheme` directly.
+Tokens are defined once with `light-dark()`. Light and dark follow the system unless Settings → Appearance forces one (per device, `packages/client/src/ui/theme.ts`). Forcing sets `data-theme` on `<html>`, which pins `color-scheme`, and an inline script in `Document.tsx` applies it before first paint. Anything themed must follow `color-scheme` (`light-dark()`), never `prefers-color-scheme` directly.
 
 ### Color
 
@@ -153,7 +153,7 @@ Hover and press take about 150ms, and panels and sheets at most 200ms. `ease-out
 - The hover fill of menus and option lists glides to the row under the pointer (`createHighlight`, built into `OptionList`), while keyboard moves land at once.
 - Sidebar rows glide to their new place when the order changes, as with a new session, one archived, or a filter picked (`createFlip`, also the ranked rows of a `Breakdown`), but not when switching sessions.
 - Toasts slide in from the top edge, stack with the older ones peeking out below, fan into a list on hover, focus, or a tap, and swipe away sideways or up.
-- Text the fast model writes in place, like a session title or a commit message, fades in with an accent tint that settles over about a second (`arrive` in `client/src/ui/arrive.ts`, or `createArrival` for a ref that plays it on each change). Otherwise the swap is instant and easy to miss. The idea comes from [How I make apps feel premium](https://youtu.be/MXLF8b15GhQ), which starts with feedback for an AI summary.
+- Text the fast model writes in place, like a session title or a commit message, fades in with an accent tint that settles over about a second (`arrive` in `packages/client/src/ui/arrive.ts`, or `createArrival` for a ref that plays it on each change). Otherwise the swap is instant and easy to miss. The idea comes from [How I make apps feel premium](https://youtu.be/MXLF8b15GhQ), which starts with feedback for an AI summary.
 - A prompt the agent takes slides from its queue line into the transcript (`sessions/queue-glide.ts`).
 
 ### Utilities
@@ -188,7 +188,7 @@ Sounds are short and synthesized with Web Audio, with no audio files: a chime wh
 
 ## Layout
 
-What each screen size shows is in [layout.md](./layout.md): phone is below `md`, tablet `md` to `xl`, and wide screen from `xl`, Tailwind's default breakpoints. State lives in `client/src/ui/layout.ts`.
+What each screen size shows is in [layout.md](./layout.md): phone is below `md`, tablet `md` to `xl`, and wide screen from `xl`, Tailwind's default breakpoints. State lives in `packages/client/src/ui/layout.ts`.
 
 - Toggles sit in the page's top bar.
 - Hiding or showing a column slides it (200ms, motion-safe): a hidden column is zero wide, not removed, and its content keeps its width so it moves instead of squeezing. Only the toggle animates; dragging an edge or resizing the window stays instant (`sliding` in `layout.ts`).
@@ -201,7 +201,7 @@ What each screen size shows is in [layout.md](./layout.md): phone is below `md`,
 
 ### Context menus
 
-Right click (or the menu key / Shift+F10, or a long press on touch) opens a menu on the thing under the pointer: a session row, a workspace header. One `ContextMenu` is mounted in `App.tsx`; any element opts in by spreading `contextMenu(() => items)` (`client/src/ui/ContextMenu.tsx`) and adding the `context-target` class (no iOS callout or text selection on long press).
+Right click (or the menu key / Shift+F10, or a long press on touch) opens a menu on the thing under the pointer: a session row, a workspace header. One `ContextMenu` is mounted in `App.tsx`; any element opts in by spreading `contextMenu(() => items)` (`packages/client/src/ui/ContextMenu.tsx`) and adding the `context-target` class (no iOS callout or text selection on long press).
 
 - Items are read when the menu opens, so they can look at current state. An item is `{ label, icon, onSelect, danger?, disabled?, hint?, keys? }`; `'separator'` splits groups. `disabled` can be a string, shown as the reason on hover, `hint` explains the item on hover, and `keys` shows a shortcut on the right.
 - It grows in from the pointer, and outside press, Esc, scroll, and resize close it. It is a manual popover, since light dismiss would close it on the right click's own pointerup.
@@ -226,7 +226,7 @@ Right click (or the menu key / Shift+F10, or a long press on touch) opens a menu
 - Visible `:focus-visible` everywhere; full keyboard operation. Text fields show focus as a darker frame with a soft accent ring (`fieldFrame`), and option rows fill with `active`; everything else gets the accent outline.
 - Tabs follow the ARIA tabs pattern: arrow keys move between them, and only the picked one is in the Tab order. A search field that drives a list is a combobox naming the row it's on.
 - Dialogs and sheets trap focus and close on Escape (native `<dialog>` does this).
-- Respect reduced motion for decorative motion. Settings → Appearance → Motion (System, Full, Reduced; per device, `client/src/ui/motion.ts`) can override the system setting, like the theme: it sets `data-motion` on `<html>`. So gate CSS with Tailwind's `motion-safe:` / `motion-reduce:` (redefined in `App.css` to follow it) and JS with `reducedMotion()`, never `prefers-reduced-motion` directly. Progress signals (spinner, `shimmer` on running work) stay on: they carry state, and the author runs macOS with reduced motion on.
+- Respect reduced motion for decorative motion. Settings → Appearance → Motion (System, Full, Reduced; per device, `packages/client/src/ui/motion.ts`) can override the system setting, like the theme: it sets `data-motion` on `<html>`. So gate CSS with Tailwind's `motion-safe:` / `motion-reduce:` (redefined in `App.css` to follow it) and JS with `reducedMotion()`, never `prefers-reduced-motion` directly. Progress signals (spinner, `shimmer` on running work) stay on: they carry state, and the author runs macOS with reduced motion on.
 - Text contrast WCAG AA in both themes; status is never color-only (pair with label or shape).
 
 ## Checking the UI
@@ -236,7 +236,7 @@ Right click (or the menu key / Shift+F10, or a long press on touch) opens a menu
 Screens are drawn against kind data, so check them against the worst realistic data too: long names, missing fields, huge counts, non-Latin text. In development, pick one under Settings → Test data, or open any page with `?data=worst` (or `demo`, `empty`, `one`, `huge`, or `live` for real data). A switch at the bottom of the page changes it, – hides it until a reload (for screenshots), and × turns it off. It stays on for the tab across navigation and reloads.
 
 - The test data stands in where topics are read (`useTopic`), so every screen gets it. It never reaches the server or the cache on the device.
-- The whole app has test data, in `client/src/fixtures/`: the sidebar (sessions, projects, terminals, kept files), the transcripts, and the side panel (git status and files). In `demo` and `worst`, models (with list prices), providers, plan usage (limits near and at the cap), and each live test session's context have test data too (`usage.ts`), and Compact and Clean up play out on them. The other modes keep those live.
+- The whole app has test data, in `packages/client/src/fixtures/`: the sidebar (sessions, projects, terminals, kept files), the transcripts, and the side panel (git status and files). In `demo` and `worst`, models (with list prices), providers, plan usage (limits near and at the cap), and each live test session's context have test data too (`usage.ts`), and Compact and Clean up play out on them. The other modes keep those live.
 - Transcripts go through the same projection as live data, so opened rows load their details. In `demo` and `worst`, a few sessions play out live: one runs on a loop, one waits on a question, and one holds every kind of finished row.
 - Demo data doubles as screenshot data: `/s/demo-shortcuts?data=demo` shows one session from prompt to reply, with its changes and diffs on the right.
 - Commands are held back while it's on: they are logged to the console and never answer. Reads with test data (step details, files and diffs in the test data) answer from it; other reads go to the server.
@@ -245,7 +245,7 @@ Screens are drawn against kind data, so check them against the worst realistic d
 
 When something doesn't update, updates too often, or is slow, record what happened instead of guessing. Do the same to check that a change didn't add extra updates. The reports name signals, memos, and effects by their `{ name }` option.
 
-- On the dev server, `diagnostics: true` in `client/vite.config.ts` turns on `/__solid/diagnostics`. It needs an open page connected to the dev server, for example through `agent-browser`.
+- On the dev server, `diagnostics: true` in `packages/client/vite.config.ts` turns on `/__solid/diagnostics`. It needs an open page connected to the dev server, for example through `agent-browser`.
 - `GET /__solid/diagnostics` returns the status and how many pages are connected.
 - `POST` it `{"method":"begin"}` and later `{"method":"end"}` to record everything in between.
 - `{"method":"whyDidRun","params":{"name":"<scope name>"}}` lists each time one named signal, memo, or effect re-ran during the recording, and `{"method":"costs"}` returns the cost tables.

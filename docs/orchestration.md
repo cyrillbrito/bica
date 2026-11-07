@@ -34,7 +34,7 @@ Bica tells sessions about each other with notes: prompts from Bica itself, sent 
 
 A message from `session_send` is one prompt to the receiver. The sender hears back only when the receiver answers with a message of its own, or when it would get a note anyway, and the message tells the receiver which.
 
-Every prompt you didn't type, a note, a message, or the task from `session_start`, goes through one place, `submit` in `server/src/sessions/prompts.ts`. It's stored as a `bica.sent` entry with the sender and the words, which the transcript and the queue show as a quiet row with the sender's name. The model still reads a user message, with a label in front: `[Note from Bica, not from the user]`, or `[Message from "Title" (session 12), which reads your replies]`. The first task a session gets from the session that started it also says who leads it. Sessions from before the entry kind read the label back from the text.
+Every prompt you didn't type, a note, a message, or the task from `session_start`, goes through one place, `submit` in `packages/server/src/sessions/prompts.ts`. It's stored as a `bica.sent` entry with the sender and the words, which the transcript and the queue show as a quiet row with the sender's name. The model still reads a user message, with a label in front: `[Note from Bica, not from the user]`, or `[Message from "Title" (session 12), which reads your replies]`. The first task a session gets from the session that started it also says who leads it. Sessions from before the entry kind read the label back from the text.
 
 ## Watching
 

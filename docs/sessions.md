@@ -25,7 +25,7 @@ The transcript shows your prompts with their images, the agent's replies, its th
 - Notes from Bica and messages from other sessions show as a quiet row with the sender.
 - Hide thinking, in Settings → Appearance, leaves thinking out on that device.
 
-`bun server/scripts/demo-session.ts` seeds a session with every kind of row.
+`bun packages/server/scripts/demo-session.ts` seeds a session with every kind of row.
 
 ## Steer, queue, stop
 
@@ -66,15 +66,15 @@ Each session in the sidebar shows its status:
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 
-The right end of a row shows a live clock while it runs, in one unit like `3m` (hover for the exact time), a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
+The right end of a row shows a live clock while it runs, in one unit like `3m` (hover for the exact time), a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`packages/shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
 
 Work is stuck when Pi Durable won't run it. Work that was cut off by crashes too many times in a row, such as a tool that runs Bica out of memory, is paused instead of crashing Bica again. Work whose code is gone from Bica, such as a removed extension's tool, can't run at all. A strip above the composer says which, with Retry for paused work. Stop ends either.
 
-Read state lives on the server, so opening a session on the phone marks it read on the laptop too. A chime plays when a session stops, different for done, asking, and failed. The installed app's icon shows a badge with the sessions that need you (`client/src/sessions/alerts.ts`).
+Read state lives on the server, so opening a session on the phone marks it read on the laptop too. A chime plays when a session stops, different for done, asking, and failed. The installed app's icon shows a badge with the sessions that need you (`packages/client/src/sessions/alerts.ts`).
 
 ## Session actions
 
-A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, assistant mode on or off, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
+A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `packages/client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, assistant mode on or off, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
 
 ## Archiving
 

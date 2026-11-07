@@ -1,6 +1,6 @@
 # Color themes
 
-Picking Bica's colors from well-known editor themes. Not built. Today `client/src/App.css` holds one hand-written light palette and one dark one.
+Picking Bica's colors from well-known editor themes. Not built. Today `packages/client/src/App.css` holds one hand-written light palette and one dark one.
 
 ## Why
 

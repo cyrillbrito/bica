@@ -398,7 +398,7 @@ The patterns come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.
 
 ## Bica's user docs
 
-This section is Bica's own addition to the upstream skill (https://github.com/blader/humanizer). Use it with the patterns above when writing or reviewing the docs site in `site/src/content/docs/`. The repo's `docs/` folder is the agents' manual and follows `docs/writing.md` instead.
+This section is Bica's own addition to the upstream skill (https://github.com/blader/humanizer). Use it with the patterns above when writing or reviewing the docs site in `packages/site/src/content/docs/`. The repo's `docs/` folder is the agents' manual and follows `docs/writing.md` instead.
 
 The reader is someone who wants to use Bica, not build it. They read the first lines of a page and skim the rest. Write for that reader:
 

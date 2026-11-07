@@ -19,7 +19,7 @@ tailscale serve status
 
 Use 3142 for the dev server, and 3144 for the website's (`bun run dev:site`). The serve config survives reboots, so only Bica has to be running.
 
-It gives HTTPS with a real certificate, which the installed app and the microphone ([voice.md](./voice.md)) need, proxies WebSockets, and stays inside the tailnet. Never use `funnel`: there is no login, and the tailnet is the only protection. The dev servers accept only `localhost` and `.ts.net` hosts, so another proxy needs its host added to `allowedHosts` in `client/vite.config.ts`.
+It gives HTTPS with a real certificate, which the installed app and the microphone ([voice.md](./voice.md)) need, proxies WebSockets, and stays inside the tailnet. Never use `funnel`: there is no login, and the tailnet is the only protection. The dev servers accept only `localhost` and `.ts.net` hosts, so another proxy needs its host added to `allowedHosts` in `packages/client/vite.config.ts`.
 
 ## Installing as an app
 
@@ -27,7 +27,7 @@ Bica installs as an app with its own window and Dock icon. In Chromium browsers,
 
 ## A built copy
 
-`bun run build` and `bun run start` run a built copy on port 3141. The build is only the browser app, in `client/dist/client`; the server runs from source and serves it. It starts through the same entry as the `bica` binary below, so it takes the same `--port` flag and keys. `BICA_PORT` picks another port for a second dev server, and its server takes the port above it.
+`bun run build` and `bun run start` run a built copy on port 3141. The build is only the browser app, in `packages/client/dist/client`; the server runs from source and serves it. It starts through the same entry as the `bica` binary below, so it takes the same `--port` flag and keys. `BICA_PORT` picks another port for a second dev server, and its server takes the port above it.
 
 Data lives in the repo's `.data/` ([architecture.md](./architecture.md#where-data-lives)). Never run two servers against the same `.data/`, since only one process may own the harness.
 
@@ -44,7 +44,7 @@ In a terminal it prints its address and a few keys, the way Vite does:
 - `p` picks the Chrome profile from Chrome's `Local State`, saved in `chrome.json` in the data folder.
 - `q` and Ctrl-C stop it, which ends its shells. Pi Durable resumes agent runs on the next start.
 
-Without a terminal, as a background service, it only logs. See [server/cli/bica.ts](../server/cli/bica.ts), the entry both start through, and [server/cli/build.ts](../server/cli/build.ts), which embeds the files and compiles it.
+Without a terminal, as a background service, it only logs. See [packages/server/cli/bica.ts](../packages/server/cli/bica.ts), the entry both start through, and [packages/server/cli/build.ts](../packages/server/cli/build.ts), which embeds the files and compiles it.
 
 `bica --version` prints the version, which comes from `BICA_VERSION` at build time. A local build without it says `0.0.0-dev`. `bun run build:bica --target bun-linux-x64` cross-compiles, into `dist/bica/linux-x64/bica`, and takes several `--target` flags at once.
 

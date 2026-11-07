@@ -31,7 +31,7 @@ Every row shows its shortcut, so the palette teaches them. Only actions you take
 
 The Hub action opens the [hub](./hub.md). It has no shortcut, since it sits at the top of the sidebar.
 
-The palette lives in `client/src/app/palette/`: `CommandPalette.tsx` draws it, `pages.tsx` lists what it offers, shortcuts included, and `commands.ts` holds the search.
+The palette lives in `packages/client/src/app/palette/`: `CommandPalette.tsx` draws it, `pages.tsx` lists what it offers, shortcuts included, and `commands.ts` holds the search.
 
 ## Sources
 

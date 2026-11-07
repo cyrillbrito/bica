@@ -14,12 +14,12 @@ A line above the composer speaks up only when there is something worth doing, an
 
 Progress and results show as lines in the transcript, with a sound when they land.
 
-The chip's menu offers Compact, Prune, and the details. Every place that offers Compact and Prune (the chip, the nag above the composer, the field of cells, the details) shares one busy state and one rule for when each can run, in `client/src/context-usage/context-usage.ts`. Compact says how much it keeps as it is, Pi Durable's `keepRecentTokens`, sent with the model catalog. The details show the window as a field of cells, filled by the system prompt, tools, the conversation, and tool output. Pointing at a part lights its cells. Below are the biggest prompts, replies, and tool results, the cache hit rate, and the spend per model.
+The chip's menu offers Compact, Prune, and the details. Every place that offers Compact and Prune (the chip, the nag above the composer, the field of cells, the details) shares one busy state and one rule for when each can run, in `packages/client/src/context-usage/context-usage.ts`. Compact says how much it keeps as it is, Pi Durable's `keepRecentTokens`, sent with the model catalog. The details show the window as a field of cells, filled by the system prompt, tools, the conversation, and tool output. Pointing at a part lights its cells. Below are the biggest prompts, replies, and tool results, the cache hit rate, and the spend per model.
 
 ## Where the numbers come from
 
 - The total is measured the way Pi Durable measures it before compacting on its own: what the newest reply reported, plus pi-ai's estimate of what came after, minus what pruning freed since. So the chip and auto-compaction agree. The parts are rough counts, scaled to add up to it.
-- The server works it out once per change and sends it with the conversation (`shared/src/context-usage.ts`, and `context-breakdown.ts` for the details). The color, the cache countdown, and when the nag and housekeeping act are rules in the same file.
+- The server works it out once per change and sends it with the conversation (`packages/shared/src/context-usage.ts`, and `context-breakdown.ts` for the details). The color, the cache countdown, and when the nag and housekeeping act are rules in the same file.
 - Spend comes from Pi Durable's usage tracking, at API prices even on a subscription.
 - Before the first reply or right after a compaction, nothing is measured yet, and the details say "estimated".
 

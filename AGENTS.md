@@ -36,7 +36,7 @@ There is no time to prove every idea here, so borrow from people who already bui
 
 - Bun 1.4.3 or newer runs the server, installs packages, type-checks, and runs the tests. Vite runs on Node, its tested runtime, and `bun run` falls back to Bun when Node isn't installed.
 - Server, scripts, and tests use Bun's own APIs before Node's or a package: `Bun.spawn`, `Bun.sleep`, `Bun.file`, `Bun.serve`, `bun:sqlite`, and so on. The client runs in the browser, so it has none of them.
-- Three Bun workspace packages: `client` (the Solid app), `server` (plain Bun), and `shared` (the code both run, as `@bica/shared/...`). See [architecture.md](docs/architecture.md#packages).
+- A Bun workspace with every package under `packages/`: `client` (the Solid app), `server` (plain Bun), and `shared` (the code both run, as `@bica/shared/...`). Versions more than one package uses sit in the root `package.json`'s `catalog`. See [architecture.md](docs/architecture.md#packages).
 - `site` is the website at bica.sh: an Astro home page plus the user docs at `/docs` in Starlight, with D2 diagrams through `astro-d2`, deployed to Cloudflare. See [website.md](docs/website.md).
 - Solid 2 (release candidate) through `@solidjs/vite-plugin` in client start mode: the app renders only in the browser, with no server-side rendering. This is not SolidStart.
 - Pi Durable, with `pi-ai` for models, runs the agent and stores it in SQLite.
@@ -48,7 +48,7 @@ There is no time to prove every idea here, so borrow from people who already bui
 
 ## Commands
 
-Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the root forwards to them: `--cwd <folder>` for one package, `--filter` or `--workspaces` for several. Lint, format, and `checks` cover the whole repo, so they live only at the root.
+Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the root forwards to them: `--cwd packages/<name>` for one package, `--filter` or `--workspaces` for several. Lint, format, and `checks` cover the whole repo, so they live only at the root.
 
 - `bun run checks` runs every check: types, lint, the format check, and the tests. Run it before every commit, and fix what fails.
 - `bun run typecheck` type-checks with `bun check`, Bun's built-in checker, so `typescript` is not a dependency. `bun run lint` lints, and `bun run fmt` formats.
@@ -72,12 +72,12 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 Pi Durable, Solid 2, and Pierre are new and change often, and the web may describe a newer version than the one installed. Read the installed copy first.
 
 - Bun: https://bun.com/llms.txt indexes the docs, one Markdown page each. Look there before reaching for a Node API or a package.
-- Pi Durable: `server/node_modules/@earendil-works/pi-durable/README.md` and `CHANGELOG.md`, plus the READMEs of `pi-ai` and `chord` next to it. Examples: https://github.com/earendil-works/pi/tree/main/packages/durable.
+- Pi Durable: `packages/server/node_modules/@earendil-works/pi-durable/README.md` and `CHANGELOG.md`, plus the READMEs of `pi-ai` and `chord` next to it. Examples: https://github.com/earendil-works/pi/tree/main/packages/durable.
 - Pi packages as inspiration: https://github.com/earendil-works/pi/tree/main/packages. Before building or changing an agent tool, prompt, or session feature, look at how Pi does it, mostly `coding-agent` (its tools in `src/core/tools`, and `examples`), `agent`, and `ai`. Bica never runs that code, but the APIs are close, so borrow the ideas and adapt them to Pi Durable.
-- Solid 2: `client/node_modules/solid-js/CHEATSHEET.md` and the skills under SolidJS 2 below. Full docs for agents: https://v2.solidjs.com/llms.txt
-- Markdown: the skills in `client/node_modules/@tanstack/markdown/skills/` (the React ones don't apply).
+- Solid 2: `packages/client/node_modules/solid-js/CHEATSHEET.md` and the skills under SolidJS 2 below. Full docs for agents: https://v2.solidjs.com/llms.txt
+- Markdown: the skills in `packages/client/node_modules/@tanstack/markdown/skills/` (the React ones don't apply).
 - Pierre: https://diffs.com/llms.txt and https://trees.software/llms.txt.
-- Vite: https://vite.dev/guide/ and `client/node_modules/@solidjs/vite-plugin/README.md` for start mode.
+- Vite: https://vite.dev/guide/ and `packages/client/node_modules/@solidjs/vite-plugin/README.md` for start mode.
 
 ## Docs
 
@@ -142,9 +142,9 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 
 After UI changes, check them in a real browser with [`agent-browser`](https://github.com/vercel-labs/agent-browser), a browser CLI for agents. Its skill explains how to use it. These are the facts for this repo:
 
-- The dev server (`bun run dev`: Vite on 3142, the server on 3143) may host the Bica session you are running in. Don't restart or stop it. It has no live updates (`server.ws: false`), so reload the page to see page edits, but server code (`server/src`) runs as it started until Bica restarts: test server changes on your own dev server on another port, such as `BICA_PORT=3199 BICA_DATA_DIR=/tmp/bica-test bun run dev`, which puts its server on 3200. Always give it its own `BICA_DATA_DIR`: the server refuses to start on a data folder another one uses. Another dev server may run on a different port; inspect running terminals before starting one.
+- The dev server (`bun run dev`: Vite on 3142, the server on 3143) may host the Bica session you are running in. Don't restart or stop it. It has no live updates (`server.ws: false`), so reload the page to see page edits, but server code (`packages/server/src`) runs as it started until Bica restarts: test server changes on your own dev server on another port, such as `BICA_PORT=3199 BICA_DATA_DIR=/tmp/bica-test bun run dev`, which puts its server on 3200. Always give it its own `BICA_DATA_DIR`: the server refuses to start on a data folder another one uses. Another dev server may run on a different port; inspect running terminals before starting one.
 - Open `http://localhost:3142`, then check `errors` and `console` for Solid warnings and socket errors.
-- For a change to a building block in `client/src/ui/`, open `http://localhost:3142/ui`: the playground shows every one in light and dark side by side.
+- For a change to a building block in `packages/client/src/ui/`, open `http://localhost:3142/ui`: the playground shows every one in light and dark side by side.
 - For the phone layout, run `set viewport 390 844` and check again.
 - For worst-case data, open the page with `?data=worst`. See Test data in `docs/UI.md`.
 - The data is real. Don't create, send to, or delete sessions, and don't commit, unless that is what you are testing.
@@ -153,14 +153,14 @@ After UI changes, check them in a real browser with [`agent-browser`](https://gi
 
 This project uses SolidJS 2. Solid is not React. Components run once and never re-render. Updates flow through signals to exactly the parts that read them, and effects and memos follow Solid's own rules. Don't bring React patterns over.
 
-Read `client/node_modules/solid-js/CHEATSHEET.md` before writing Solid code. It matches the installed version, and it ends with the corrections for habits from Solid 1 and React.
+Read `packages/client/node_modules/solid-js/CHEATSHEET.md` before writing Solid code. It matches the installed version, and it ends with the corrections for habits from Solid 1 and React.
 
 ### Skills that ship with the installed packages
 
 Read these when you need them. They match the installed versions.
 
-- `client/node_modules/solid-js/skills/reactivity-diagnostics/SKILL.md` maps every dev-mode warning code, such as `REACTIVE_WRITE_IN_OWNED_SCOPE` or `STRICT_READ_UNTRACKED`, to its fix. Read it whenever one of those codes shows up in test output or the browser console.
-- `client/node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` explains how to record which parts re-ran and why, find wasted work, and set limits on it, in tests and on live pages.
+- `packages/client/node_modules/solid-js/skills/reactivity-diagnostics/SKILL.md` maps every dev-mode warning code, such as `REACTIVE_WRITE_IN_OWNED_SCOPE` or `STRICT_READ_UNTRACKED`, to its fix. Read it whenever one of those codes shows up in test output or the browser console.
+- `packages/client/node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` explains how to record which parts re-ran and why, find wasted work, and set limits on it, in tests and on live pages.
 
 ### Debugging updates
 

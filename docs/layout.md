@@ -20,7 +20,7 @@ Every page has three parts: the sidebar on the left, the page itself in the cent
 
 The tab you pick is part of the address, such as `?panel=git`, so a reload or a shared link opens the same tab. A link without it keeps the tab you picked last, since you usually want the same kind of view when switching sessions. A link to a tab that no longer exists shows Git instead.
 
-Each tab lives in its feature's folder, and `client/src/app/SidePanel.tsx` lists them in the order they show.
+Each tab lives in its feature's folder, and `packages/client/src/app/SidePanel.tsx` lists them in the order they show.
 
 ## Sources
 

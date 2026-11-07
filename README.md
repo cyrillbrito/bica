@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="client/public/favicon.svg" alt="Bica" width="96" height="96" />
+<img src="packages/client/public/favicon.svg" alt="Bica" width="96" height="96" />
 
 # Bica
 
