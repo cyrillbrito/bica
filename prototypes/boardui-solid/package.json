@@ -1,0 +1,25 @@
+{
+  "name": "boardui-solid-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3190 --strictPort",
+    "build": "vite build",
+    "typecheck": "bun check"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@solidjs/web": "2.0.0-rc.20",
+    "marked": "^16.4.0",
+    "remixicon": "^4.9.0",
+    "solid-js": "2.0.0-rc.20",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@solidjs/vite-plugin": "3.0.0-next.54",
+    "@tailwindcss/vite": "4.3.3",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.5"
+  }
+}

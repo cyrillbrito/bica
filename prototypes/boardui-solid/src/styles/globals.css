@@ -1,0 +1,419 @@
+/* The parts of BoardUI's styles/globals.css (MIT, see LICENSE-boardui) that
+ * the ported components use, then a few rules of this prototype's own at the
+ * bottom. Landing-page, chart, and Pro-component styles are left out. */
+
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import './theme.css';
+@import './typography.css';
+
+/* BoardUI loads its fonts through next/font, which defines these. */
+:root {
+  --font-inter: 'Inter Variable';
+  --font-mono-source: 'JetBrains Mono';
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@keyframes ai-chat-text-shimmer {
+  from {
+    background-position: 200% center;
+  }
+  to {
+    background-position: -100% center;
+  }
+}
+
+.agent-progress-loading-text {
+  color: transparent;
+  background-image: linear-gradient(
+    100deg,
+    var(--color-text-secondary) 16%,
+    var(--color-text-secondary) 38%,
+    var(--color-text-primary) 50%,
+    var(--color-text-secondary) 62%,
+    var(--color-text-secondary) 84%
+  );
+  background-position: 200% center;
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: ai-chat-text-shimmer 3.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-progress-loading-text {
+    color: var(--color-text-secondary);
+    background-image: none;
+    animation: none;
+  }
+}
+
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-ligatures: contextual;
+  font-kerning: normal;
+}
+
+html {
+  color-scheme: light;
+  background-color: var(--color-background-full);
+}
+html.dark {
+  color-scheme: dark;
+}
+body {
+  background-color: var(--color-background-full);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Tailwind bakes shadow values into utilities at build time; point them back
+ * at the live tokens so `.dark` can deepen them. */
+.dark .shadow-2xs {
+  --tw-shadow: var(--shadow-2xs);
+}
+.dark .shadow-xs {
+  --tw-shadow: var(--shadow-xs);
+}
+.dark .shadow-sm {
+  --tw-shadow: var(--shadow-sm);
+}
+.dark .shadow-md {
+  --tw-shadow: var(--shadow-md);
+}
+.dark .shadow-lg {
+  --tw-shadow: var(--shadow-lg);
+}
+.dark .shadow-xl {
+  --tw-shadow: var(--shadow-xl);
+}
+.dark .shadow-card {
+  --tw-shadow: var(--shadow-card);
+}
+.dark .shadow-dropdown {
+  --tw-shadow: var(--shadow-dropdown);
+}
+.dark .shadow-sidebar {
+  --tw-shadow: var(--shadow-sidebar);
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* iOS zooms into fields under 16px. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.animate-check-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: check-draw 200ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-check-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Table primitive (components/base/table). */
+.bui-table {
+  @apply w-full border-collapse text-start;
+}
+.bui-table th {
+  @apply px-3 py-2.5 text-start align-middle text-body-medium text-text-tertiary whitespace-nowrap outline-none;
+  background-color: var(--color-background-secondary-default);
+  border-top: 1px solid var(--color-separator-border);
+  border-bottom: 1px solid var(--color-separator-border);
+}
+.bui-table td {
+  @apply px-3 py-2.5 align-middle text-body-medium text-text-primary outline-none;
+}
+.bui-table tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--color-separator-border);
+}
+.bui-table tbody tr {
+  @apply transition-colors duration-150;
+}
+.bui-table tbody tr:focus-visible {
+  @apply ring-2 ring-inset ring-border-focus-ring;
+}
+.bui-table.bui-table-sm th,
+.bui-table.bui-table-sm td {
+  @apply px-2.5 py-1.5 text-body-2-medium;
+}
+
+/* ---------------------------------------------------------------------------
+ * Prototype's own rules, not BoardUI's.
+ * --------------------------------------------------------------------------- */
+
+/* Popovers and menus use the native popover attribute in place of React
+ * Aria's overlay; this is BoardUI's 150ms fade + scale + blur entrance. */
+.bui-pop {
+  transition:
+    opacity 150ms ease-out,
+    scale 150ms ease-out,
+    filter 150ms ease-out,
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+.bui-pop:not(:popover-open) {
+  opacity: 0;
+  scale: 0.95;
+  filter: blur(2px);
+}
+@starting-style {
+  .bui-pop:popover-open {
+    opacity: 0;
+    scale: 0.95;
+    filter: blur(2px);
+  }
+}
+
+/* Tooltip: React Aria's 200ms scale-90 + blur(4px) entrance. */
+.bui-tooltip {
+  transition:
+    opacity 200ms ease-out,
+    scale 200ms ease-out,
+    filter 200ms ease-out,
+    display 200ms allow-discrete,
+    overlay 200ms allow-discrete;
+}
+.bui-tooltip:not(:popover-open) {
+  opacity: 0;
+  scale: 0.9;
+  filter: blur(4px);
+}
+@starting-style {
+  .bui-tooltip:popover-open {
+    opacity: 0;
+    scale: 0.9;
+    filter: blur(4px);
+  }
+}
+
+/* Streaming lines fade and unblur in, as StreamedText does with motion. */
+@keyframes bui-line-in {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    translate: 0 4px;
+  }
+}
+.bui-line-in > * {
+  animation: bui-line-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Assistant Markdown inside the transcript. */
+.bui-markdown {
+  @apply flex flex-col gap-3 text-body-regular text-text-primary;
+  overflow-wrap: anywhere;
+}
+.bui-markdown :where(h1, h2, h3) {
+  @apply text-headline-semibold mt-1;
+}
+.bui-markdown :where(ul, ol) {
+  @apply flex flex-col gap-1 ps-5;
+}
+.bui-markdown ul {
+  list-style: disc;
+}
+.bui-markdown ol {
+  list-style: decimal;
+}
+.bui-markdown :where(li)::marker {
+  color: var(--color-text-tertiary);
+}
+.bui-markdown :where(strong) {
+  @apply font-semibold;
+}
+.bui-markdown :where(a) {
+  @apply text-accent-600 underline-offset-3 hover:underline;
+}
+.bui-markdown :where(:not(pre) > code) {
+  @apply rounded-sm bg-background-tertiary-default px-1 py-px font-mono text-[0.8125rem];
+}
+.bui-markdown :where(pre) {
+  @apply overflow-x-auto rounded-2lg border border-border-button-default bg-background-primary-default p-3 font-mono text-[0.8125rem] leading-5 shadow-card;
+}
+
+/* Working composer: a soft accent glow that breathes around the pill. Our own
+ * take, not BoardUI's Composer Loader. */
+@property --bui-glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes bui-glow-spin {
+  to {
+    --bui-glow-angle: 360deg;
+  }
+}
+.bui-glow {
+  position: relative;
+  isolation: isolate;
+}
+.bui-glow::before,
+.bui-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--bui-glow-angle),
+    var(--color-accent-400),
+    var(--color-purple-400),
+    var(--color-pink-400),
+    var(--color-accent-300),
+    var(--color-accent-400)
+  );
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+  animation: bui-glow-spin 4s linear infinite;
+}
+.bui-glow::after {
+  inset: 0;
+  filter: blur(14px);
+}
+.bui-glow[data-active]::before {
+  opacity: 0.9;
+}
+.bui-glow[data-active]::after {
+  opacity: 0.35;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bui-glow::before,
+  .bui-glow::after {
+    animation: none;
+  }
+}
+
+/* Dots of the thinking indicator, rising one after another. */
+@keyframes bui-dot {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+    opacity: 0.35;
+  }
+  30% {
+    translate: 0 -3px;
+    opacity: 1;
+  }
+}
+.bui-dot {
+  animation: bui-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes bui-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.bui-spin {
+  animation: bui-spin 0.9s linear infinite;
+}
+
+@keyframes bui-pulse-halo {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 1.35;
+    opacity: 0.6;
+  }
+}
+.bui-halo-pulse {
+  animation: bui-pulse-halo 1.6s ease-in-out infinite;
+}
+
+/* Notification: the countdown bar drains, and toasts rise in with a blur, as
+ * BoardUI does with Framer Motion. */
+@keyframes bui-drain {
+  to {
+    scale: 0 1;
+  }
+}
+.bui-drain {
+  animation: bui-drain linear forwards;
+}
+@keyframes bui-toast-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+    scale: 0.97;
+    filter: blur(4px);
+  }
+}
+.bui-toast-in {
+  animation: bui-toast-in 250ms ease-out both;
+}
+
+/* Settings modal: BoardUI's 300ms scale(0.85) + blur(4px) entrance, on a
+ * native <dialog>. Closing is instant. */
+.bui-dialog[open] {
+  animation: bui-dialog-in 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.bui-dialog[open]::backdrop {
+  animation: bui-fade-in 300ms ease-out both;
+}
+@keyframes bui-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.85;
+    filter: blur(4px);
+  }
+}
+@keyframes bui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A `.dark` region anywhere (the gallery's dark column) gets dark form
+ * controls and scrollbars too. */
+.dark {
+  color-scheme: dark;
+}
+
+/* The phone drawer slides in over a fading backdrop. */
+.bui-fade {
+  animation: bui-fade-in 200ms ease-out both;
+}
+@keyframes bui-drawer-in {
+  from {
+    translate: -24px 0;
+    opacity: 0;
+  }
+}
+.bui-drawer {
+  animation: bui-drawer-in 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <title>BoardUI in Solid · Bica prototype</title>
+    <script>
+      // Apply the saved theme before first paint. BoardUI toggles `.dark` on <html>.
+      // `?theme=dark` or `?theme=light` overrides it, for screenshots.
+      const forced = new URLSearchParams(location.search).get('theme');
+      if (forced) localStorage.setItem('proto.theme', forced);
+      if (localStorage.getItem('proto.theme') === 'dark')
+        document.documentElement.classList.add('dark');
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
