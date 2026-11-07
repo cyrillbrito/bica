@@ -248,13 +248,10 @@ export function WorkspacePage() {
   const workspace = workspaceById(id);
   if (!workspace) return <NotFound />;
   const path = diff ?? file;
-  const name = path?.split('/').pop();
   return (
     <Page
-      title={name ?? workspaceLabel(workspace)}
-      subtitle={
-        path ? path : workspace.project && `~/code/${workspace.project}`
-      }
+      title={path ?? workspaceLabel(workspace)}
+      crumb={path ? workspaceLabel(workspace) : undefined}
       workspace={workspace.id}
       actions={
         path && (

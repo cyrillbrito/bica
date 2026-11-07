@@ -22,17 +22,15 @@ export function TerminalPage() {
   return (
     <Page
       title={terminal.name}
-      subtitle={
-        <>
-          <Chip
-            variant="caption"
-            color={terminal.running ? 'lime' : 'neutral'}
-            className="py-0"
-          >
-            {terminal.running ? 'Running' : 'Exited 0'}
-          </Chip>
-          {workspace && workspaceLabel(workspace)}
-        </>
+      crumb={workspace && workspaceLabel(workspace)}
+      badge={
+        <Chip
+          variant="caption"
+          color={terminal.running ? 'lime' : 'neutral'}
+          className="py-0"
+        >
+          {terminal.running ? 'Running' : 'Exited 0'}
+        </Chip>
       }
       actions={
         <>

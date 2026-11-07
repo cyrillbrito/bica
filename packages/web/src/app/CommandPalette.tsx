@@ -209,17 +209,17 @@ export function CommandPalette() {
     })),
     {
       id: 'sidebar',
-      label: 'Show or hide the sidebar',
+      label: 'Collapse or expand the sidebar',
       icon: RiSideBarLine,
       shortcut: '⌘B',
-      run: () => ui.setSidebarHidden(!ui.sidebarHidden),
+      run: () => ui.setSidebarCollapsed(!ui.sidebarCollapsed),
     },
     {
       id: 'panel',
-      label: 'Show or hide the side panel',
+      label: 'Collapse or expand the side panel',
       icon: RiLayoutRightLine,
       shortcut: '⌥⌘B',
-      run: () => ui.setPanelHidden(!ui.panelHidden),
+      run: () => ui.setPanelCollapsed(!ui.panelCollapsed),
     },
     {
       id: 'theme',

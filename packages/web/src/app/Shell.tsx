@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import { DirectionProvider } from '@/components/foundations/direction/direction';
-import { cx } from '@/utils/cx';
 import { CommandPalette } from './CommandPalette';
 import { Settings } from './Settings';
 import { Sidebar } from './Sidebar';
@@ -21,10 +20,10 @@ function Frame() {
         ui.setPalette(!ui.palette);
       } else if (key === 'b' && e.altKey) {
         e.preventDefault();
-        ui.setPanelHidden(!ui.panelHidden);
+        ui.setPanelCollapsed(!ui.panelCollapsed);
       } else if (key === 'b') {
         e.preventDefault();
-        ui.setSidebarHidden(!ui.sidebarHidden);
+        ui.setSidebarCollapsed(!ui.sidebarCollapsed);
       } else if (key === ',') {
         e.preventDefault();
         void navigate({
@@ -39,7 +38,7 @@ function Frame() {
 
   return (
     <div className="relative flex h-dvh w-full gap-3 overflow-hidden bg-background-full p-2 sm:p-3">
-      <Sidebar className={cx('hidden', !ui.sidebarHidden && 'lg:flex')} />
+      <Sidebar collapsed={ui.sidebarCollapsed} className="hidden lg:flex" />
 
       {/* Below lg the sidebar rides in as a drawer, as in BoardUI's shell. */}
       {ui.nav && (

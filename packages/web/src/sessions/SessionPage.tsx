@@ -84,17 +84,15 @@ function SessionView({ session }: { session: Session }) {
   return (
     <Page
       title={session.title}
-      subtitle={
-        <>
-          <Chip variant="caption" color={STATUS_CHIP[status]} className="py-0">
-            {STATUS_LABEL[status]}
-          </Chip>
-          <span className="truncate">
-            {workspace && session.workspace !== 'hub'
-              ? workspaceLabel(workspace)
-              : 'Coordinates your sessions'}
-          </span>
-        </>
+      crumb={
+        workspace && session.workspace !== 'hub'
+          ? workspaceLabel(workspace)
+          : 'Hub'
+      }
+      badge={
+        <Chip variant="caption" color={STATUS_CHIP[status]} className="py-0">
+          {STATUS_LABEL[status]}
+        </Chip>
       }
       actions={<SessionMenu />}
       workspace={

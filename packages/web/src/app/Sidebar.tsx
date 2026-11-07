@@ -5,6 +5,7 @@ import {
   RiArrowDownSLine,
   RiCloseLine,
   RiFolder3Line,
+  RiFolderOpenLine,
   RiGitBranchLine,
   RiGitPullRequestLine,
   RiSearchLine,
@@ -31,25 +32,36 @@ import { useUi } from './ui';
 
 type Icon = RemixiconComponentType;
 
-/** BoardUI's nav row: 36px, radius 2lg, the blue gradient when selected. */
+/**
+ * BoardUI's nav row, with the neutral selection of its chat history rail
+ * and AI Chat template rather than the blue gradient: the sidebar holds many
+ * rows, and blue stays for what needs attention.
+ */
 function rowClass(selected: boolean) {
   return cx(
     'flex w-full min-w-0 items-center gap-2 rounded-2lg p-2 outline-none',
     'transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-border-focus-ring',
     selected
-      ? 'bg-linear-to-b from-accent-500 to-accent-600 shadow-nav-selected'
+      ? 'bg-background-secondary-hover'
       : 'hover:bg-background-secondary-hover',
   );
 }
 
-function labelClass(selected: boolean, muted = false) {
+function labelClass(selected: boolean) {
   return cx(
     'min-w-0 flex-1 truncate text-start text-body-medium',
+    selected ? 'text-text-primary' : 'text-text-secondary',
+  );
+}
+
+function iconClass(selected: boolean, tertiary = false) {
+  return cx(
+    'size-5 shrink-0',
     selected
-      ? 'text-white'
-      : muted
-        ? 'text-text-tertiary'
-        : 'text-text-secondary',
+      ? 'text-foreground-icon-primary'
+      : tertiary
+        ? 'text-foreground-icon-tertiary'
+        : 'text-foreground-icon-secondary',
   );
 }
 
@@ -70,13 +82,7 @@ function NavRow({
 }) {
   const inner = (
     <>
-      <I
-        aria-hidden
-        className={cx(
-          'size-5 shrink-0',
-          selected ? 'text-white' : 'text-foreground-icon-secondary',
-        )}
-      />
+      <I aria-hidden className={iconClass(selected)} />
       <span className={labelClass(selected)}>{label}</span>
       {trailing}
     </>
@@ -114,7 +120,7 @@ function SessionRow({
       onClick={onNavigate}
       className={rowClass(selected)}
     >
-      <StatusIcon session={session} selected={selected} />
+      <StatusIcon session={session} />
       <span
         className={cx(
           labelClass(selected),
@@ -123,12 +129,7 @@ function SessionRow({
       >
         {session.title}
       </span>
-      <span
-        className={cx(
-          'shrink-0 text-caption-1-medium',
-          selected ? 'text-white/80' : 'text-text-tertiary',
-        )}
-      >
+      <span className="shrink-0 rounded-md bg-background-tertiary-default px-1.5 py-0.5 text-caption-1-medium text-text-tertiary">
         {session.time}
       </span>
     </Link>
@@ -173,20 +174,12 @@ function WorkspaceGroup({
           onClick={onNavigate}
           className={rowClass(here)}
         >
-          <RiGitBranchLine
-            aria-hidden
-            className={cx(
-              'size-5 shrink-0',
-              here ? 'text-white' : 'text-foreground-icon-tertiary',
-            )}
-          />
+          <RiGitBranchLine aria-hidden className={iconClass(here, true)} />
           {workspace.ticket && (
             <span
               className={cx(
                 'shrink-0 rounded-sm px-1 text-caption-1-semibold',
-                here
-                  ? 'bg-white/20 text-white'
-                  : 'bg-status-blue-background text-status-blue-text',
+                'bg-background-tertiary-default text-text-secondary',
               )}
             >
               {workspace.ticket}
@@ -212,12 +205,7 @@ function WorkspaceGroup({
           >
             <RiTerminalBoxLine
               aria-hidden
-              className={cx(
-                'size-5 shrink-0',
-                path === `/t/${t.id}`
-                  ? 'text-white'
-                  : 'text-foreground-icon-tertiary',
-              )}
+              className={iconClass(path === `/t/${t.id}`, true)}
             />
             <span className={labelClass(path === `/t/${t.id}`)}>{t.name}</span>
             {t.running && (
@@ -262,19 +250,12 @@ function ProjectGroup({
           onClick={onNavigate}
           className={cx(rowClass(here), 'flex-1')}
         >
-          <RiFolder3Line
-            aria-hidden
-            className={cx(
-              'size-5 shrink-0',
-              here ? 'text-white' : 'text-foreground-icon-secondary',
-            )}
-          />
-          <span
-            className={cx(
-              labelClass(here),
-              !here && 'text-body-semibold text-text-primary',
-            )}
-          >
+          {open ? (
+            <RiFolderOpenLine aria-hidden className={iconClass(here)} />
+          ) : (
+            <RiFolder3Line aria-hidden className={iconClass(here)} />
+          )}
+          <span className={cx(labelClass(here), 'text-text-primary')}>
             {name}
           </span>
         </Link>
@@ -345,11 +326,111 @@ function UsageCard() {
   );
 }
 
+/** One icon of the collapsed rail: the row's 36px square, its label as a tooltip. */
+function RailItem({
+  to,
+  label,
+  selected = false,
+  onClick,
+  children,
+}: {
+  to?: string;
+  label: string;
+  selected?: boolean;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  const className = cx(
+    rowClass(selected),
+    'relative size-9 justify-center p-0 cursor-pointer',
+  );
+  if (!to)
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={onClick}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  return (
+    <Link to={to} aria-label={label} title={label} className={className}>
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * The 60px rail BoardUI's sidebar folds into. Sessions keep their status
+ * icon, so a running or waiting session still shows while folded.
+ */
+function Rail({ path, className }: { path: string; className?: string }) {
+  const ui = useUi();
+  const sessions = SESSIONS.filter((s) => s.workspace !== 'hub');
+  return (
+    <aside
+      aria-label="Sidebar"
+      className={cx(
+        'h-full w-[60px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-3xl border border-border-button-white bg-background-secondary-default px-[11px] py-3 shadow-sidebar',
+        className,
+      )}
+    >
+      <RailItem
+        label="Expand sidebar"
+        onClick={() => ui.setSidebarCollapsed(false)}
+      >
+        <RiSideBarFill aria-hidden className={iconClass(false)} />
+      </RailItem>
+      <RailItem label="Search ⌘K" onClick={() => ui.setPalette(true)}>
+        <RiSearchLine aria-hidden className={iconClass(false)} />
+      </RailItem>
+      <RailItem to="/" label="New session" selected={path === '/'}>
+        <RiAddLine aria-hidden className={iconClass(path === '/')} />
+      </RailItem>
+      <RailItem to="/s/hub" label="Hub" selected={path === '/s/hub'}>
+        <RiSparkling2Line
+          aria-hidden
+          className={iconClass(path === '/s/hub')}
+        />
+      </RailItem>
+      <div className="my-1 h-px w-6 shrink-0 bg-separator-border" />
+      <div className="-mx-2 flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-2 [scrollbar-width:none]">
+        {sessions.map((s) => (
+          <RailItem
+            key={s.id}
+            to={`/s/${s.id}`}
+            label={s.title}
+            selected={path === `/s/${s.id}`}
+          >
+            <StatusIcon session={s} />
+          </RailItem>
+        ))}
+      </div>
+      <ThemeToggle collapsed appearance="sidebar" />
+      <Link
+        to="."
+        search={(prev) => ({ ...prev, settings: 'general' as const })}
+        aria-label="Settings"
+        title="Settings ⌘,"
+        className={cx(rowClass(false), 'size-9 justify-center p-0')}
+      >
+        <RiSettings4Line aria-hidden className={iconClass(false)} />
+      </Link>
+    </aside>
+  );
+}
+
 export function Sidebar({
   mobile = false,
+  collapsed = false,
   className,
 }: {
   mobile?: boolean;
+  /** Folds to the 60px rail; ignored in the phone drawer. */
+  collapsed?: boolean;
   className?: string;
 }) {
   const ui = useUi();
@@ -357,8 +438,11 @@ export function Sidebar({
   const close = () => ui.setNav(false);
   const chats = WORKSPACES.find((w) => w.id === 'chats')!;
 
+  if (collapsed && !mobile) return <Rail path={path} className={className} />;
+
   return (
     <aside
+      aria-label="Sidebar"
       className={cx(
         'flex h-full w-[280px] shrink-0 flex-col gap-3 overflow-hidden rounded-3xl border border-border-button-white bg-background-secondary-default p-3 shadow-sidebar',
         className,
@@ -366,15 +450,16 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between ps-1">
         <Link to="/" onClick={close} className="flex items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-linear-to-b from-accent-500 to-accent-700 text-body-semibold text-white shadow-nav-selected">
+          <span className="flex size-7 items-center justify-center rounded-full bg-background-tertiary-default text-body-semibold text-text-primary">
             B
           </span>
           <span className="text-headline-semibold text-text-primary">Bica</span>
         </Link>
         <button
           type="button"
-          aria-label={mobile ? 'Close sidebar' : 'Hide sidebar'}
-          onClick={() => (mobile ? close() : ui.setSidebarHidden(true))}
+          aria-label={mobile ? 'Close sidebar' : 'Collapse sidebar'}
+          title={mobile ? undefined : 'Collapse sidebar ⌘B'}
+          onClick={() => (mobile ? close() : ui.setSidebarCollapsed(true))}
           className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-foreground-icon-secondary hover:bg-background-secondary-hover"
         >
           {mobile ? (
@@ -387,7 +472,6 @@ export function Sidebar({
           )}
         </button>
       </div>
-
       <button
         type="button"
         onClick={() => {

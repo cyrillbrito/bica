@@ -1,24 +1,33 @@
 import type { ReactNode } from 'react';
-import { RiLayoutRightLine, RiMenuLine, RiSideBarFill } from '@remixicon/react';
+import {
+  RiArrowRightSLine,
+  RiLayoutRightLine,
+  RiMenuLine,
+} from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { cx } from '@/utils/cx';
 import { SidePanel } from './SidePanel';
 import { useUi } from './ui';
 
 /**
- * The centre card, after BoardUI's chat screen: a rounded secondary surface
- * with a 48px header, and the side panel as a card of its own beside it.
+ * The centre card, after BoardUI's AI Chat template: a rounded secondary
+ * surface whose header is only a breadcrumb and a few actions, with the side
+ * panel flat on the page beside it. Each column folds itself from its own
+ * header, so the centre carries no toggles on a wide screen.
  */
 export function Page({
   title,
-  subtitle,
+  crumb,
+  badge,
   actions,
   workspace,
   children,
   bodyClassName,
 }: {
   title: ReactNode;
-  subtitle?: ReactNode;
+  /** The parent before the title, such as the workspace. */
+  crumb?: ReactNode;
+  badge?: ReactNode;
   actions?: ReactNode;
   /** Shows the side panel for this workspace. */
   workspace?: string;
@@ -29,7 +38,7 @@ export function Page({
   return (
     <>
       <section className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-3xl bg-background-secondary-default">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-separator-border px-3 sm:px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-3 sm:px-4">
           <IconButton
             icon={RiMenuLine}
             size="small"
@@ -37,46 +46,34 @@ export function Page({
             onClick={() => ui.setNav(true)}
             className="lg:hidden"
           />
-          {ui.sidebarHidden && (
-            <IconButton
-              icon={RiSideBarFill}
-              size="small"
-              aria-label="Show sidebar"
-              onClick={() => ui.setSidebarHidden(false)}
-              className="hidden lg:flex"
-            />
-          )}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <h1 className="truncate text-headline-medium text-text-primary">
-              {title}
-            </h1>
-            {subtitle && (
-              <div className="flex min-w-0 items-center gap-1.5 truncate text-caption-1-medium text-text-tertiary">
-                {subtitle}
-              </div>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {actions}
-            {workspace && (
+          <nav
+            aria-label="Location"
+            className="flex min-w-0 flex-1 items-center gap-1 text-body-2-medium"
+          >
+            {crumb && (
               <>
-                <IconButton
-                  icon={RiLayoutRightLine}
-                  size="small"
-                  aria-label="Open side panel"
-                  onClick={() => ui.setPanel(true)}
-                  className="xl:hidden"
-                />
-                <IconButton
-                  icon={RiLayoutRightLine}
-                  size="small"
-                  aria-label={
-                    ui.panelHidden ? 'Show side panel' : 'Hide side panel'
-                  }
-                  onClick={() => ui.setPanelHidden(!ui.panelHidden)}
-                  className="hidden xl:flex"
+                <span className="hidden min-w-0 shrink truncate text-text-tertiary sm:block">
+                  {crumb}
+                </span>
+                <RiArrowRightSLine
+                  aria-hidden
+                  className="hidden size-4 shrink-0 text-foreground-icon-tertiary sm:block"
                 />
               </>
+            )}
+            <h1 className="min-w-0 truncate text-text-primary">{title}</h1>
+            {badge && <span className="ms-1 shrink-0">{badge}</span>}
+          </nav>
+          <div className="flex shrink-0 items-center gap-1">
+            {actions}
+            {workspace && (
+              <IconButton
+                icon={RiLayoutRightLine}
+                size="small"
+                aria-label="Open side panel"
+                onClick={() => ui.setPanel(true)}
+                className="xl:hidden"
+              />
             )}
           </div>
         </header>
@@ -89,7 +86,8 @@ export function Page({
         <>
           <SidePanel
             workspace={workspace}
-            className={cx('hidden', !ui.panelHidden && 'xl:flex')}
+            collapsed={ui.panelCollapsed}
+            className="hidden xl:flex"
           />
           {ui.panel && (
             <div className="fixed inset-0 z-50 flex justify-end xl:hidden">

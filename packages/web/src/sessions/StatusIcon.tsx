@@ -17,11 +17,9 @@ export const STATUS_LABEL: Record<Session['status'], string> = {
 /** The icon slot of a session row: what the session is doing. */
 export function StatusIcon({
   session,
-  selected = false,
   className,
 }: {
   session: Session;
-  selected?: boolean;
   className?: string;
 }) {
   const base = cx('size-5 shrink-0', className);
@@ -29,35 +27,28 @@ export function StatusIcon({
     return (
       <RiLoader4Line
         aria-label="Running"
-        className={cx(
-          base,
-          'animate-spin',
-          selected ? 'text-white' : 'text-accent-500',
-        )}
+        className={cx(base, 'animate-spin text-accent-500')}
       />
     );
   if (session.status === 'waiting')
     return (
       <RiQuestionFill
         aria-label="Waiting for you"
-        className={cx(base, selected ? 'text-white' : 'text-yellow-500')}
+        className={cx(base, 'text-yellow-500')}
       />
     );
   if (session.status === 'error')
     return (
       <RiErrorWarningFill
         aria-label="Failed"
-        className={cx(base, selected ? 'text-white' : 'text-rose-500')}
+        className={cx(base, 'text-rose-500')}
       />
     );
   return (
     <span className={cx(base, 'relative flex items-center justify-center')}>
       <RiChat3Line
         aria-hidden
-        className={cx(
-          'size-5',
-          selected ? 'text-white' : 'text-foreground-icon-tertiary',
-        )}
+        className="size-5 text-foreground-icon-tertiary"
       />
       {session.unread && (
         <span

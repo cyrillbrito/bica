@@ -16,11 +16,11 @@ type Ui = {
   /** The side panel as a drawer, below xl. */
   panel: boolean;
   setPanel: (open: boolean) => void;
-  /** ⌘B and ⌥⌘B on a wide screen. */
-  sidebarHidden: boolean;
-  setSidebarHidden: (hidden: boolean) => void;
-  panelHidden: boolean;
-  setPanelHidden: (hidden: boolean) => void;
+  /** ⌘B and ⌥⌘B on a wide screen fold each column to its icon rail. */
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  panelCollapsed: boolean;
+  setPanelCollapsed: (collapsed: boolean) => void;
 };
 
 const UiContext = createContext<Ui | null>(null);
@@ -29,8 +29,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [palette, setPalette] = useState(false);
   const [nav, setNav] = useState(false);
   const [panel, setPanel] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [panelHidden, setPanelHidden] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const value = useMemo(
     () => ({
       palette,
@@ -39,12 +39,12 @@ export function UiProvider({ children }: { children: ReactNode }) {
       setNav,
       panel,
       setPanel,
-      sidebarHidden,
-      setSidebarHidden,
-      panelHidden,
-      setPanelHidden,
+      sidebarCollapsed,
+      setSidebarCollapsed,
+      panelCollapsed,
+      setPanelCollapsed,
     }),
-    [palette, nav, panel, sidebarHidden, panelHidden],
+    [palette, nav, panel, sidebarCollapsed, panelCollapsed],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
