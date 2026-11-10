@@ -8,6 +8,22 @@ import { serveAttachment } from './sessions/attachments';
 import { startHousekeeping } from './sessions/housekeeping';
 import { upgrade, websocket } from './socket';
 
+// There is no login (docs/deploy.md), and a page on any website can point its
+// own name at 127.0.0.1 (DNS rebinding): the browser then treats Bica as that
+// site, so the socket's Origin check passes. The `Host` header still says the
+// site's name. Only the routes a page could use get the check: a download's
+// token and an attachment's hash can't be guessed.
+const KNOWN_HOST =
+  /^(localhost|[\d.]+|\[[\da-f:.]+\]|[\w.-]+\.ts\.net)(:\d+)?$/i;
+
+function knownHost(req: Request) {
+  return KNOWN_HOST.test(req.headers.get('host') ?? '');
+}
+
+function forbidden() {
+  return new Response('Forbidden', { status: 403 });
+}
+
 /**
  * Bica's HTTP server: the socket, and the files it hands out links to.
  * `fallback` answers every other URL with the built app in production; in
@@ -24,9 +40,12 @@ export function serve(
     hostname: '127.0.0.1',
     port,
     routes: {
-      '/ws': upgrade,
+      '/ws': (req, server) =>
+        knownHost(req) ? upgrade(req, server) : forbidden(),
       '/download/:token/*': { GET: serveDownload },
-      '/blob/:hash': { GET: serveBlob },
+      '/blob/:hash': {
+        GET: (req) => (knownHost(req) ? serveBlob(req) : forbidden()),
+      },
       '/attachment/:name': { GET: serveAttachment },
     },
     fetch: fallback,

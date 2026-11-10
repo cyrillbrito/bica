@@ -119,7 +119,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies the assistant's and hub's memory files.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
 - [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.
-- [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, and the DNS rebinding hole.
+- [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, so the network isn't the only lock.
 - [themes.md](docs/explorations/themes.md): editor color themes.
 - [ui-hierarchy.md](docs/explorations/ui-hierarchy.md): what the side panel next to a session belongs to.
 - [voice-and-hub.md](docs/explorations/voice-and-hub.md): what's left from OpenAI's GPT-Live and Codex voice for calls and the hub.

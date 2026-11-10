@@ -41,12 +41,23 @@ export class NoAnswer extends Error {}
 async function network(cwd: string, args: string[], timeout: number) {
   const p = Bun.spawn(['git', ...args], {
     cwd,
-    timeout,
+    // A process group of its own, stopped as one: git hands the transfer to
+    // helpers such as git-remote-http, which outlive git and keep stderr
+    // open, so stopping git alone would leave this waiting for good.
+    detached: true,
     env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     stdout: 'ignore',
     stderr: 'pipe',
   });
+  const timer = setTimeout(() => {
+    try {
+      process.kill(-p.pid, 'SIGTERM');
+    } catch {
+      // Already gone.
+    }
+  }, timeout);
   const [stderr, code] = await Promise.all([p.stderr.text(), p.exited]);
+  clearTimeout(timer);
   if (p.signalCode)
     throw new NoAnswer(`git ${args[0]} got no answer in ${timeout / 1000} s`);
   if (code !== 0) throw new Error(stderr.trim() || `git ${args[0]} failed`);

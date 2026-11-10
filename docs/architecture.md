@@ -93,4 +93,4 @@ Your own files for Bica live in `~/.bica/`: an `AGENTS.md` and skills for every 
 
 ## Safety
 
-There is no login. Bica is reached on localhost or over Tailscale, and that network is the security boundary. The socket refuses other websites, and every file or git request must stay inside its workspace. See [deploy.md](./deploy.md).
+There is no login. Bica is reached on localhost or over Tailscale, and that network is the security boundary. The socket refuses other websites, by its `Origin` and its `Host`, and every file or git request must stay inside its workspace. See [deploy.md](./deploy.md).

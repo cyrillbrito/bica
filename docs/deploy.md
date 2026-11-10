@@ -19,7 +19,7 @@ tailscale serve status
 
 Use 3142 for the dev server, and 3144 for the website's (`bun run dev:site`). The serve config survives reboots, so only Bica has to be running.
 
-It gives HTTPS with a real certificate, which the installed app and the microphone ([voice.md](./voice.md)) need, proxies WebSockets, and stays inside the tailnet. Never use `funnel`: there is no login, and the tailnet is the only protection. The dev servers accept only `localhost` and `.ts.net` hosts, so another proxy needs its host added to `allowedHosts` in `client/vite.config.ts`.
+It gives HTTPS with a real certificate, which the installed app and the microphone ([voice.md](./voice.md)) need, proxies WebSockets, and stays inside the tailnet. Never use `funnel`: there is no login, and the tailnet is the only protection. The socket and the diff blobs answer only when the address names Bica as `localhost`, an IP address, or a `.ts.net` host, so a website that points its own name at your machine (DNS rebinding) is refused. Another proxy needs its host added in `server/src/serve.ts`, and for the dev server to `allowedHosts` in `client/vite.config.ts` too.
 
 ## Installing as an app
 
@@ -27,7 +27,7 @@ Bica installs as an app with its own window and Dock icon. In Chromium browsers,
 
 ## A built copy
 
-`bun run build` and `bun run start` run a built copy on port 3141. The build is only the browser app, in `client/dist/client`; the server runs from source and serves it. It starts through the same entry as the `bica` binary below, so it takes the same `--port` flag and keys. `BICA_PORT` picks another port for a second dev server, and its server takes the port above it.
+`bun run build` and `bun run start` run a built copy on port 3141, which serves the app's text files gzipped. The build is only the browser app, in `client/dist/client`; the server runs from source and serves it. It starts through the same entry as the `bica` binary below, so it takes the same `--port` flag and keys. `BICA_PORT` picks another port for a second dev server, and its server takes the port above it.
 
 Data lives in the repo's `.data/` ([architecture.md](./architecture.md#where-data-lives)). Never run two servers against the same `.data/`, since only one process may own the harness.
 

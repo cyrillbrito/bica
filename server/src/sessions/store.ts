@@ -84,7 +84,17 @@ export function load() {
   }));
 }
 
-export async function listSessions(): Promise<SessionSummary[]> {
+// One read at a time: a second one would find `dirty` empty and return the
+// rows the first is still bringing up to date.
+let listing: Promise<unknown> = Promise.resolve();
+
+export function listSessions(): Promise<SessionSummary[]> {
+  const next = listing.then(readSessions);
+  listing = next.catch(() => {});
+  return next;
+}
+
+async function readSessions(): Promise<SessionSummary[]> {
   await load();
   const ids = [...dirty];
   dirty.clear();
