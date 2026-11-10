@@ -167,7 +167,10 @@ test('the model reads each image where the prompt names it, with its file', asyn
     .until((c) => shows(c, 'seen them'));
   const blocks = seen as { type: string; text?: string; data?: string }[];
   const files = blocks.flatMap(
-    (b) => /^\n\[image file: (.+)\]\n$/.exec(b.text ?? '')?.[1] ?? [],
+    (b) =>
+      /^\n\[The image above as a file, for tools: (.+)\]\n$/.exec(
+        b.text ?? '',
+      )?.[1] ?? [],
   );
   expect(
     blocks.map((b) => b.text ?? b.data).filter((t) => t![0] !== '\n'),
@@ -240,7 +243,7 @@ test("Prune takes old prompts' images out of what the model reads, and keeps the
   const first = JSON.stringify(seen);
   expect(first).toContain('Look at [Image #1]');
   expect(first).not.toContain('"type":"image"');
-  expect(first).toContain('[image file: ');
+  expect(first).toContain('[The image above as a file, for tools: ');
 });
 
 test('a session on a provider you signed out of moves to the same model through another', async () => {

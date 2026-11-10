@@ -79,7 +79,7 @@ Bica's data sits in the repo's `.data/`. The browser keeps small preferences per
 | Keys and sign-ins | `auth.json`, readable only by you |
 | Plan accounts' emails and order | `accounts.json` |
 | Plan limits for the meters | `plan-usage.json` |
-| Images sent with prompts, by content hash | `attachments/` |
+| Images sent with prompts, by content hash: copies of what `harness.sqlite` holds | `attachments/` |
 | Worktrees, branches, files | git and the disk |
 
 `server/src/storage.ts` is the one way to these files: it knows where `.data` is, keeps keys private, saves through a temporary file so a crash never leaves half a file, and refuses to overwrite a file it can't read. In `harness.sqlite`, each session has Pi Durable's documents (`pi.agent`, `pi.live`, `pi.inbox`, and more) and Bica's own, `bica.session`, with its title, project, archive, and what the features around it keep. Code reads and changes it through `sessionMeta` and `editSession` in `server/src/sessions/store.ts`.

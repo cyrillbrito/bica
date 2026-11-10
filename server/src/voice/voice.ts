@@ -30,6 +30,14 @@ const CANCEL = '[[live:cancel-current]]';
 // Handoffs that joined the same run share its reply: the first to settle
 // gets it, the others this.
 const COVERED = '(Answered in the other result.)';
+// Photos no handoff took go on their own: after this long without the user
+// talking, or when the call ends. A photo followed by "log this" still goes
+// with those words, and one sent in silence isn't left waiting.
+const PHOTOS_ALONE_MS = 5000;
+const PHOTOS_ALONE =
+  'The user added these photos during the voice call, without saying anything about them yet.';
+const PHOTOS_AFTER_CALL =
+  'The user added these photos during the voice call, and it ended before a request took them.';
 // What was said since the last handoff, newest kept.
 const CALL_WORDS_CHARS = 4000;
 // A handoff claims its reply within this; a final reply still unclaimed
@@ -140,7 +148,8 @@ export async function transcribe(audio: string, mimeType: string) {
 type Call = {
   socket: WebSocket;
   stop: (by: string) => void;
-  photos: (images: PromptImage[]) => void;
+  // Resolves once the photos go to the agent.
+  photos: (images: PromptImage[]) => Promise<void>;
 };
 const calls = new Map<string, Call>();
 
@@ -290,8 +299,40 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   // What was said since the last handoff, for the agent.
   const said: string[] = [];
   // Photos the user added since the last handoff: the voice can't see them,
-  // so they ride along with the next one.
+  // so they ride along with the next one, or go alone (PHOTOS_ALONE_MS).
   const photos: PromptImage[] = [];
+  // Each tells a browser's add that its photos went.
+  const photosSent: (() => void)[] = [];
+  let photosTimer: ReturnType<typeof setTimeout> | undefined;
+  // When the user's transcript last grew, since a turn's end clears it.
+  let userHeard = 0;
+  const takePhotos = () => {
+    clearTimeout(photosTimer);
+    for (const sent of photosSent.splice(0)) sent();
+    return photos.splice(0);
+  };
+  const sendPhotos = (why: string, title: string) => {
+    const images = takePhotos();
+    if (!images.length) return;
+    log('photos alone', { count: images.length, why: title });
+    // The reply comes back as a run the call didn't start (onStep above).
+    session
+      .ask(withCallWords(why, callWords()), title, images)
+      .then(({ text }) => log('photos answered', { chars: text.length }))
+      .catch((error: unknown) =>
+        log('photos alone failed', { error: String(error) }),
+      );
+  };
+  const photosLater = () => {
+    clearTimeout(photosTimer);
+    photosTimer = setTimeout(() => {
+      if (socket.readyState !== WebSocket.OPEN) return;
+      // Talking: the voice may be about to hand them off with the words.
+      if (turns.you.text || Date.now() - userHeard < USER_QUIET_MS)
+        return photosLater();
+      sendPhotos(PHOTOS_ALONE, 'Photos from a call');
+    }, PHOTOS_ALONE_MS);
+  };
   // The start of the user's unfinished line that a handoff already carried.
   let carried = '';
   const callWords = () => {
@@ -321,7 +362,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       return finish(delegation, 'I stopped the current work.');
     }
     const prompt = withCallWords(request, callWords());
-    const images = photos.splice(0);
+    const images = takePhotos();
     waiting.push(delegation);
     // Long runs: keep telling the voice the work is alive, so it waits.
     const started = Date.now();
@@ -361,6 +402,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   };
   const hear = (who: VoiceLine['who'], piece: string) => {
     const turn = turns[who];
+    if (who === 'you') userHeard = Date.now();
     if (!turn.text) turn.at = Date.now();
     turn.heard = Date.now();
     turn.text = piece.startsWith(turn.text) ? piece : turn.text + piece;
@@ -436,9 +478,11 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       log('photos', { count: images.length, waiting: photos.length });
       const added = images.length === 1 ? 'a photo' : `${images.length} photos`;
       append(
-        `The user added ${added} to the call. You can't see photos, but the agent can: they go with your next delegation. Say in a few words that you got it, unless the user is talking. When the user asks about a photo, delegate in their words, and never guess what it shows.`,
+        `The user added ${added} to the call. You can't see photos, but the agent can. If the user says what to do with them, delegate in their words, and they go along. If not, they go to the agent on their own in a few seconds, and its reply reaches you as an update. Say in a few words that you got it, unless the user is talking, and never guess what a photo shows.`,
         null,
       );
+      photosLater();
+      return new Promise<void>((resolve) => photosSent.push(resolve));
     },
     stop: (by) => {
       if (!calls.has(callId)) return;
@@ -449,6 +493,9 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       stopSteps();
       calls.delete(callId);
       if (socket.readyState <= WebSocket.OPEN) socket.close(1000, 'done');
+      // Photos no handoff took still reach the agent, with what was said
+      // about them, instead of being lost with the call.
+      sendPhotos(PHOTOS_AFTER_CALL, 'Photos from a call');
     },
   };
   calls.set(callId, call);
@@ -469,10 +516,11 @@ export function stopCall(callId: string) {
   calls.get(callId)?.stop('browser');
 }
 
+/** Adds photos to a call; resolves once they go to the agent. */
 export function addPhotos(callId: string, images: PromptImage[]) {
   const call = calls.get(callId);
   if (!call) throw new Error('The call has ended');
-  call.photos(images);
+  return call.photos(images);
 }
 
 function ago(at: number) {

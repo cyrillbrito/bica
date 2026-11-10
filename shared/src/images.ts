@@ -18,13 +18,17 @@ export const imageMarkers = /\[Image #(\d+)\]/g;
 /**
  * Follows each saved image in a prompt, so the agent can hand the file to a
  * script; the model sees pixels, its tools need a path. Read back into the
- * image's `file`, so the transcript doesn't show it as text.
+ * image's `file`, so the transcript doesn't show it as text. It says the
+ * model has the pixels already, so an agent doesn't read the file just to
+ * look, paying for the image twice.
  */
 export function fileNote(file: string) {
-  return `\n[image file: ${file}]\n`;
+  return `\n[The image above as a file, for tools: ${file}]\n`;
 }
 
-const FILE_NOTE = /^\n\[image file: (.+)\]\n$/;
+// Prompts sent before the wording changed say `[image file: …]`.
+const FILE_NOTE =
+  /^\n\[(?:image file|The image above as a file, for tools): (.+)\]\n$/;
 
 /**
  * A prompt's content blocks, each image right after its marker, so the model

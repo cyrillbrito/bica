@@ -97,7 +97,8 @@ export type CallState = {
   // The mic gives pure silence, not even room noise: the browser or the
   // system isn't passing it through.
   micSilent?: boolean;
-  // A short note on photos being added, shown for a moment.
+  // On photos being added: shown until they reach the agent, then for a
+  // moment.
   photoNote?: { text: string; failed?: boolean };
 };
 
@@ -293,6 +294,7 @@ export async function startCall(session: string | Promise<string>) {
     level: (who) => Math.min(1, rms(who) * 6),
   };
   current = self;
+  photosOut = 0;
   const end = (error?: string) => {
     if (current !== self) return;
     current = undefined;
@@ -434,19 +436,22 @@ export async function startCall(session: string | Promise<string>) {
 
 /**
  * Adds photos to the call, such as one just taken. The voice can't see them,
- * so the server holds them for the next handoff.
+ * so the server holds them for the next handoff, or sends them alone after a
+ * few quiet seconds. The note stays until they reach the agent, so a photo
+ * never looks handled while it still waits.
  */
 export async function addPhotos(files: File[]) {
   const callId = current?.callId;
   if (!callId || !files.length) return;
   clearTimeout(noteTimer);
-  update({ photoNote: { text: 'Adding the photo…' } });
+  photosOut += files.length;
+  update({ photoNote: { text: sending() } });
   let note: CallState['photoNote'];
   try {
     const images = await Promise.all(files.map(toPromptImage));
     await request('voice.photos', { callId, images });
     note = {
-      text: `${files.length === 1 ? 'Photo' : 'Photos'} added to your next request`,
+      text: `${files.length === 1 ? 'Photo' : 'Photos'} sent to the agent`,
     };
   } catch (error) {
     current?.log('photos failed', {
@@ -458,11 +463,21 @@ export async function addPhotos(files: File[]) {
       failed: true,
     };
   }
+  // A call that ended has its photos sent by the server.
   if (current?.callId !== callId) return;
+  photosOut -= files.length;
+  // Another add still waits: its note stays.
+  if (photosOut && !note.failed) note = { text: sending() };
   update({ photoNote: note });
-  noteTimer = setTimeout(() => update({ photoNote: undefined }), 4000);
+  if (!photosOut)
+    noteTimer = setTimeout(() => update({ photoNote: undefined }), 4000);
 }
 let noteTimer: ReturnType<typeof setTimeout> | undefined;
+// Photos added to this call that haven't reached the agent yet.
+let photosOut = 0;
+function sending() {
+  return `Sending ${photosOut === 1 ? 'the photo' : `${photosOut} photos`} to the agent…`;
+}
 
 /** Hangs up, or dismisses a failed call. */
 export function endCall() {

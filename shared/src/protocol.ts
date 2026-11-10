@@ -535,7 +535,8 @@ export interface Calls {
     result: { sdp: string; callId: string };
   };
   'voice.stop': { args: { callId: string }; result: null };
-  // Photos added during a call; they go with its next handoff.
+  // Photos added during a call; they go with its next handoff, or alone after
+  // a few quiet seconds. Answers once they have gone to the agent.
   'voice.photos': {
     args: { callId: string; images: PromptImage[] };
     result: null;

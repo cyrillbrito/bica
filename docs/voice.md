@@ -20,7 +20,7 @@ GPT-Live is only the voice. It listens, talks, can be interrupted, and decides w
 - A result that is ready while you talk waits until you finish.
 - The voice knows the recent conversation, so "continue" makes sense, and the project's file names, so it passes names like "CommitBox" on spelled right.
 - "How's it going" gets the agent's latest turn and how long ago it was, and "stop" stops the run.
-- The photo button in the call panel adds photos, and on a phone it can open the camera. The voice can't see them, so they wait on the server and go with the next handoff: take a picture, then ask "what's wrong with this?". Photos still waiting when the call ends are dropped.
+- The photo button in the call panel adds photos, and on a phone it can open the camera. The voice can't see them, so they wait on the server and go with the next handoff: take a picture, then ask "what's wrong with this?". If you say nothing for 5 seconds, they go to the agent on their own, and its reply comes back as an update. Photos still waiting when the call ends go too, with what was said since the last handoff. The call panel says "Sending the photo to the agent…" until the photo has gone, as `pi-live-codex` keeps its attached badge, so a photo never looks handled while it waits.
 
 Voice settings, in the session's ⋯ menu in the top bar, set a session's speed and instructions such as "talk with me in simple French".
 

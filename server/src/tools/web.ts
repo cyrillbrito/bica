@@ -150,7 +150,7 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
   const webFetch = defineTool({
     name: 'web_fetch',
     description:
-      'Read public web pages (articles, docs, PDFs) as clean text. Pass `query` to get only the passages relevant to it instead of the whole page. Cannot reach localhost or private networks; use bash (curl) for those.',
+      'Read public web pages (articles, docs, PDFs) as clean text. A YouTube video link returns its transcript, sometimes translated to English. Pass `query` to get only the passages relevant to it instead of the whole page. Cannot reach localhost or private networks; use bash (curl) for those.',
     parameters: Type.Object({
       urls: Type.Array(Type.String(), {
         minItems: 1,
