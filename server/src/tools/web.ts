@@ -1,4 +1,12 @@
-import { Type } from '@earendil-works/pi-ai';
+import {
+  arr,
+  bool,
+  lit,
+  obj,
+  opt,
+  str,
+  union,
+} from '@earendil-works/pi-schema';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
 
 // Exa does both jobs: search, and fetching a page as clean text.
@@ -73,29 +81,26 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
     name: 'web_search',
     description:
       'Search the web. Returns the top results with title, URL, date and the most relevant passages. Use web_fetch to read a result in full.',
-    parameters: Type.Object({
-      queries: Type.Array(Type.String(), {
-        minItems: 1,
-        description: 'What to search for, in natural language',
-      }),
-      recency: Type.Optional(
-        Type.Union(
-          [
-            Type.Literal('day'),
-            Type.Literal('week'),
-            Type.Literal('month'),
-            Type.Literal('year'),
-          ],
-          { description: 'Only results published within this period' },
-        ),
-      ),
-      domains: Type.Optional(
-        Type.Array(Type.String(), {
-          description:
-            'Limit to these domains; prefix with - to exclude one (e.g. "-reddit.com")',
+    parameters: obj(
+      {
+        queries: arr(str(), {
+          minItems: 1,
+          description: 'What to search for, in natural language',
         }),
-      ),
-    }),
+        recency: opt(
+          union([lit('day'), lit('week'), lit('month'), lit('year')], {
+            description: 'Only results published within this period',
+          }),
+        ),
+        domains: opt(
+          arr(str(), {
+            description:
+              'Limit to these domains; prefix with - to exclude one (e.g. "-reddit.com")',
+          }),
+        ),
+      },
+      { open: true },
+    ),
     replay: 'safe',
     async execute({ queries, recency, domains }, _api, context) {
       const include = domains?.filter((d) => !d.startsWith('-'));
@@ -151,22 +156,25 @@ export function createWebTools(apiKey: () => Promise<string | undefined>) {
     name: 'web_fetch',
     description:
       'Read public web pages (articles, docs, PDFs) as clean text. A YouTube video link returns its transcript, sometimes translated to English. Pass `query` to get only the passages relevant to it instead of the whole page. Cannot reach localhost or private networks; use bash (curl) for those.',
-    parameters: Type.Object({
-      urls: Type.Array(Type.String(), {
-        minItems: 1,
-        description: 'The page URLs',
-      }),
-      query: Type.Optional(
-        Type.String({
-          description: 'Return only the passages relevant to this question',
+    parameters: obj(
+      {
+        urls: arr(str(), {
+          minItems: 1,
+          description: 'The page URLs',
         }),
-      ),
-      fresh: Type.Optional(
-        Type.Boolean({
-          description: 'Skip the cache and fetch the live page (slower)',
-        }),
-      ),
-    }),
+        query: opt(
+          str({
+            description: 'Return only the passages relevant to this question',
+          }),
+        ),
+        fresh: opt(
+          bool({
+            description: 'Skip the cache and fetch the live page (slower)',
+          }),
+        ),
+      },
+      { open: true },
+    ),
     replay: 'safe',
     async execute({ urls, query, fresh }, _api, context) {
       const data = await exa(

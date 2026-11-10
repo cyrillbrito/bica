@@ -61,14 +61,14 @@ Each session in the sidebar shows its status:
 
 - Running: the agent is working.
 - Retrying: the provider failed, and Pi Durable will try again.
-- Failed: the last run ended in an error, or its work is stuck.
+- Failed: the last run ended in an error or without an answer, or its work is stuck.
 - Waiting for you: the agent asked a question.
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 
 The right end of a row shows a live clock while it runs, in one unit like `3m` (hover for the exact time), a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
 
-Work is stuck when Pi Durable won't run it. Work that was cut off by crashes too many times in a row, such as a tool that runs Bica out of memory, is paused instead of crashing Bica again. Work whose code is gone from Bica, such as a removed extension's tool, can't run at all. A strip above the composer says which, with Retry for paused work. Stop ends either.
+A run that ends without an answer says why at the end of the transcript (`pi.live.runFailure`), such as a step that crashed Bica too often in a row, or a model that's gone. A new prompt runs again. Work is stuck when its code is gone from Bica, such as a removed extension's tool: Pi Durable can't run it, so a strip above the composer says so, and Stop ends it.
 
 Read state lives on the server, so opening a session on the phone marks it read on the laptop too. A chime plays when a session stops, different for done, asking, and failed. The installed app's icon shows a badge with the sessions that need you (`client/src/sessions/alerts.ts`).
 

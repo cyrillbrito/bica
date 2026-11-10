@@ -16,6 +16,7 @@ import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
 import { SentEntry, type Sent } from '@bica/shared/transcript';
 import { lastSender, named, readSession } from './read';
+import { readActive } from './active-view';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
 
@@ -276,9 +277,10 @@ export async function compact(id: string, instructions?: string) {
  */
 export async function pruneContext(id: string) {
   const conversation = await getConversation(id);
-  const watch = await conversation.watch(context);
-  const usage = contextUsage(watch.value, await getCatalog());
-  void watch.stop();
+  const usage = contextUsage(
+    await readActive(conversation),
+    await getCatalog(),
+  );
   const blocked = pruneBlocked(usage);
   if (blocked) throw new Error(blocked);
   const view = await conversation.context(context);

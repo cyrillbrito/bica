@@ -22,7 +22,7 @@ import {
   agentIdOf,
   parentOf,
 } from './session-doc';
-import { stuckOf, watchStuck } from './stuck';
+import { isStuck, watchStuck } from './stuck';
 
 export { SessionDoc, agentIdOf, parentOf };
 
@@ -48,26 +48,29 @@ export function load() {
   return (loaded ??= (async () => {
     const harness = await getHarness();
     let scheduled: ReturnType<typeof setTimeout> | undefined;
-    harness.subscribeCommits(({ changes }) => {
-      for (const change of changes) {
-        const id = touched(change);
-        if (id !== undefined) dirty.add(id);
-        // Automatic ones too. The prompt cache starts over anyway, so the next
-        // prompt takes a fresh memory index and project list (prompts.ts).
-        if (
-          change.type === 'entry' &&
-          CompactionEntry.is(change.value) &&
-          !subagents.has(change.value.conversationId)
-        )
-          void editSession(change.value.conversationId, (meta) => {
-            delete meta.memory;
-            delete meta.projects;
-          }).catch((error) => console.error('[sessions]', error));
-      }
-      scheduled ??= setTimeout(() => {
-        scheduled = undefined;
-        void sessions.refresh();
-      }, 250);
+    harness.observeCommits({
+      advance: ({ changes }) => {
+        for (const change of changes) {
+          const id = touched(change);
+          if (id !== undefined) dirty.add(id);
+          // Automatic ones too. The prompt cache starts over anyway, so the next
+          // prompt takes a fresh memory index and project list (prompts.ts).
+          if (
+            change.type === 'entry' &&
+            CompactionEntry.is(change.value) &&
+            !subagents.has(change.value.conversationId)
+          )
+            void editSession(change.value.conversationId, (meta) => {
+              delete meta.memory;
+              delete meta.projects;
+            }).catch((error) => console.error('[sessions]', error));
+        }
+        scheduled ??= setTimeout(() => {
+          scheduled = undefined;
+          void sessions.refresh();
+        }, 250);
+      },
+      end: (end) => console.error('[sessions] commits ended', end),
     });
     await watchStuck(harness, (ids) => {
       for (const id of ids) dirty.add(id);
@@ -133,7 +136,7 @@ export async function summarize(
   ]);
   const createdAt = meta?.createdAt ?? 0;
   let status = statusOf(live, newest);
-  const stuck = stuckOf(id);
+  const stuck = isStuck(id);
   // Its run would look busy for good.
   if (stuck && isBusy(status)) status = 'error';
   if (

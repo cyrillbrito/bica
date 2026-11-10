@@ -1,6 +1,5 @@
 import { isAbsolute, relative, resolve } from 'node:path';
 import type { JsonValue } from '@earendil-works/chord';
-import type { TSchema } from '@earendil-works/pi-ai';
 import { defineExtension } from '@earendil-works/pi-durable';
 import type { ToolRegistration } from '@earendil-works/pi-durable';
 import {
@@ -18,7 +17,7 @@ function ownsPath(cwd: string, path: string) {
 }
 
 /** The hub writes only its own memory files (docs/hub.md). */
-function ownFolder<P extends TSchema, D extends JsonValue>(
+function ownFolder<P extends object, D extends JsonValue>(
   tool: ToolRegistration<P, D>,
 ): ToolRegistration<P, D> {
   return {

@@ -130,7 +130,7 @@ function session(
     agent: 'coding',
     voice: null,
     tonight: null,
-    stuck: null,
+    stuck: false,
     // Varied, so branch totals on the hub board differ.
     cost: ((n * 37) % 290) / 100,
     ...extra,
@@ -516,7 +516,7 @@ function worst(): Dataset {
       session('nw', nw, '', 'waiting', 3 * MIN, { id: 'worst-ask' }),
       session('nw', nw, long200, 'error', 4 * MIN, {
         id: 'worst-stuck',
-        stuck: 'crashed',
+        stuck: true,
       }),
       session(
         'nw',

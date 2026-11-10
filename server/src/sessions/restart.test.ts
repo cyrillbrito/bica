@@ -103,34 +103,47 @@ test('a parent hears of a session it started that finishes after a restart, with
   }
 }, 20_000);
 
-test('a run that keeps crashing Bica pauses, and Retry runs it again', async () => {
+test('a run that keeps crashing Bica fails and says why, and the next prompt runs', async () => {
   const root = await scratch();
   const first = await launch(root, 'hang');
   const { id } = await startWork(first.port, root);
   await first.working();
   await first.crash();
-  // Each restart resumes the run, which crashes Bica again: five crashes in
-  // all, Pi Durable's limit.
-  for (let i = 0; i < 4; i++) {
+  // Each restart tries the cut-off request again after a pause, which
+  // crashes Bica again, until Pi Durable's retries run out.
+  for (;;) {
     const again = await launch(root, 'hang');
-    await again.working();
+    const tab = await connect(again.port);
+    const failed = tab
+      .watch('sessions', {})
+      .until((l) => l.some((s) => s.id === id && s.status === 'error'), 30_000)
+      .then(
+        () => true,
+        // The crash below cuts this watch off.
+        () => false,
+      );
+    if (await Promise.race([again.working().then(() => false), failed])) {
+      await again.stop();
+      break;
+    }
     await again.crash();
   }
 
-  const last = await launch(root, 'answer', 'Finished after the retry');
+  const last = await launch(root, 'answer', 'Finished after a new prompt');
   try {
     const tab = await connect(last.port);
-    await tab
-      .watch('sessions', {})
-      .until(
-        (l) => l.some((s) => s.id === id && s.stuck === 'crashed'),
-        10_000,
-      );
-    await tab.request('session.retry', { id });
-    await tab
-      .watch('conversation', { id })
-      .until((c) => shows(c, 'Finished after the retry'), 10_000);
+    const chat = tab.watch('conversation', { id });
+    await chat.until(
+      (c) => c?.docs['pi.live']?.runFailure?.reason === 'interrupted',
+      10_000,
+    );
+    await tab.request('session.submit', {
+      id,
+      prompt: 'Try again',
+      requestId: crypto.randomUUID(),
+    });
+    await chat.until((c) => shows(c, 'Finished after a new prompt'), 10_000);
   } finally {
     await last.stop();
   }
-}, 60_000);
+}, 90_000);

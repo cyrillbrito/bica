@@ -176,10 +176,6 @@ export function stopSession(id: string) {
   return request('session.stop', { id });
 }
 
-export function retrySession(id: string) {
-  return request('session.retry', { id });
-}
-
 export function setAgent(id: string, agent: PickableAgent) {
   return request('session.agent', { id, agent });
 }

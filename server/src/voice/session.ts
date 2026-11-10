@@ -65,21 +65,28 @@ export async function voiceSession(sessionId: string) {
     onStep(listener: (text: string, final: EntryId | undefined) => void) {
       // An entry can be committed again, e.g. when its thinking folds.
       const seen = new Set<EntryId>();
-      return harness.subscribeCommits(({ changes }) => {
-        for (const change of changes) {
-          if (change.type !== 'entry' || change.value.conversationId !== id)
-            continue;
-          const message = change.value.model?.at(-1);
-          if (message?.role !== 'assistant' || seen.has(change.value.id))
-            continue;
-          const { stopReason } = message;
-          if (stopReason !== 'toolUse' && stopReason !== 'stop') continue;
-          seen.add(change.value.id);
-          const text = entryText(change.value);
-          if (text)
-            listener(text, stopReason === 'stop' ? change.value.id : undefined);
-        }
+      const observation = harness.observeCommits({
+        advance: ({ changes }) => {
+          for (const change of changes) {
+            if (change.type !== 'entry' || change.value.conversationId !== id)
+              continue;
+            const message = change.value.model?.at(-1);
+            if (message?.role !== 'assistant' || seen.has(change.value.id))
+              continue;
+            const { stopReason } = message;
+            if (stopReason !== 'toolUse' && stopReason !== 'stop') continue;
+            seen.add(change.value.id);
+            const text = entryText(change.value);
+            if (text)
+              listener(
+                text,
+                stopReason === 'stop' ? change.value.id : undefined,
+              );
+          }
+        },
+        end: () => {},
       });
+      return () => observation.detach();
     },
 
     /**

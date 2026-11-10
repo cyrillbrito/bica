@@ -1,4 +1,4 @@
-import { Type } from '@earendil-works/pi-ai';
+import { arr, bool, obj, opt, str } from '@earendil-works/pi-schema';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
 
 /**
@@ -13,31 +13,32 @@ const ask = defineTool({
   name: ASK,
   description:
     'Ask the user one to four multiple-choice questions and end your turn; the answer comes in a message from them. Use it for decisions that are genuinely theirs (what to build, which approach, scope), not for facts you can look up. Put your recommended option first and end its label with " (Recommended)". A skipped question comes back as "(skipped)": decide it yourself or ask again later.',
-  parameters: Type.Object({
-    questions: Type.Array(
-      Type.Object({
-        question: Type.String({
-          description: 'The full question, ending with a question mark',
-        }),
-        header: Type.String({
-          description: 'A very short label for it, at most 12 characters',
-        }),
-        options: Type.Array(
-          Type.Object({
-            label: Type.String({ description: '1 to 5 words' }),
-            description: Type.Optional(
-              Type.String({ description: 'What choosing it means' }),
-            ),
+  parameters: obj(
+    {
+      questions: arr(
+        obj({
+          question: str({
+            description: 'The full question, ending with a question mark',
           }),
-          { minItems: 2, maxItems: 4 },
-        ),
-        multiSelect: Type.Optional(
-          Type.Boolean({ description: 'Allow picking several options' }),
-        ),
-      }),
-      { minItems: 1, maxItems: 4 },
-    ),
-  }),
+          header: str({
+            description: 'A very short label for it, at most 12 characters',
+          }),
+          options: arr(
+            obj({
+              label: str({ description: '1 to 5 words' }),
+              description: opt(str({ description: 'What choosing it means' })),
+            }),
+            { minItems: 2, maxItems: 4 },
+          ),
+          multiSelect: opt(
+            bool({ description: 'Allow picking several options' }),
+          ),
+        }),
+        { minItems: 1, maxItems: 4 },
+      ),
+    },
+    { open: true },
+  ),
   replay: 'safe',
   callers: ['model'],
   async execute() {

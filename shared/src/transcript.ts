@@ -8,7 +8,11 @@ import {
   calculateContextTokens,
   estimateTextTokens,
 } from '@earendil-works/pi-ai/utils/estimate';
-import type { EntryRecord, LiveState } from '@earendil-works/pi-durable';
+import type {
+  EntryRecord,
+  LiveState,
+  RunFailure,
+} from '@earendil-works/pi-durable';
 
 import { promptOf } from './images';
 import type { ProjectedView } from './projection';
@@ -382,6 +386,8 @@ export function toMessages(
       add(m, `${entry.id}:${i}`, SentEntry.is(entry) ? entry.data : undefined);
     });
   });
+  const failure = !live?.run && failureText(live?.runFailure);
+  if (failure) messages.push({ key: 'failure', kind: 'error', text: failure });
   if (!live?.run) end(view.entries.at(-1)?.id);
   divider();
   const compaction = live?.compactions?.[0];
@@ -389,7 +395,7 @@ export function toMessages(
     messages.push({
       key: 'compacting',
       kind: 'compacting',
-      auto: compaction.reason !== 'manual',
+      auto: compaction.trigger !== 'manual',
       retry: compaction.retry?.error,
     });
   const partial = live?.generation?.message as AssistantMessage | undefined;
@@ -450,7 +456,36 @@ function questionsOf(args: Record<string, unknown>): Question[] {
  * nothing came after. Any prompt, an answer or not, moves on.
  */
 // The server reads Pi's live doc, the browser its projection: both keep these.
-type Run = Pick<LiveState, 'run' | 'generation'>;
+type Run = Pick<LiveState, 'run' | 'generation' | 'runFailure'>;
+
+/**
+ * Why the last run ended without an answer, when nothing in the transcript
+ * says so already: a model error leaves its own error, and a stop or a reset
+ * is the user's.
+ */
+function failureText(failure: RunFailure | undefined) {
+  if (!failure) return undefined;
+  const detail = failure.detail ? `: ${failure.detail}` : '';
+  switch (failure.reason) {
+    case 'model_error':
+    case 'aborted':
+    case 'reset':
+    case 'nothing_to_answer':
+      return undefined;
+    case 'interrupted':
+      return 'Bica stopped while the model was answering, too often in a row';
+    case 'restart_limit':
+      return 'This step crashed Bica too often in a row';
+    case 'orphaned':
+      return `Its code is gone from Bica${detail}`;
+    case 'no_model':
+      return `No model to run it${detail}`;
+    case 'turn_limit':
+      return `Stopped at the turn limit${detail}`;
+    case 'faulted':
+      return `The run failed${detail}`;
+  }
+}
 
 function pendingAsk(live: Run | undefined, newest: EntryRecord | undefined) {
   if (live?.run) return undefined;
@@ -472,6 +507,7 @@ export function statusOf(
   newest: EntryRecord | undefined,
 ): SessionStatus {
   if (live?.run) return live.generation?.retry ? 'retrying' : 'running';
+  if (failureText(live?.runFailure)) return 'error';
   if (pendingAsk(live, newest)) return 'waiting';
   const last = newest?.model?.at(-1);
   return last?.role === 'assistant' && last.stopReason === 'error'

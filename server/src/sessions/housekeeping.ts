@@ -13,6 +13,7 @@ import { isLongLived } from '@bica/shared/agents';
 import { SentEntry } from '@bica/shared/transcript';
 import { context, getHarness } from '../harness';
 import { getCatalog } from '../models/models';
+import { readActive } from './active-view';
 import { markSeen } from './meta';
 import { pruneContext, compact, submit } from './prompts';
 import { listSessions } from './store';
@@ -57,9 +58,7 @@ async function housekeep(id: string, unread: boolean) {
     await getHarness()
   ).conversation(Number(id) as ConversationId, context);
   if (!conversation) return;
-  const watch = await conversation.watch(context);
-  const view = watch.value;
-  void watch.stop();
+  const view = await readActive(conversation);
   const usage = contextUsage(view, await getCatalog());
   // No cache lifetime known (not Anthropic): no clock to plan around.
   if (usage.running || usage.compacting || !usage.cache) return;

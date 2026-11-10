@@ -1,4 +1,4 @@
-import { Type } from '@earendil-works/pi-ai';
+import { bool, num, obj, opt, str } from '@earendil-works/pi-schema';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
 import type { TerminalInfo } from '@bica/shared/protocol';
 import { sessionWorkspace } from '../sessions/store';
@@ -57,8 +57,8 @@ function report(id: string, lines?: number) {
   };
 }
 
-const USER_ASKED = Type.Optional(
-  Type.Boolean({
+const USER_ASKED = opt(
+  bool({
     description:
       'true: the user told you to, for a terminal you started that is theirs now. Only then',
   }),
@@ -99,8 +99,8 @@ async function notifyWhenDone(id: string, session: string) {
 }
 
 function notify(fallback: string) {
-  return Type.Optional(
-    Type.Boolean({
+  return opt(
+    bool({
       description: `true: when the command finishes (or someone stops it), you get a note with its exit code and last lines, even if you are idle by then. ${fallback}`,
     }),
   );
@@ -110,23 +110,24 @@ const terminalStart = defineTool({
   name: 'terminal_start',
   description:
     'Open a shell in a terminal in your folder, optionally running a command first: a dev server, watcher, game server, REPL. The user sees it in the sidebar and can type into it. Use this instead of `&`, nohup, or a long bash call for anything that keeps running. Starting a name again reuses that terminal: whatever it runs stops, and the new command starts in its place. So to restart a dev server, start it again with the same name. Check `list` first: one may already run. Returns once output settles (or after `wait` seconds) with the latest output.',
-  parameters: Type.Object({
-    command: Type.Optional(
-      Type.String({ description: 'A shell command to run first' }),
-    ),
-    name: Type.Optional(
-      Type.String({
-        description:
-          'A short name for the sidebar, e.g. "dev server". Default: the command',
-      }),
-    ),
-    notify: notify('Default: true when you give a command.'),
-    wait: Type.Optional(
-      Type.Number({
-        description: `Most seconds to wait for output to settle (default 10, max ${MAX_WAIT})`,
-      }),
-    ),
-  }),
+  parameters: obj(
+    {
+      command: opt(str({ description: 'A shell command to run first' })),
+      name: opt(
+        str({
+          description:
+            'A short name for the sidebar, e.g. "dev server". Default: the command',
+        }),
+      ),
+      notify: notify('Default: true when you give a command.'),
+      wait: opt(
+        num({
+          description: `Most seconds to wait for output to settle (default 10, max ${MAX_WAIT})`,
+        }),
+      ),
+    },
+    { open: true },
+  ),
   execute: async ({ command, name, notify, wait }, api) => {
     const session = String(api.conversationId);
     const workspace = await sessionWorkspace(api.conversationId);
@@ -156,23 +157,24 @@ const terminalRead = defineTool({
   name: 'terminal_read',
   description:
     "Read a terminal's latest output and state: running a command, at the prompt, or exited. `list` shows all terminals. To wait for a long command, use `wait` here, not sleep in bash. Pick a wait about as long as you expect it to take, and read the output between waits, so a stuck command doesn't hold you for long.",
-  parameters: Type.Object({
-    id: Type.String({ description: 'The terminal id' }),
-    lines: Type.Optional(
-      Type.Number({ description: 'How many last lines (default 100)' }),
-    ),
-    wait: Type.Optional(
-      Type.Number({
-        description: `Most seconds to wait first (default 0, max ${MAX_READ_WAIT}). Ends early when the command finishes, \`until\` shows up, or a message arrives for you`,
-      }),
-    ),
-    until: Type.Optional(
-      Type.String({
-        description:
-          'Text to wait for in new output, e.g. a server\'s "ready" line',
-      }),
-    ),
-  }),
+  parameters: obj(
+    {
+      id: str({ description: 'The terminal id' }),
+      lines: opt(num({ description: 'How many last lines (default 100)' })),
+      wait: opt(
+        num({
+          description: `Most seconds to wait first (default 0, max ${MAX_READ_WAIT}). Ends early when the command finishes, \`until\` shows up, or a message arrives for you`,
+        }),
+      ),
+      until: opt(
+        str({
+          description:
+            'Text to wait for in new output, e.g. a server\'s "ready" line',
+        }),
+      ),
+    },
+    { open: true },
+  ),
   execute: async ({ id, lines, wait, until }, api, context) => {
     if (wait) {
       const steered = new AbortController();
@@ -196,25 +198,28 @@ const terminalSend = defineTool({
   name: 'terminal_send',
   description:
     'Type into a terminal: a command, input for a REPL or server console, or keys. Include "\\n" to press Enter. With `interrupt`, Ctrl-C stops what runs first, e.g. to run something else where a dev server ran. Only use terminals you started or the user named. Returns the output once it settles.',
-  parameters: Type.Object({
-    id: Type.String({ description: 'The terminal id' }),
-    input: Type.String({
-      description: 'The text to type; may be empty with `interrupt`',
-    }),
-    interrupt: Type.Optional(
-      Type.Boolean({
-        description:
-          'true: press Ctrl-C first and wait for the prompt, with no note about the stopped command',
+  parameters: obj(
+    {
+      id: str({ description: 'The terminal id' }),
+      input: str({
+        description: 'The text to type; may be empty with `interrupt`',
       }),
-    ),
-    notify: notify('Default: false.'),
-    wait: Type.Optional(
-      Type.Number({
-        description: `Most seconds to wait for output to settle (default 3, max ${MAX_WAIT})`,
-      }),
-    ),
-    user_asked: USER_ASKED,
-  }),
+      interrupt: opt(
+        bool({
+          description:
+            'true: press Ctrl-C first and wait for the prompt, with no note about the stopped command',
+        }),
+      ),
+      notify: notify('Default: false.'),
+      wait: opt(
+        num({
+          description: `Most seconds to wait for output to settle (default 3, max ${MAX_WAIT})`,
+        }),
+      ),
+      user_asked: USER_ASKED,
+    },
+    { open: true },
+  ),
   execute: async ({ id, input, interrupt, notify, wait, user_asked }, api) => {
     const t = terminalInfo(id);
     checkInCharge(t, String(api.conversationId), user_asked);
@@ -233,10 +238,13 @@ const terminalSend = defineTool({
 const terminalStop = defineTool({
   name: 'terminal_stop',
   description: `Close a terminal when you are done with it, and it leaves the sidebar. Everything it started gets SIGTERM to shut down cleanly, the shell gets SIGHUP once they are gone, and whatever still runs after ${STOP_GRACE_MS / 1000} seconds gets SIGKILL. Returns its last lines. To restart what runs in it, use terminal_start with its name instead; to stop only the command, terminal_send with \`interrupt\`.`,
-  parameters: Type.Object({
-    id: Type.String({ description: 'The terminal id' }),
-    user_asked: USER_ASKED,
-  }),
+  parameters: obj(
+    {
+      id: str({ description: 'The terminal id' }),
+      user_asked: USER_ASKED,
+    },
+    { open: true },
+  ),
   execute: async ({ id, user_asked }, api) => {
     const t = terminalInfo(id);
     checkInCharge(t, String(api.conversationId), user_asked);

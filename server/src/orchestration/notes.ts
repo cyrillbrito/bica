@@ -29,10 +29,16 @@ let watching: Promise<void> | undefined;
 export function watchRuns() {
   return (watching ??= (async () => {
     const harness = await getHarness();
-    harness.subscribeCommits(({ changes }) => {
-      for (const change of changes)
-        if (change.type === 'document' && change.record.kind === 'pi.live')
-          runChanged(change.conversationId, !!change.value?.run);
+    harness.observeCommits({
+      advance: ({ changes }) => {
+        for (const change of changes)
+          if (change.type === 'document' && change.record.kind === 'pi.live')
+            runChanged(
+              change.conversationId,
+              change.kind === 'change' && !!change.value.run,
+            );
+      },
+      end: (end) => console.error('[notes] commits ended', end),
     });
     // Runs a restart left unfinished resume; their end must still be heard.
     await Promise.all(

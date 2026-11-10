@@ -29,11 +29,11 @@ A session is one conversation with an agent, working in one folder. When you sen
 
 The run happens on the server, so closing the tab, putting the phone away, or losing signal doesn't stop it. Bica's agent engine, Pi Durable, saves every step before you see it. If Bica stops in the middle of a run, because you quit it, it crashed, or you updated it, the run continues from the last saved step the next time `bica` starts:
 
-- A reply the model was writing is asked for again.
+- A reply the model was writing is asked for again, after a short pause.
 - A command, edit, or file write that was cut off doesn't run twice. The agent is told it was interrupted, sees the output so far, and decides what to do.
 - Queued prompts stay queued, and a question the agent asked still waits for your answer.
 
-Shells are the exception: quitting Bica ends its [terminals](/docs/basics/terminals/). Work that crashes Bica over and over is paused after a few tries: its session shows Failed, with a Retry button above the composer.
+Shells are the exception: quitting Bica ends its [terminals](/docs/basics/terminals/). Work that crashes Bica over and over stops after a few tries: its session shows Failed, the transcript says why, and a new prompt tries again.
 
 ## Every browser sees the same sessions
 

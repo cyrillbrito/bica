@@ -356,10 +356,10 @@ function Labels() {
         <Strip
           tone="danger"
           icon={<AlertIcon />}
-          label="Paused after crashing Bica again and again"
+          label="Stuck: its code is gone from Bica"
           action={
             <Button size="sm" variant="outline">
-              Retry
+              Stop
             </Button>
           }
         />

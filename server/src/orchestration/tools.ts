@@ -1,4 +1,12 @@
-import { Type } from '@earendil-works/pi-ai';
+import {
+  bool,
+  lit,
+  num,
+  obj,
+  opt,
+  str,
+  union,
+} from '@earendil-works/pi-schema';
 import { defineExtension, defineTool } from '@earendil-works/pi-durable';
 import type {
   ConversationId,
@@ -43,8 +51,8 @@ function other(id: string, self: ConversationId) {
   return id;
 }
 
-const USER_ASKED = Type.Optional(
-  Type.Boolean({
+const USER_ASKED = opt(
+  bool({
     description:
       'true: the user told you to, for a session you started that is theirs now. Only then',
   }),
@@ -81,47 +89,47 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     description: hub
       ? "Start a session for one thread of work, when the user asked for it: a normal session in the user's session list, which they can watch and steer too. Pass `folder`, a project folder or worktree from your projects list; with `worktree`, it gets a new worktree of that folder's project. It runs on the user's default model. It's your child session: you get a note whenever it finishes a turn, until the user detaches it. With `detached`, it's the user's from the start and you hear nothing of it. Its prompt must stand alone, like a ticket: it sees nothing of this conversation. Sessions in one folder share its files, so code work gets its own worktree."
       : "Start a new, separate session in the user's session list: same model as you, in your folder unless you pass `folder` or `worktree`. Use it when the user asks to split work across sessions, e.g. one session per bug. The user watches and steers it too. It's your child session: you get a note whenever it finishes a turn, until the user detaches it, and can talk to it with session_send. With `detached`, it's the user's from the start and you hear nothing of it. Its prompt must stand alone: it sees nothing of this conversation. Sessions in one folder share its files, so give each its own part of the code, or its own worktree.",
-    parameters: Type.Object({
-      prompt: Type.String({
-        description:
-          'The full task for the new session, with every detail it needs: files, findings, what done looks like',
-      }),
-      folder: Type.Optional(
-        Type.String({
-          description: hub
-            ? 'Absolute path of a project folder or git worktree to start in. Required'
-            : 'Absolute path of an existing project folder or git worktree to start in, e.g. one you just made with `git worktree add`; absent: your folder',
-        }),
-      ),
-      worktree: Type.Optional(
-        Type.Boolean({
-          description: hub
-            ? "true: start in a new git worktree of `folder`'s project, on a new branch from the default branch, named after the session"
-            : 'true: start in a new git worktree of your project, on a new branch from the default branch, named after the session. Ignores `folder`',
-        }),
-      ),
-      detached: Type.Optional(
-        Type.Boolean({
+    parameters: obj(
+      {
+        prompt: str({
           description:
-            "true: hand it off instead of leading it: no parent, so it's the user's and you hear nothing of its turns. Default: your child session",
+            'The full task for the new session, with every detail it needs: files, findings, what done looks like',
         }),
-      ),
-      tonight: Type.Optional(
-        Type.Boolean({
-          description:
-            "true: hold it for tonight's night run, when the user asks for work to run overnight. It starts at the night start time from Settings, one at a time, with no `ask`, and ends with a morning report. Write the prompt so it can finish alone: the goal, the scope, and the command that proves it done",
-        }),
-      ),
-      effort: Type.Optional(
-        Type.Union(
-          [Type.Literal('low'), Type.Literal('medium'), Type.Literal('high')],
-          {
+        folder: opt(
+          str({
+            description: hub
+              ? 'Absolute path of a project folder or git worktree to start in. Required'
+              : 'Absolute path of an existing project folder or git worktree to start in, e.g. one you just made with `git worktree add`; absent: your folder',
+          }),
+        ),
+        worktree: opt(
+          bool({
+            description: hub
+              ? "true: start in a new git worktree of `folder`'s project, on a new branch from the default branch, named after the session"
+              : 'true: start in a new git worktree of your project, on a new branch from the default branch, named after the session. Ignores `folder`',
+          }),
+        ),
+        detached: opt(
+          bool({
+            description:
+              "true: hand it off instead of leading it: no parent, so it's the user's and you hear nothing of its turns. Default: your child session",
+          }),
+        ),
+        tonight: opt(
+          bool({
+            description:
+              "true: hold it for tonight's night run, when the user asks for work to run overnight. It starts at the night start time from Settings, one at a time, with no `ask`, and ends with a morning report. Write the prompt so it can finish alone: the goal, the scope, and the command that proves it done",
+          }),
+        ),
+        effort: opt(
+          union([lit('low'), lit('medium'), lit('high')], {
             description:
               'How hard it thinks, only when the user asked for an effort. Default: yours',
-          },
+          }),
         ),
-      ),
-    }),
+      },
+      { open: true },
+    ),
     execute: async (
       { prompt, folder, worktree, detached, tonight, effort },
       api,
@@ -152,15 +160,18 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     name: 'session_read',
     description:
       "Read another session's title, folder, status (running, idle, waiting for an answer, error), the questions it waits on, and its last messages. `list` shows all sessions.",
-    parameters: Type.Object({
-      id: Type.String({ description: 'The session id' }),
-      messages: Type.Optional(
-        Type.Number({
-          description:
-            'How many recent messages to read, prompts and its replies, oldest first, without tool calls (default 1: its last reply)',
-        }),
-      ),
-    }),
+    parameters: obj(
+      {
+        id: str({ description: 'The session id' }),
+        messages: opt(
+          num({
+            description:
+              'How many recent messages to read, prompts and its replies, oldest first, without tool calls (default 1: its last reply)',
+          }),
+        ),
+      },
+      { open: true },
+    ),
     execute: async ({ id, messages }, api) => {
       const s = await readSession(other(id, api.conversationId));
       const count = Math.min(Math.max(Math.round(messages ?? 1), 1), 50);
@@ -225,16 +236,19 @@ function sessionTools(hub: boolean): ToolRegistration[] {
   const sessionArchive = defineTool({
     name: 'session_archive',
     description: `Archive a session once its work is done: it leaves the session list (the user can bring it back), and the terminals it started close. With \`remove_worktree\`, its worktree folder and local branch go too, unless another open session works there, or it has uncommitted files or commits no other branch has.${hub ? ' Only when the user asked for it.' : " Only archive sessions you started or the user named, or this one when the user told you to. A running session, this one included, goes once its turn ends, unless that turn ends with an error or a question. Archive one you started once its result is in your reply and the user wouldn't want to open it themselves: a lookup, a check, one child session of many. Keep it when the user might want to read or continue it: they asked for it, it holds a decision, a long back and forth, unmerged work, or a question for them. Name what you archived in your reply, so they can bring it back. A session you started that has no parent now is theirs: archive it only if they told you to."}`,
-    parameters: Type.Object({
-      id: Type.String({ description: 'The session id' }),
-      remove_worktree: Type.Optional(
-        Type.Boolean({
-          description:
-            "true: also remove the session's worktree, if it is merged and clean",
-        }),
-      ),
-      user_asked: USER_ASKED,
-    }),
+    parameters: obj(
+      {
+        id: str({ description: 'The session id' }),
+        remove_worktree: opt(
+          bool({
+            description:
+              "true: also remove the session's worktree, if it is merged and clean",
+          }),
+        ),
+        user_asked: USER_ASKED,
+      },
+      { open: true },
+    ),
     execute: async ({ id, remove_worktree, user_asked }, api) => {
       const self = id === String(api.conversationId);
       if (self && !user_asked)
@@ -271,11 +285,14 @@ function sessionTools(hub: boolean): ToolRegistration[] {
   const sessionSend = defineTool({
     name: 'session_send',
     description: `Send a message to another session, signed with your name so it can answer with session_send. It lands at that session's next step, even mid-run; an idle session starts a turn. You hear back only when it answers with session_send, or when it's your child session${hub ? ' or you watch it' : ''}: then you get a note at the end of each turn.${hub ? ' New work, decisions, and steering only when the user asked for it.' : ' Only message your child sessions, your parent, or sessions the user named. To get an answer from another session, ask it to reply with session_send.'}`,
-    parameters: Type.Object({
-      id: Type.String({ description: 'The session id' }),
-      message: Type.String({ description: 'What to tell or ask it' }),
-      user_asked: USER_ASKED,
-    }),
+    parameters: obj(
+      {
+        id: str({ description: 'The session id' }),
+        message: str({ description: 'What to tell or ask it' }),
+        user_asked: USER_ASKED,
+      },
+      { open: true },
+    ),
     execute: async ({ id, message, user_asked }, api) => {
       other(id, api.conversationId);
       const [me, target] = await Promise.all([
@@ -302,10 +319,13 @@ function sessionTools(hub: boolean): ToolRegistration[] {
   const sessionStop = defineTool({
     name: 'session_stop',
     description: `Stop the turn another session is running, and drop its queued messages. The session stays, and a later session_send starts it again.${hub ? ' Only when the user asked for it.' : ' Only stop sessions you started or the user named.'}`,
-    parameters: Type.Object({
-      id: Type.String({ description: 'The session id' }),
-      user_asked: USER_ASKED,
-    }),
+    parameters: obj(
+      {
+        id: str({ description: 'The session id' }),
+        user_asked: USER_ASKED,
+      },
+      { open: true },
+    ),
     execute: async ({ id, user_asked }, api) => {
       other(id, api.conversationId);
       const s = await readSession(id);
@@ -319,10 +339,13 @@ function sessionTools(hub: boolean): ToolRegistration[] {
     name: 'session_watch',
     description:
       "Start or stop watching a session: while you watch it, you get a note at the end of each of its turns, with its reply, as with your child sessions. Watch one when the user wants to hear how its work goes, or you messaged it and need its result; stop once that thread closes, since every note costs you a turn. Archiving ends a watch. Your child sessions report anyway, and any session's questions and errors reach you without a watch.",
-    parameters: Type.Object({
-      id: Type.String({ description: 'The session id' }),
-      watch: Type.Boolean({ description: 'true: start watching; false: stop' }),
-    }),
+    parameters: obj(
+      {
+        id: str({ description: 'The session id' }),
+        watch: bool({ description: 'true: start watching; false: stop' }),
+      },
+      { open: true },
+    ),
     execute: async ({ id, watch: on }, api) => {
       other(id, api.conversationId);
       const s = await readSession(id);
@@ -342,14 +365,17 @@ function sessionTools(hub: boolean): ToolRegistration[] {
   const list = defineTool({
     name: 'list',
     description: `List every project, folder or worktree, open session, and terminal in Bica, as a tree, with each one's status, which one is you, and what you started. With \`archived\`, the archived sessions instead, newest first.${hub ? '' : " Leave others' sessions and terminals alone unless the user names them."}`,
-    parameters: Type.Object({
-      archived: Type.Optional(
-        Type.Boolean({
-          description:
-            'true: list the last 50 archived sessions, newest first, instead of the tree. session_read reads them too',
-        }),
-      ),
-    }),
+    parameters: obj(
+      {
+        archived: opt(
+          bool({
+            description:
+              'true: list the last 50 archived sessions, newest first, instead of the tree. session_read reads them too',
+          }),
+        ),
+      },
+      { open: true },
+    ),
     execute: async ({ archived }, api) => {
       const me = String(api.conversationId);
       const mine = (by: string | null) => (by === me ? ', started by you' : '');

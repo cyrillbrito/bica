@@ -27,7 +27,6 @@ import {
   withdraw,
 } from './sessions/prompts';
 import { createSession, fork } from './sessions/create';
-import { retryStuck } from './sessions/stuck';
 import { detach, unwatch } from './orchestration/notes';
 import { conversationDetail, watchConversation } from './sessions/conversation';
 import { watchSessions } from './sessions/store';
@@ -136,9 +135,6 @@ const calls: Handlers = {
   'session.withdraw': async ({ id, submission }) => withdraw(id, submission),
   'session.push': async ({ id, submission }) => pushSubmission(id, submission),
   'session.stop': async ({ id }) => stop(id),
-  'session.retry': async ({ id }) => {
-    await retryStuck(id);
-  },
   'session.archive': async ({ id, archived }) => archive(id, archived),
   'session.rename': async ({ id, title }) => rename(id, title),
   'session.compact': async ({ id, instructions }) => compact(id, instructions),

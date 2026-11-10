@@ -10,9 +10,9 @@
   "dependencies": {
     "@bica/shared": "workspace:*",
     "@dnd-kit/dom": "^0.5.3",
-    "@earendil-works/chord": "~1.4.0",
-    "@earendil-works/pi-ai": "~1.4.0",
-    "@earendil-works/pi-durable": "~1.4.0",
+    "@earendil-works/chord": "^1.5.0",
+    "@earendil-works/pi-ai": "^1.5.0",
+    "@earendil-works/pi-durable": "^1.5.0",
     "@pierre/diffs": "1.6.4",
     "@pierre/trees": "1.0.0-beta.6",
     "@solidjs/meta": "^1.0.0-next.2",

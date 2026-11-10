@@ -13,6 +13,7 @@ import {
   type ProjectedView,
 } from '@bica/shared/projection';
 import { watchModels } from '../models/models';
+import { activeView, readActive, WHOLE_HISTORY } from './active-view';
 import { saveImage } from './attachments';
 
 /**
@@ -40,8 +41,8 @@ export async function watchConversation(
   let catalog: ModelCatalog | undefined;
   const unwatchModels = await watchModels((c) => (catalog = c));
   const project = projector(() => catalog, saveImage);
-  const watch = await conversation.watch(context);
-  let sent = project(watch.value);
+  const watch = await conversation.watch(context, WHOLE_HISTORY);
+  let sent = project(activeView(watch.value));
   const kept = keptEntries(sent.entries, have);
   sink.snapshot(
     kept ? { ...sent, entries: sent.entries.slice(kept) } : sent,
@@ -49,9 +50,10 @@ export async function watchConversation(
   );
   // The commit's own ops would carry what the projection leaves out, so the
   // browser gets the difference between two projections instead.
-  watch.start(async (value) => {
+  watch.start(async (call) => {
+    if (call.kind !== 'value') return;
     try {
-      const next = project(value);
+      const next = project(activeView(call.value));
       const ops = diffRevisions(
         sent as unknown as JsonValue,
         next as unknown as JsonValue,
@@ -74,12 +76,7 @@ export async function conversationDetail(id: string, key: string) {
     await getHarness()
   ).conversation(Number(id) as ConversationId, context);
   if (!conversation) return null;
-  const watch = await conversation.watch(context);
-  try {
-    return stepDetail(watch.value, key);
-  } finally {
-    void watch.stop();
-  }
+  return stepDetail(await readActive(conversation), key);
 }
 
 // Entries never change once saved, and the active ones run in id order from

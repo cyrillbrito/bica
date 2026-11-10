@@ -492,12 +492,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                             />
                           </Show>
                           <Show when={summary()?.stuck}>
-                            {(stuck) => (
-                              <StuckStrip
-                                id={props.params.id!}
-                                stuck={stuck()}
-                              />
-                            )}
+                            <StuckStrip />
                           </Show>
                           <Show when={summary()?.parent}>
                             <ParentStrip
