@@ -57,6 +57,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - `bun run dev:site`, `bun run build:site`, and `bun run deploy:site` run, build, and deploy the website.
 - `bun run build` and `bun run start` run a built copy, see [docs/deploy.md](docs/deploy.md).
 - `bun run build:bica` compiles the `bica` binary into `dist/bica/bica`, and the `release` workflow publishes it as a draft GitHub release, see the same doc.
+- `bunx skills add <owner/repo> -a codex -y` adds a skill for agents working on this repo. `-a codex` keeps it in `.agents/skills` alone, with no `.claude/` link. The CLI also records it in `skills-lock.json`, so commit both.
 - Ports: 3141 for `bica` and `bun run start`, 3142 for Vite in dev, 3143 for the dev server, 3144 for the website. `BICA_PORT` moves the dev pair.
 
 ## Next
@@ -130,6 +131,8 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 ## Rules
 
 - Write docs, comments, and commit messages as [docs/writing.md](docs/writing.md) describes. Comments are rare and say why, never what.
+- Commit only when the user asks, and only your own files: other sessions share the worktree. Messages follow Conventional Commits, such as `chore: add the improve skill`. Check `git log` and match it, and run `bun run checks` first.
+- Before adding something the repo already has more of, such as a skill, a package, or a config file, look at how the existing ones were added and match them. A tool's defaults are not the repo's conventions: check the diff it leaves for files and changes the others don't have.
 - Use the terms in [docs/GLOSSARY.md](docs/GLOSSARY.md) for names, comments, docs, and UI labels. Stored fields, socket names, and Durable extension names keep older words so stored data still reads; their comments say so. Add a term there when a new concept appears.
 - Read [docs/UI.md](docs/UI.md) before any UI work.
 - Keep this file and `docs/` up to date with every change. Add a doc when a new area appears.
