@@ -37,7 +37,7 @@ It's your normal login shell. When the command exits, the terminal keeps its out
 
 The agent uses terminals for dev servers, builds, and test runs, instead of running them in the background where you can't see them. It can wait for a command to finish or for a line such as a server's ready message, and it hears when a command it started ends, so a crashed dev server doesn't go unnoticed. [The agent's tools](/docs/features/tools/) lists them.
 
-A terminal the agent starts belongs to its session. A strip under its top bar names that session, and Detach there makes the terminal yours: the agent can no longer type into it unless you tell it to. Archiving the session asks which of its terminals to close.
+A terminal the agent starts belongs to its session. A strip under its top bar names that session, and Detach there makes the terminal yours: the agent can no longer type into it unless you tell it to. Archiving the session asks which of its terminals to close when one is still running a command. Terminals with nothing running just close.
 
 ## Restarting Bica ends every shell
 

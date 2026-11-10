@@ -30,7 +30,7 @@ With `notify`, the agent gets a note when the command finishes, even if it is id
 A terminal an agent starts has that session as its parent, as a [child session](./orchestration.md) does, and follows the same rules:
 
 - A "Parent in charge" strip under the terminal's top bar links to the parent. Detach there makes the terminal yours for good.
-- Archiving the parent closes the terminals it leads. When there are any, the archive dialog lists them checked; unchecking one detaches it, so it stays open.
+- Archiving the parent closes the terminals it leads. When one still runs a command, the archive dialog lists them checked; unchecking one detaches it, so it stays open. Ones idle at their prompt or exited close without asking.
 - Once detached, the agent that started it can't type into it or close it, unless you tell it to (`user_asked`), and hears nothing more from it. `list` shows it as the user's.
 
 Terminals you open have no parent. Unlike a session, a terminal is closed, not archived: its process is gone, so there is nothing to bring back.
