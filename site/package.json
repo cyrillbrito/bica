@@ -11,21 +11,21 @@
     "deploy": "astro build && bun scripts/check-links.mjs && wrangler deploy"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.42.8",
+    "@astrojs/starlight": "^0.42.10",
     "@bica/shared": "workspace:*",
-    "@solidjs/vite-plugin": "^3.0.0-next.54",
-    "@solidjs/web": "^2.0.0-rc.20",
-    "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.4.4",
-    "astro-d2": "^0.14.0",
-    "satteri": "0.11.6",
-    "solid-js": "^2.0.0-rc.20",
-    "tailwindcss": "^4.3.3"
+    "@solidjs/vite-plugin": "^3.0.0-next.57",
+    "@solidjs/web": "^2.0.0-rc.21",
+    "@tailwindcss/vite": "^4.3.5",
+    "astro": "^7.4.8",
+    "astro-d2": "^0.14.1",
+    "satteri": "0.11.7",
+    "solid-js": "^2.0.0-rc.21",
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
     "pdf-lib": "^1.17.1",
-    "playwright": "1.63.0",
-    "wrangler": "^4.156.0"
+    "playwright": "1.65.0",
+    "wrangler": "^4.158.0"
   }
 }
