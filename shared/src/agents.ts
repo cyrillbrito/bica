@@ -23,6 +23,10 @@ export const AGENTS = {
 
 export type AgentId = keyof typeof AGENTS;
 
+// The agents a person picks for a session, when starting it or later. Bica
+// sets the others itself: the hub from its page, Night for tonight's runs.
+export type PickableAgent = Extract<AgentId, 'coding' | 'assistant'>;
+
 export function isAgent(value: unknown): value is AgentId {
   return typeof value === 'string' && Object.hasOwn(AGENTS, value);
 }

@@ -1,7 +1,7 @@
 // The wire format of the one WebSocket (docs/realtime-communication.md).
 // Shared by server/src/socket.ts and client/src/socket/socket.ts; types only.
 import type { Op } from '@earendil-works/chord/delta';
-import type { AgentId } from './agents';
+import type { AgentId, PickableAgent } from './agents';
 import type { ProjectedView } from './projection';
 
 // A run in progress (or backing off after a provider error), or none: failed,
@@ -403,7 +403,7 @@ export interface Calls {
       // Absent: the agent's default.
       choice?: ModelChoice;
       // Absent: coding.
-      agent?: AgentId;
+      agent?: PickableAgent;
       // Starts in a new worktree named after the session, instead of `cwd`.
       worktree?: boolean;
       // Holds the prompt for tonight's run instead of sending it.
@@ -478,7 +478,10 @@ export interface Calls {
   // Named when pruning was called clean up.
   'session.cleanup': { args: { id: string }; result: null };
   // Changing it later breaks the prompt cache once.
-  'session.agent': { args: { id: string; agent: AgentId }; result: null };
+  'session.agent': {
+    args: { id: string; agent: PickableAgent };
+    result: null;
+  };
   // The hub's session id, started first if there is none.
   'hub.open': { args: Record<string, never>; result: string };
   // Applies from the next call.

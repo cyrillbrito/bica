@@ -34,19 +34,11 @@ import {
 } from './sessions/prompts';
 import { createSession, fork } from './sessions/create';
 import { retryStuck } from './sessions/stuck';
-import { detach, unwatch, watchRuns } from './orchestration/notes';
+import { detach, unwatch } from './orchestration/notes';
 import { conversationDetail, watchConversation } from './sessions/conversation';
 import { watchSessions } from './sessions/store';
-import { installAgents } from './agents/extensions';
 import { openHub, updateHub } from './hub/hub';
-import {
-  cancelTonight,
-  runTonight,
-  saveTonight,
-  startNight,
-} from './night-runs/night';
-import { startHousekeeping } from './sessions/housekeeping';
-import { startWorktreeCleanup } from './projects/cleanup';
+import { cancelTonight, runTonight, saveTonight } from './night-runs/night';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
 import { wsLogger } from './ws-log';
@@ -97,60 +89,41 @@ import {
   watchStatus,
 } from './git/workspace';
 
-installAgents();
-startHousekeeping();
-startWorktreeCleanup();
-startNight();
-// Opens the harness, which resumes runs a restart left unfinished, and
-// follows them at once: a parent hears when one ends, open tab or not.
-void watchRuns().catch((error) => console.error('[sessions]', error));
-
 type Sink = {
   snapshot: (value: unknown, kept?: number) => void;
   changes: (ops: readonly Op[]) => void;
 };
 
+// A call whose result is null may end without one: run() sends null.
 type Handlers = {
-  [K in Call]: (args: Calls[K]['args']) => Promise<Calls[K]['result']>;
+  [K in Call]: (
+    args: Calls[K]['args'],
+  ) => Promise<
+    [Calls[K]['result']] extends [null] ? void | null : Calls[K]['result']
+  >;
 };
 
 // The browser is our own typed client, so args arrive as protocol.ts says.
 const calls: Handlers = {
-  'session.create': async (args) => {
-    // The hub and night runs set their own agents (openHub, createSession).
-    if (args.agent && args.agent !== 'coding' && args.agent !== 'assistant')
-      throw new Error('A new session runs as Coding or Assistant');
-    return createSession({ ...args, prompt: args.prompt.trim() });
-  },
+  'session.create': async (args) =>
+    createSession({ ...args, prompt: args.prompt.trim() }),
   'session.tonight': async ({ id, action, prompt }) => {
     if (action === 'cancel') return cancelTonight(id);
     if (action === 'save') await saveTonight(id, prompt ?? '');
     else await runTonight(id, prompt);
     return '';
   },
-  'session.configure': async ({ id, ...choice }) => {
-    await configure(id, choice);
-    return null;
-  },
+  'session.configure': async ({ id, ...choice }) => configure(id, choice),
+  // Here because the hub reads settings, so settings can't call it.
   'settings.update': async (change) => {
     await updateSettings(change);
     if (change.hubModel !== undefined || change.hubFolder !== undefined)
       await updateHub();
-    return null;
   },
   'project.add': async ({ path }) => addProject(path),
-  'project.reorder': async ({ ids }) => {
-    await reorderProjects(ids);
-    return null;
-  },
-  'project.pin': async ({ id, pinned }) => {
-    await pinProject(id, pinned);
-    return null;
-  },
-  'project.update': async ({ id, ...edit }) => {
-    await updateProject(id, edit);
-    return null;
-  },
+  'project.reorder': async ({ ids }) => reorderProjects(ids),
+  'project.pin': async ({ id, pinned }) => pinProject(id, pinned),
+  'project.update': async ({ id, ...edit }) => updateProject(id, edit),
   'worktree.cleanUp': async (args) =>
     removeWorktree(args.projectId, args.cwd, args.force === true),
   'fs.dirs': async ({ path }) => listDirs(path),
@@ -163,121 +136,51 @@ const calls: Handlers = {
       'user',
       args.whenBusy,
     );
-    return null;
   },
-  'session.detach': async ({ id }) => {
-    await detach(id);
-    return null;
-  },
-  'session.unwatch': async ({ id }) => {
-    await unwatch(id);
-    return null;
-  },
+  'session.detach': async ({ id }) => detach(id),
+  'session.unwatch': async ({ id }) => unwatch(id),
   'session.withdraw': async ({ id, submission }) => withdraw(id, submission),
   'session.push': async ({ id, submission }) => pushSubmission(id, submission),
   'session.stop': async ({ id }) => stop(id),
   'session.retry': async ({ id }) => {
     await retryStuck(id);
-    return null;
   },
   'session.archive': async ({ id, archived }) => archive(id, archived),
-  'session.rename': async ({ id, title }) => {
-    await rename(id, title);
-    return null;
-  },
-  'session.compact': async ({ id, instructions }) => {
-    await compact(id, instructions);
-    return null;
-  },
+  'session.rename': async ({ id, title }) => rename(id, title),
+  'session.compact': async ({ id, instructions }) => compact(id, instructions),
   'hub.open': async () => openHub(),
-  'session.agent': async ({ id, agent }) => {
-    // The hub and night runs set their own agents (openHub, createSession).
-    if (agent !== 'coding' && agent !== 'assistant')
-      throw new Error('A session can switch only between Coding and Assistant');
-    await setAgent(id, agent);
-    return null;
-  },
-  'session.voice': async ({ id, voice }) => {
-    await setVoice(id, voice);
-    return null;
-  },
+  'session.agent': async ({ id, agent }) => setAgent(id, agent),
+  'session.voice': async ({ id, voice }) => setVoice(id, voice),
   'session.cleanup': async ({ id }) => {
     await pruneContext(id);
-    return null;
   },
   'session.fork': async ({ id, at }) => fork(id, at),
   'session.detail': async ({ id, key }) => conversationDetail(id, key),
-  'session.seen': async ({ id, seen }) => {
-    await markSeen(id, seen !== false);
-    return null;
-  },
+  'session.seen': async ({ id, seen }) => markSeen(id, seen !== false),
   'voice.start': async ({ id, sdp, trace }) => startCall(id, sdp, trace),
-  'voice.log': async ({ trace, event, data }) => {
-    voiceLog(trace, 'browser', event, data);
-    return null;
-  },
+  'voice.log': async ({ trace, event, data }) =>
+    voiceLog(trace, 'browser', event, data),
   'voice.transcribe': async ({ audio, mimeType }) =>
     transcribe(audio, mimeType),
-  'voice.stop': async ({ callId }) => {
-    stopCall(callId);
-    return null;
-  },
-  'voice.photos': async ({ callId, images }) => {
-    addPhotos(callId, images);
-    return null;
-  },
-  'account.signIn': async ({ id, type }) => {
-    await signIn(id, type);
-    return null;
-  },
-  'account.answer': async ({ prompt, value }) => {
-    answer(prompt, value);
-    return null;
-  },
-  'account.cancel': async () => {
-    await cancel();
-    return null;
-  },
-  'account.add': async ({ provider }) => {
-    await addAccount(provider);
-    return null;
-  },
-  'account.useFirst': async ({ id }) => {
-    await useFirst(id);
-    return null;
-  },
-  'account.signOut': async ({ id }) => {
-    await signOut(id);
-    return null;
-  },
-  'git.stage': async (args) => {
-    await stage(ref(args), args.paths, args.repo);
-    return null;
-  },
-  'git.unstage': async (args) => {
-    await unstage(ref(args), args.paths, args.repo);
-    return null;
-  },
-  'git.commit': async (args) => {
-    await commit(ref(args), args.message.trim(), {
+  'voice.stop': async ({ callId }) => stopCall(callId),
+  'voice.photos': async ({ callId, images }) => addPhotos(callId, images),
+  'account.signIn': async ({ id, type }) => signIn(id, type),
+  'account.answer': async ({ prompt, value }) => answer(prompt, value),
+  'account.cancel': async () => cancel(),
+  'account.add': async ({ provider }) => addAccount(provider),
+  'account.useFirst': async ({ id }) => useFirst(id),
+  'account.signOut': async ({ id }) => signOut(id),
+  'git.stage': async (args) => stage(ref(args), args.paths, args.repo),
+  'git.unstage': async (args) => unstage(ref(args), args.paths, args.repo),
+  'git.commit': async (args) =>
+    commit(ref(args), args.message.trim(), {
       all: args.all === true,
       amend: args.amend === true,
       repo: args.repo,
-    });
-    return null;
-  },
-  'git.discard': async (args) => {
-    await discard(ref(args), args.paths, args.repo);
-    return null;
-  },
-  'git.push': async (args) => {
-    await push(ref(args), args.repo);
-    return null;
-  },
-  'git.pull': async (args) => {
-    await pull(ref(args), args.repo);
-    return null;
-  },
+    }),
+  'git.discard': async (args) => discard(ref(args), args.paths, args.repo),
+  'git.push': async (args) => push(ref(args), args.repo),
+  'git.pull': async (args) => pull(ref(args), args.repo),
   'git.suggest': async (args) =>
     suggestCommitMessage(ref(args), {
       all: args.all === true,
@@ -287,42 +190,20 @@ const calls: Handlers = {
   'git.diff': async (args) =>
     diff(ref(args), args.path, args.staged, args.oldPath, args.repo),
   'file.read': async (args) => readText(ref(args), args.path),
-  'editor.open': async (args) => {
-    await openInEditor(ref(args), args.path);
-    return null;
-  },
-  'path.open': async ({ path, cwd, reveal }) => {
-    await openPath(path, cwd, reveal === true);
-    return null;
-  },
+  'editor.open': async (args) => openInEditor(ref(args), args.path),
+  'path.open': async ({ path, cwd, reveal }) =>
+    openPath(path, cwd, reveal === true),
   'path.find': async ({ path, cwd }) => findPath(path, cwd),
   'file.link': async (args) => workspaceFileLink(ref(args), args.path),
   'terminal.create': async (args) =>
     createTerminal(ref(args), { command: args.command, title: args.title }),
-  'terminal.input': async ({ id, data }) => {
-    writeTerminal(id, data);
-    return null;
-  },
-  'terminal.resize': async ({ id, cols, rows }) => {
-    resizeTerminal(id, cols, rows);
-    return null;
-  },
-  'terminal.stop': async ({ id }) => {
-    await stopTerminal(id);
-    return null;
-  },
-  'terminal.restart': async ({ id }) => {
-    await restartTerminal(id);
-    return null;
-  },
-  'terminal.detach': async ({ id }) => {
-    detachTerminal(id);
-    return null;
-  },
-  'terminal.remove': async ({ id }) => {
-    await removeTerminal(id);
-    return null;
-  },
+  'terminal.input': async ({ id, data }) => writeTerminal(id, data),
+  'terminal.resize': async ({ id, cols, rows }) =>
+    resizeTerminal(id, cols, rows),
+  'terminal.stop': async ({ id }) => stopTerminal(id),
+  'terminal.restart': async ({ id }) => restartTerminal(id),
+  'terminal.detach': async ({ id }) => detachTerminal(id),
+  'terminal.remove': async ({ id }) => removeTerminal(id),
 };
 
 // A request re-sent after a reconnect (its reply was lost) gets the first
@@ -428,7 +309,7 @@ function connect(ws: Socket) {
     args,
   }: Extract<ClientMessage, { type: 'request' }>) {
     try {
-      const value = await run(String(id), call, args ?? {});
+      const value = (await run(String(id), call, args ?? {})) ?? null;
       send({ type: 'reply', id, ok: true, value });
     } catch (error) {
       send({ type: 'reply', id, ok: false, error: messageOf(error) });

@@ -1,5 +1,5 @@
 import { createMemo, createSignal } from 'solid-js';
-import type { AgentId } from '@bica/shared/agents';
+import type { PickableAgent } from '@bica/shared/agents';
 import { pruneBlocked, type ContextUsage } from '@bica/shared/context-usage';
 import type {
   ModelChoice,
@@ -46,7 +46,7 @@ export function startSession(
   images: PromptImage[],
   choice?: ModelChoice,
   worktree?: boolean,
-  agent?: AgentId,
+  agent?: PickableAgent,
   tonight?: boolean,
 ) {
   return request('session.create', {
@@ -227,7 +227,7 @@ export function pruneSession(id: string) {
   return once(`prune:${id}`, () => request('session.cleanup', { id }));
 }
 
-export function setAgent(id: string, agent: AgentId) {
+export function setAgent(id: string, agent: PickableAgent) {
   return request('session.agent', { id, agent });
 }
 
