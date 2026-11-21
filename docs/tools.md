@@ -35,3 +35,5 @@ Bica has no hidden subagents. Every helper is a normal session you can open, rea
 
 - Claude Code's `SendMessage` with `notify_when_idle`, and Codex's `send_input` and `wait_agent`, which the session tools follow.
 - Pi Durable's [`codemode`](https://github.com/earendil-works/pi/tree/main/packages/durable), on the `pi-codemode` sandbox.
+- The open [web search benchmark for coding agents](https://github.com/openbenchmarks-labs/web-search-for-coding-agents), where Exa leads search and fetch.
+- [Expand Fetch](https://expand.ai), which reads the rendered page with a vision model. On 43 pages that past sessions fetched, it read two that Exa missed but returned about 1.7 times as much text, so fetch stays on Exa.
