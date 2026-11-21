@@ -113,6 +113,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 `docs/explorations/` holds research and plans for what isn't built. Read the matching one before building in its area, and delete or trim it once the feature's doc takes over. Write one only when the user asks for it.
 
 - [fast-loading.md](docs/explorations/fast-loading.md): opening, switching, and reconnecting faster on the phone.
+- [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies the assistant's and hub's memory files.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
 - [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.
 - [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, and the DNS rebinding hole.
