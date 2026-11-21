@@ -67,6 +67,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - Installing as an app on the phone.
 - A file watcher instead of polling.
 - A file mode in the command palette: `/` searches the workspace's files, and ⌘P opens straight into it.
+- A new look after BoardUI's design. Two branches on GitHub hold the trials: `boardui-solid-port-prototype` ports its free components to Solid 2 (`prototypes/boardui-solid/README.md` there), and `monorepo-react-client` mocks every screen in React with them.
 
 ## Library docs
 
