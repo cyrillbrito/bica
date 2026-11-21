@@ -3,6 +3,7 @@ import {
   createProvider,
   envApiKeyAuth,
   type Api,
+  type ImageModel,
   type Model,
 } from '@earendil-works/pi-ai';
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy';
@@ -20,6 +21,7 @@ import { credentials } from './credentials';
 import { models } from './registry';
 import { live } from '#server/live';
 import { refreshModels } from './models';
+import { OPENAI_IMAGES, openAIImagesApi } from './openai-images';
 
 /*
  * A CLIProxyAPI server as one provider (docs/proxy.md). It holds many plan
@@ -120,6 +122,25 @@ function toModel(id: string, url: string): Model<Api> {
   } as Model<Api>;
 }
 
+// Image models such as gpt-image-2.5 serve /v1/images, not chat. Agents
+// reach them through codemode's models.generateImages() (docs/tools.md).
+const isImage = (id: string) => id.includes('image');
+
+function toImageModel(id: string, url: string): ImageModel<string> {
+  return {
+    type: 'image',
+    id,
+    name: titleOf(id.slice(id.indexOf('/') + 1)).replace(/^Gpt/, 'GPT'),
+    api: OPENAI_IMAGES,
+    provider: PROXY_ID,
+    baseUrl: `${url}/v1`,
+    input: ['text', 'image'],
+    output: ['image'],
+    // Plan sign-ins have no per-token price.
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  };
+}
+
 async function listModels(
   c: Pick<Config, 'url' | 'apiKey'>,
   signal?: AbortSignal,
@@ -131,13 +152,7 @@ async function listModels(
   });
   if (!res.ok) throw new Error(`The proxy answered HTTP ${res.status}`);
   const body = (await res.json()) as { data?: { id: string }[] };
-  return (
-    (body.data ?? [])
-      .map((m) => m.id)
-      // Image models aren't chat models; sessions can't use them.
-      .filter((id) => !id.includes('image'))
-      .sort()
-  );
+  return (body.data ?? []).map((m) => m.id).sort();
 }
 
 export const proxyProvider = createProvider({
@@ -148,13 +163,16 @@ export const proxyProvider = createProvider({
   fetchModels: async ({ signal }) => {
     const c = await config();
     if (!c) return [];
-    return (await listModels(c, signal)).map((id) => toModel(id, c.url));
+    return (await listModels(c, signal)).map((id) =>
+      isImage(id) ? toImageModel(id, c.url) : toModel(id, c.url),
+    );
   },
   api: {
     'anthropic-messages': anthropicMessagesApi(),
     'openai-responses': openAIResponsesApi(),
     'openai-completions': openAICompletionsApi(),
   },
+  images: { [OPENAI_IMAGES]: openAIImagesApi },
 });
 
 models.setProvider(proxyProvider);

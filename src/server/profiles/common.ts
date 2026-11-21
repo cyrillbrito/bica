@@ -104,6 +104,7 @@ const TOOL_GUIDE: { tools: string[]; line: string; rules?: string[] }[] = [
     line: 'Run JavaScript that calls other tools',
     rules: [
       'Use codemode to batch independent tool calls (Promise.allSettled), chain them, or filter large output, instead of many separate calls.',
+      'To create or edit an image (icon, mockup, illustration, photo), call `models.generateImages()` in codemode with a model from `models.getAvailableOfType("image")`, adding the source image as input to edit it. `image(block)` saves the result to a temp file: move it into place with bash.',
     ],
   },
   {

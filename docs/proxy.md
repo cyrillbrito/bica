@@ -20,10 +20,14 @@ The proxy only lists model names, so Bica looks each one up in pi-ai's catalog t
 
 The list loads when the server starts and on every save. If the proxy is down at start, Bica keeps trying while a tab is open.
 
+## Image models
+
+Names with `image` in them, like `gpt-image-2.5`, are image models: the proxy runs them on a ChatGPT plan through Codex, so they cost plan usage and no API credits. They never show in the model picker. Agents call them from codemode ([tools.md](./tools.md#images)). Bica speaks OpenAI's Images API to them, which pi-ai lacks: a prompt alone goes to `/v1/images/generations`, and a prompt with images goes to `/v1/images/edits`. An image takes 15 to 20 seconds. The proxy picks the size itself, often 1536×1024 or about 1254×1254, so ask for a shape in the prompt.
+
 ## Accounts and limits
 
 With a management key, Settings lists the proxy's accounts with their limit bars, and the sidebar's foot shows the ones serving the open session's model. The proxy keeps each account's latest rate-limit headers, so reading them costs no request to the model provider. An account that hasn't answered since the proxy started has no numbers yet.
 
 ## Sources
 
-- [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI). Copilot is only in its community fork, CLIProxyAPIPlus.
+- [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI). Copilot is only in its community fork, CLIProxyAPIPlus. Its image routes are in `internal/runtime/executor/codex_openai_images.go`.

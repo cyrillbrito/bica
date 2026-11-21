@@ -13,6 +13,10 @@ Codemode lets the model write a short JavaScript script that calls the other too
 
 Scripts can also call classifier models. A classifier doesn't chat: it answers typed yes/no, choice, or score questions about JSON, in well under a second and for a fraction of a cent. That makes it cheap to label many items, such as the steps of past agent runs, and read only the flagged ones. Any provider with a key that offers classifiers works.
 
+### Images
+
+Scripts can also generate and edit images with `models.generateImages()`, the way the Pi coding agent does since 1.0. There is no image tool of its own, so no session pays for one in its prompt. A rule under codemode tells the agent this exists, since without it the agent drew icons as SVG instead. `image(block)` shows the result to the model and saves it to a temp file, and the agent moves that file into the project with bash. To edit, the script adds the source image to the input. The image models come from the [CLI proxy](./proxy.md#image-models) and from OpenRouter. The transcript shows a script's text, not its images, so open the saved file to see one.
+
 ## Asking you
 
 `ask` puts one to four multiple-choice questions to you and ends the run. Nothing waits, so a question survives restarts and can be answered hours later from another device. Your answer is an ordinary prompt, so typing in the composer answers too. Number keys pick the options of the question you're on and ⌘↵ sends, also with nothing focused. Once answered, the card folds into one row that opens to the questions and your answers. The answer shows there instead of as a prompt of its own, and one typed in the composer shows whole under the questions.
@@ -38,5 +42,6 @@ Bica has no hidden subagents. Every helper is a normal session you can open, rea
 - Claude Code's `SendMessage` with `notify_when_idle`, and Codex's `send_input` and `wait_agent`, which the session tools follow.
 - Taking over a session: Zendesk and Intercom stop their bot once a human takes a conversation, and the Pi package [`pi-cmux-orchestrator`](https://www.npmjs.com/package/@mporenta/pi-cmux-orchestrator) holds back the orchestrator once you type in a worker, until it is released.
 - Pi Durable's [`codemode`](https://github.com/earendil-works/pi/tree/main/packages/durable), on the `pi-codemode` sandbox.
+- Image generation: Pi 1.0's [`models.generateImages()` in codemode](http://pi.dev/changelog), which Bica follows. Codex's built-in `image_gen` tool and its [imagegen skill](https://github.com/openai/codex/blob/main/codex-rs/skills/src/assets/samples/imagegen/SKILL.md), the opencode plugins [opencode-gpt-image](https://github.com/plfavreau/opencode-gpt-image) (`image_generate`, `image_edit`) and [opencode-gpt-imagegen](https://github.com/yuji-hatakeyama/opencode-gpt-imagegen), and Kilo Code's [`generate_image`](https://github.com/Kilo-Org/kilocode/pull/11566) all add a dedicated tool that writes the file, which costs prompt space in every session.
 - The open [web search benchmark for coding agents](https://github.com/openbenchmarks-labs/web-search-for-coding-agents), where Exa leads search and fetch.
 - [Expand Fetch](https://expand.ai), which reads the rendered page with a vision model. On 43 pages that past sessions fetched, it read two that Exa missed but returned about 1.7 times as much text, so fetch stays on Exa.
