@@ -19,7 +19,7 @@ There are no tabs. Opening something replaces what was there, and what's open li
 - Markdown, HTML, and Mermaid files open rendered, and the eye button shows the source. HTML runs in a sandbox with no access to Bica.
 - Open in editor starts your editor on the dev machine, from `VISUAL` or `EDITOR`.
 - Download saves the file through the browser, at any size, so it reaches a phone or another computer.
-- Paths in replies are links that open in Bica, so they work away from the dev machine. A file opens in its workspace, over the chat when it is the session's own, and a folder opens its workspace. A file outside every workspace opens in a new tab: PDFs, images, and media as themselves, and text as plain text. ⌘ click opens it in the editor instead, and Alt click shows it in Finder.
+- Paths in replies are links that open in Bica, so they work away from the dev machine. A file opens in its workspace, over the chat when it is the session's own, and a folder opens its workspace. A file outside every workspace, such as an agent's report in a temp folder, opens over the chat too, with a button for a new tab: Markdown and Mermaid rendered, PDFs, images, media, and HTML pages as themselves, and other text as plain text. Away from a session page it opens in a new tab. ⌘ click opens it in the editor instead, and Alt click shows it in Finder.
 
 ## File lists
 
@@ -39,7 +39,7 @@ A file that changed again before the browser asked comes back as it is now, mark
 
 Every request names a workspace, and paths that lead outside it are refused. Large or binary files aren't shown as text.
 
-Blobs need no token: anyone who reaches them already reaches the socket, which has no login either ([self-hosted-auth.md](./explorations/self-hosted-auth.md)). Downloads and files outside every workspace go over plain HTTP, at `/download/<token>/<name>`. The socket hands out each link, and its random token lasts an hour, so another website can't guess one, even through DNS rebinding. HTML and SVG are served as plain text, because they would run on Bica's own origin.
+Blobs need no token: anyone who reaches them already reaches the socket, which has no login either ([self-hosted-auth.md](./explorations/self-hosted-auth.md)). Downloads and files outside every workspace go over plain HTTP, at `/download/<token>/<name>`. The socket hands out each link, and its random token lasts an hour, so another website can't guess one, even through DNS rebinding. HTML and SVG render under a `Content-Security-Policy: sandbox` without `allow-same-origin`, so they run on an opaque origin: the socket refuses their `Origin: null` handshake, and Bica's other routes are cross-origin to them.
 
 ## Sources
 

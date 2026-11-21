@@ -20,6 +20,7 @@ import { isPruning } from '../../context-usage/context-usage';
 import MessageRow, { RULE } from '../../sessions/MessageRow';
 import ModelPicker from '../../models/ModelPicker';
 import OpenFile from '../../files/OpenFile';
+import OutsideFile from '../../files/OutsideFile';
 import CommitView from '../../git/CommitView';
 import { commitFromSearch, sameCommit } from '../../git/git';
 import {
@@ -42,7 +43,12 @@ import { IconButton } from '../../ui/Button';
 import Empty from '../../ui/Empty';
 import { CloseIcon, ParentIcon, SessionIcon, VoiceIcon } from '../../ui/icons';
 import { drawer, setNoPanels } from '../../ui/layout';
-import { openFromSearch, sameOpen, sessionFileHref } from '../../files/files';
+import {
+  openFromSearch,
+  outsideFromSearch,
+  sameOpen,
+  sessionFileHref,
+} from '../../files/files';
 import { useCurrentWorkspace } from '../../projects/projects';
 import { paths } from '../../router';
 import { sessionChoice, setOpenModel } from '../../models/models';
@@ -121,12 +127,15 @@ export default function Session(props: RouteProps<'/s/:id'>) {
     name: 'commitOverChat',
     equals: sameCommit,
   });
+  const outside = createMemo(() => outsideFromSearch(location.search), {
+    name: 'outsideFileOverChat',
+  });
   const closeFile = () => navigate(paths.s(props.params.id!)());
   onSettled(() => {
     const onKey = (e: KeyboardEvent) => {
       if (
         e.key === 'Escape' &&
-        (open() || commit()) &&
+        (open() || commit() || outside()) &&
         !drawer() &&
         !e.defaultPrevented
       )
@@ -536,6 +545,27 @@ export default function Session(props: RouteProps<'/s/:id'>) {
               <CommitView
                 workspace={workspace()!.ref}
                 open={o()}
+                actions={
+                  <IconButton
+                    size="md"
+                    title="Back to the session (Esc)"
+                    onClick={closeFile}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                }
+              />
+            </section>
+          )}
+        </Show>
+        <Show when={outside()}>
+          {(path) => (
+            <section
+              class="absolute inset-0 z-10 flex flex-col border-t border-line bg-bg"
+              aria-label={path()}
+            >
+              <OutsideFile
+                path={path()}
                 actions={
                   <IconButton
                     size="md"

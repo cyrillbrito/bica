@@ -35,11 +35,11 @@ export async function serveDownload(req: BunRequest<'/download/:token/*'>) {
   const info = file ? await stat(file).catch(() => undefined) : undefined;
   if (!info?.isFile()) return new Response(null, { status: 404 });
   const save = new URL(req.url).searchParams.has('download');
+  const type = save ? 'application/octet-stream' : await shownType(file!);
   return new Response(Bun.file(file!), {
     headers: {
-      'Content-Type': save
-        ? 'application/octet-stream'
-        : await shownType(file!),
+      'Content-Type': type,
+      ...(SANDBOXED.has(type) && { 'Content-Security-Policy': SANDBOX }),
       'Content-Disposition': `${save ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(basename(file!))}`,
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
@@ -47,11 +47,18 @@ export async function serveDownload(req: BunRequest<'/download/:token/*'>) {
   });
 }
 
-// The page runs on Bica's own origin, so HTML or SVG shown as itself could
-// drive the socket. Text shows as plain text, and media as itself.
+// HTML and SVG would run on Bica's own origin and could drive the socket.
+// The sandbox, without allow-same-origin, gives them an opaque origin: the
+// socket refuses its `Origin: null`, and other routes are cross-origin.
+// Agents' reports load scripts from CDNs, so scripts still run.
+const SANDBOX = 'sandbox allow-scripts allow-popups allow-forms';
+const SANDBOXED = new Set(['text/html', 'image/svg+xml']);
+
+// Text shows as plain text, and media and sandboxed pages as themselves.
 async function shownType(file: string) {
   const type = Bun.file(file).type.split(';')[0]!;
   if (
+    SANDBOXED.has(type) ||
     type === 'application/pdf' ||
     /^(audio|video)\//.test(type) ||
     (type.startsWith('image/') && type !== 'image/svg+xml')
@@ -59,8 +66,7 @@ async function shownType(file: string) {
     return type;
   if (
     type.startsWith('text/') ||
-    /json|javascript|typescript|xml|yaml|toml/.test(type) ||
-    type === 'image/svg+xml'
+    /json|javascript|typescript|xml|yaml|toml/.test(type)
   )
     return 'text/plain; charset=utf-8';
   // Git's own test for names it doesn't know, such as Makefile or .py: a NUL

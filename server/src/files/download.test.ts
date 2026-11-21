@@ -37,15 +37,20 @@ test('a path from a reply opens in its workspace, or by link outside every works
   expect(await (await get(found.url!)).text()).toBe('not in a workspace\n');
 });
 
-test('files are served only through a link from the socket, and HTML never runs', async () => {
+test('files are served only through a link from the socket, and HTML runs sandboxed', async () => {
   const tab = await bica.connect();
   const ref = await bica.project(tab, 'served');
   await writeFile(join(ref.cwd, 'page.html'), '<script>alert(1)</script>');
 
   const link = await tab.request('file.link', { ...ref, path: 'page.html' });
   const shown = await get(link);
-  expect(shown.headers.get('content-type')).toStartWith('text/plain');
+  expect(shown.headers.get('content-type')).toStartWith('text/html');
+  expect(shown.headers.get('content-security-policy')).toStartWith('sandbox');
   expect(await shown.text()).toBe('<script>alert(1)</script>');
+  const opaque = await fetch(`http://127.0.0.1:${bica.port}/ws`, {
+    headers: { origin: 'null', upgrade: 'websocket' },
+  });
+  expect(opaque.status).toBe(403);
   const saved = await get(`${link}?download`);
   expect(saved.headers.get('content-disposition')).toStartWith('attachment');
 
