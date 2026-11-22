@@ -203,6 +203,7 @@ const NAMES: Record<string, string> = {
   start_session: 'session',
   session_start: 'session',
   codemode: 'code',
+  composio_multi_execute_tool: 'apps',
 };
 
 // The icon shows what the call does. Its status only tints it, so a round

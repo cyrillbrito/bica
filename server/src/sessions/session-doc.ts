@@ -55,6 +55,9 @@ export type SessionMeta = {
   memory?: string;
   // The project list for the hub, kept like `memory`.
   projects?: string;
+  // The connected apps line (server/src/connectors/apps.ts), kept like
+  // `memory`; '' without a Composio key.
+  apps?: string;
   // The first prompt, held for tonight's run (docs/night-runs.md); '' or
   // unset: none waiting.
   tonight?: string;

@@ -63,6 +63,7 @@ export function load() {
             void editSession(change.value.conversationId, (meta) => {
               delete meta.memory;
               delete meta.projects;
+              delete meta.apps;
             }).catch((error) => console.error('[sessions]', error));
         }
         scheduled ??= setTimeout(() => {
@@ -127,15 +128,16 @@ export async function summarize(
   if (subagents.has(id)) return undefined;
   const harness = await getHarness();
   if (!(await harness.conversation(id, context))) return undefined;
-  const [meta, live, agent, newest, usage] = await Promise.all([
+  const [meta, live, agent, recent, usage] = await Promise.all([
     sessionMeta(id),
     harness.snapshot(LiveDoc, id, context),
     harness.snapshot(AgentDoc, id, context),
-    newestTurn(id),
+    newestEntries(id),
     harness.snapshot(UsageDoc, id, context),
   ]);
+  const newest = recent.findLast(isTurn);
   const createdAt = meta?.createdAt ?? 0;
-  let status = statusOf(live, newest);
+  let status = statusOf(live, recent);
   const stuck = isStuck(id);
   // Its run would look busy for good.
   if (stuck && isBusy(status)) status = 'error';
@@ -233,10 +235,11 @@ export async function newestEntry(id: ConversationId) {
 }
 
 /** The newest entry from the agent or a prompt: voice lines don't set the status. */
-async function newestTurn(id: ConversationId) {
+/** The newest 50 entries, oldest first. */
+async function newestEntries(id: ConversationId) {
   const conversation = await (await getHarness()).conversation(id, context);
   const page = await conversation?.entries({}, 50, undefined, context);
-  return page?.items.find(isTurn);
+  return page?.items.toReversed() ?? [];
 }
 
 /** The session list now and whenever it changes. */

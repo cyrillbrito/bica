@@ -3,6 +3,7 @@ import { useLocation } from '@solidjs/router';
 import { For, Show, createEffect } from 'solid-js';
 
 import Accounts from '../models/Accounts';
+import ConnectedApps from '../connectors/ConnectedApps';
 import { Card, Setting, Toggle } from '../ui/Card';
 import Alert from '../ui/Alert';
 import { Button } from '../ui/Button';
@@ -126,6 +127,10 @@ export default function Settings() {
 
           <div id="providers">
             <Accounts />
+          </div>
+
+          <div id="connectors">
+            <ConnectedApps />
           </div>
 
           <Card title="Models">

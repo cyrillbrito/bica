@@ -1,32 +1,30 @@
-import {
-  For,
-  Show,
-  createEffect,
-  createSignal,
-  onSettled,
-  untrack,
-} from 'solid-js';
+import { For, Show, createSignal, onSettled } from 'solid-js';
 
-import { reducedMotion } from '../ui/motion';
 import type { Question } from '@bica/shared/transcript';
+import {
+  RequestFooter,
+  RequestHeader,
+  RequestSheet,
+  RequestTray,
+  ResolvedRow,
+} from '../requests/RequestCard';
 import { Button } from '../ui/Button';
 import { CheckMark } from '../ui/CheckMark';
 import Input from '../ui/Input';
 import Kbd from '../ui/Kbd';
-import { CheckIcon, DrawnCheckIcon, QuestionIcon } from '../ui/icons';
-import Chevron from '../ui/Chevron';
+import { QuestionIcon } from '../ui/icons';
 
 const MAC = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 
 /**
- * The agent's questions (the `ask` tool), after affectUI's Approval Card and
- * Decision Inbox: a card on a tray, options with number keys, ⌘↵ to send.
+ * The agent's questions (the `ask` tool), a request card after affectUI's
+ * Decision Inbox: options with number keys, ⌘↵ to send.
  * While the session waits, each question takes picks, a written answer, or
  * both, and any can be skipped. Send goes back as a normal prompt; typing in
  * the composer answers too. Once answered, the card glides down into one
  * row, which opens to the questions and the answers.
  */
-export default function AskCard(props: {
+export default function QuestionCard(props: {
   questions: Question[];
   open: boolean;
   // The prompt that answered, from the card or the composer.
@@ -110,69 +108,27 @@ export default function AskCard(props: {
     return () => removeEventListener('keydown', onKey);
   });
 
-  // Answered while on screen: the tray holds its height for a frame, then
-  // glides down to the resolved row. Loaded answered, it is just the row.
-  const [settled, setSettled] = createSignal(
-    untrack(() => !props.open),
-    {
-      name: 'askSettled',
-    },
-  );
-  let lastHeight = 0;
-  onSettled(() => {
-    const ro = new ResizeObserver(() => {
-      if (props.open) lastHeight = root.offsetHeight;
-    });
-    ro.observe(root);
-    return () => ro.disconnect();
-  });
-  createEffect(
-    () => props.open,
-    (open, was) => {
-      if (open || !was || reducedMotion() || !lastHeight) return;
-      setSettled(false);
-      const to = root.scrollHeight;
-      root.style.height = `${lastHeight}px`;
-      void root.offsetHeight;
-      root.style.height = `${to}px`;
-      const done = () => {
-        root.style.height = '';
-        setSettled(true);
-      };
-      const id = setTimeout(done, 450);
-      return () => clearTimeout(id);
-    },
-  );
-
   const count = () => props.questions.length;
   return (
-    <div
-      ref={(el) => (root = el)}
-      role="group"
-      aria-label={props.open ? 'The agent asks' : 'Asked'}
-      class={[
-        'appear overflow-hidden rounded-tray bg-well p-1 motion-safe:transition-[height] motion-safe:duration-300 motion-safe:ease-out',
-        props.open && sending() && 'cursor-progress',
-      ]}
+    <RequestTray
+      open={props.open}
+      label={props.open ? 'The agent asks' : 'Asked'}
+      busy={sending()}
+      resolved={(seen) => (
+        <Resolved
+          questions={props.questions}
+          answer={props.answer}
+          seen={seen}
+        />
+      )}
     >
-      <Show
-        when={props.open}
-        fallback={
-          <Resolved
-            questions={props.questions}
-            answer={props.answer}
-            seen={!settled()}
-          />
-        }
-      >
-        <div class="flex h-8 items-center gap-1.5 px-2.5 text-meta text-muted">
-          <QuestionIcon />
-          <span class="font-medium text-fg">The agent asks</span>
+      <div ref={(el) => (root = el)} class="contents">
+        <RequestHeader icon={<QuestionIcon />} title="The agent asks">
           <span>
             · {count()} {count() === 1 ? 'question' : 'questions'}
           </span>
-        </div>
-        <div class="flex flex-col gap-5 rounded-sheet border border-line bg-surface p-3 md:p-4">
+        </RequestHeader>
+        <RequestSheet class="gap-5">
           <For each={props.questions} keyed={false}>
             {(q, i) => (
               <fieldset
@@ -247,8 +203,8 @@ export default function AskCard(props: {
               </fieldset>
             )}
           </For>
-        </div>
-        <div class="flex min-h-11 flex-wrap items-center justify-end gap-x-3 gap-y-1 py-1 pr-0.5 pl-2.5">
+        </RequestSheet>
+        <RequestFooter>
           <span class="mr-auto text-meta text-muted">
             {skipped() && count() > 1 && ready()
               ? `${skipped()} left blank, sent as skipped`
@@ -265,9 +221,9 @@ export default function AskCard(props: {
             {skipped() && count() > 1 ? `Send, skip ${skipped()}` : 'Send'}
             <Kbd class="bg-bg/60">{MAC ? '⌘↵' : 'Ctrl↵'}</Kbd>
           </Button>
-        </div>
-      </Show>
-    </div>
+        </RequestFooter>
+      </div>
+    </RequestTray>
   );
 }
 
@@ -281,74 +237,59 @@ function Resolved(props: {
   const first = () => props.questions[0]?.question ?? '';
   const more = () => props.questions.length - 1;
   return (
-    <details class="group/ask expand">
-      <summary
-        class={[
-          'flex min-h-10 cursor-pointer list-none items-center gap-2.5 rounded-sheet border border-line bg-surface px-3 py-2 transition-colors hover:border-line-strong [&::-webkit-details-marker]:hidden',
-          props.seen && 'appear',
-        ]}
-      >
-        <span
-          class={[
-            'grid size-5 shrink-0 place-items-center rounded-full bg-running/15 text-running [&_svg]:size-3 [&_svg]:stroke-[2.5]',
-            props.seen && 'swap-in',
-          ]}
-        >
-          <Show when={props.seen} fallback={<CheckIcon />}>
-            <DrawnCheckIcon />
-          </Show>
-        </span>
-        <span class="min-w-0 flex-1 truncate">
+    <ResolvedRow
+      seen={props.seen}
+      outcome={props.answer === undefined ? 'closed' : 'done'}
+      summary={
+        <>
           <span class="text-muted">Asked </span>
           {first()}
           <Show when={more() > 0}>
             <span class="text-muted"> · +{more()} more</span>
           </Show>
-        </span>
-        <Chevron class="text-muted group-open/ask:rotate-90" />
-      </summary>
-      <div class="flex flex-col gap-3 px-3 pt-3 pb-2">
-        <For each={props.questions} keyed={false}>
-          {(q, i) => (
-            <div class="flex flex-col gap-1">
-              <div class="text-meta font-medium text-muted">{q().header}</div>
-              <div class="text-pretty text-muted">{q().question}</div>
-              <Show
-                when={answers()}
-                fallback={
-                  <div class="text-meta text-muted">
-                    {q()
-                      .options.map((o) => o.label)
-                      .join(' · ')}
-                  </div>
-                }
-              >
-                {(list) => (
-                  <Show
-                    when={list()[i] !== SKIPPED && list()[i]}
-                    fallback={<div class="text-muted italic">Skipped</div>}
-                  >
-                    {(answer) => (
-                      <div class="whitespace-pre-wrap wrap-anywhere">
-                        {answer()}
-                      </div>
-                    )}
-                  </Show>
-                )}
-              </Show>
-            </div>
-          )}
-        </For>
-        <Show when={!answers() && props.answer}>
-          {(text) => (
-            <div class="flex flex-col gap-1 border-t border-line pt-3">
-              <div class="text-meta font-medium text-muted">Your answer</div>
-              <div class="whitespace-pre-wrap wrap-anywhere">{text()}</div>
-            </div>
-          )}
-        </Show>
-      </div>
-    </details>
+        </>
+      }
+    >
+      <For each={props.questions} keyed={false}>
+        {(q, i) => (
+          <div class="flex flex-col gap-1">
+            <div class="text-meta font-medium text-muted">{q().header}</div>
+            <div class="text-pretty text-muted">{q().question}</div>
+            <Show
+              when={answers()}
+              fallback={
+                <div class="text-meta text-muted">
+                  {q()
+                    .options.map((o) => o.label)
+                    .join(' · ')}
+                </div>
+              }
+            >
+              {(list) => (
+                <Show
+                  when={list()[i] !== SKIPPED && list()[i]}
+                  fallback={<div class="text-muted italic">Skipped</div>}
+                >
+                  {(answer) => (
+                    <div class="whitespace-pre-wrap wrap-anywhere">
+                      {answer()}
+                    </div>
+                  )}
+                </Show>
+              )}
+            </Show>
+          </div>
+        )}
+      </For>
+      <Show when={!answers() && props.answer}>
+        {(text) => (
+          <div class="flex flex-col gap-1 border-t border-line pt-3">
+            <div class="text-meta font-medium text-muted">Your answer</div>
+            <div class="whitespace-pre-wrap wrap-anywhere">{text()}</div>
+          </div>
+        )}
+      </Show>
+    </ResolvedRow>
   );
 }
 

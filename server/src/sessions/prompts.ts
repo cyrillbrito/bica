@@ -4,6 +4,7 @@ import {
   InboxDoc,
   type InboxItem,
 } from '@earendil-works/pi-durable';
+import type { JsonValue } from '@earendil-works/chord/json';
 
 import { contextUsage, pruneBlocked } from '@bica/shared/context-usage';
 import { promptBlocks, promptOf } from '@bica/shared/images';
@@ -12,6 +13,7 @@ import type { ModelChoice, PromptImage } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
 import { getAgent } from '../agents/registry';
 import { loadMemory, projectList } from '../agents/common';
+import { connectedAppsLine } from '../connectors/apps';
 import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
 import { SentEntry, type Sent } from '@bica/shared/transcript';
@@ -50,6 +52,8 @@ export async function submit(
   requestId: string,
   from: Sender,
   whenBusy: 'followUp' | 'steer' = 'followUp',
+  // Shown instead of the prompt, such as an answer on a card.
+  entry?: { kind: string; data: JsonValue },
 ) {
   const conversation = await getConversation(id);
   const meta = await sessionMeta(conversation.id);
@@ -74,7 +78,9 @@ export async function submit(
       content: input(sent?.prompt ?? prompt, images),
       requestId,
       whenBusy,
-      ...(sent && { entry: { kind: SentEntry.kind, data: sent.data } }),
+      ...(sent
+        ? { entry: { kind: SentEntry.kind, data: sent.data } }
+        : entry && { entry }),
     },
     context,
   );
@@ -130,8 +136,8 @@ export async function recordSender(id: ConversationId, from: Sender) {
 }
 
 /**
- * Takes the memory index, and the project list for an agent with a
- * `projects` section such as the hub's, when the session holds
+ * Takes the memory index, the connected apps, and the project list for an
+ * agent with a `projects` section such as the hub's, when the session holds
  * no copy: at its first prompt and after a compaction (store.ts). The prompt sections
  * show the copies (server/src/agents/registry.ts), since the agent
  * edits memory mid-session and every change would be sent again. Every
@@ -148,12 +154,18 @@ export async function keepCopies(id: ConversationId) {
     await (
       await getConversation(String(id))
     ).configure({ instructions: null }, context);
-  if (meta?.memory !== undefined && meta.projects !== undefined) return;
+  if (
+    meta?.memory !== undefined &&
+    meta.projects !== undefined &&
+    meta.apps !== undefined
+  )
+    return;
   const taken = {
     memory: meta?.memory ?? (await loadMemory(agent.cwd)),
     projects:
       meta?.projects ??
       (getAgent(agentIdOf(meta)).sections.projects ? await projectList() : ''),
+    apps: meta?.apps ?? (await connectedAppsLine()),
   };
   await editSession(id, (meta) => void Object.assign(meta, taken));
 }

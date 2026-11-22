@@ -5,7 +5,7 @@ import { defineExtension, defineTool } from '@earendil-works/pi-durable';
  * Asks the user and ends the run; the answer arrives as the next prompt.
  * Nothing blocks while waiting, so a question survives restarts and can be
  * answered hours later from another device. The browser draws the options
- * from the call's arguments (src/components/AskCard.tsx).
+ * from the call's arguments (client/src/sessions/QuestionCard.tsx).
  */
 export const ASK = 'ask';
 

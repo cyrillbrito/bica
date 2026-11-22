@@ -1,6 +1,9 @@
-import { For, Match, Show, Switch } from 'solid-js';
+import { For, Match, Show, Switch, useContext } from 'solid-js';
 import Activity from './Activity';
-import AskCard from './AskCard';
+import QuestionCard from './QuestionCard';
+import ApprovalCard from '../connectors/ApprovalCard';
+import { answerRequest } from '../requests/requests';
+import { SessionId } from './step-detail';
 import ErrorReply from './ErrorReply';
 import Markdown from '../markdown/Markdown';
 import { IconButton } from '../ui/Button';
@@ -24,7 +27,8 @@ import { imageUrl, openImage } from './images';
 import { clockTime } from '../ui/time';
 import { formatTokens } from '../ui/format';
 import { contextMenu } from '../ui/ContextMenu';
-import { type Message } from '@bica/shared/transcript';
+import type { ApprovalRequest } from '@bica/shared/requests';
+import { type Message, type Question } from '@bica/shared/transcript';
 import { promptArrived } from './queue-glide';
 
 export default function MessageRow(props: {
@@ -37,6 +41,7 @@ export default function MessageRow(props: {
   // Where relative paths in replies start.
   cwd?: string;
 }) {
+  const session = useContext(SessionId);
   const text = () =>
     'text' in props.message ? (props.message.text ?? '') : '';
   // A static wrapper: the list's insert effect then doesn't track every row.
@@ -176,14 +181,46 @@ export default function MessageRow(props: {
         >
           {(activity) => <Activity activity={activity()} />}
         </Match>
-        <Match when={props.message.kind === 'ask' ? props.message : undefined}>
-          {(ask) => (
-            <AskCard
-              questions={ask().questions}
-              open={ask().open}
-              answer={ask().answer?.text}
-              onAnswer={props.onAnswer}
-            />
+        <Match
+          when={props.message.kind === 'request' ? props.message : undefined}
+        >
+          {(row) => (
+            <Switch>
+              <Match
+                when={
+                  row().request.kind === 'question'
+                    ? (row().request as { questions: Question[] })
+                    : undefined
+                }
+              >
+                {(ask) => (
+                  <QuestionCard
+                    questions={ask().questions}
+                    open={row().open}
+                    answer={row().answer?.text}
+                    onAnswer={props.onAnswer}
+                  />
+                )}
+              </Match>
+              <Match
+                when={
+                  row().request.kind === 'approval'
+                    ? (row().request as ApprovalRequest)
+                    : undefined
+                }
+              >
+                {(approval) => (
+                  <ApprovalCard
+                    request={approval()}
+                    open={row().open}
+                    answer={row().answer}
+                    onAnswer={(value) =>
+                      answerRequest(session!(), row().key, value)
+                    }
+                  />
+                )}
+              </Match>
+            </Switch>
           )}
         </Match>
         <Match when={props.message.kind === 'call' ? props.message : undefined}>

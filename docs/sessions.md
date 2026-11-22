@@ -63,7 +63,7 @@ Each session in the sidebar shows its status:
 - Running: the agent is working.
 - Retrying: the provider failed, and Pi Durable will try again.
 - Failed: the last run ended in an error or without an answer, or its work is stuck.
-- Waiting for you: the agent asked a question.
+- Waiting for you: the agent asked a question, or a call waits for your approval ([requests.md](./requests.md)).
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 

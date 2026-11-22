@@ -19,6 +19,13 @@ import type { ProjectedView } from './projection';
 import { CompactionEntry, entryKind } from './pi-types';
 import { PruneEntry } from './prune';
 import type { PromptImage, SessionStatus } from './protocol';
+import {
+  ASK,
+  AnswerEntry,
+  requestOf,
+  type Answer,
+  type ApprovalRequest,
+} from './requests';
 
 // `key` stays the same while a row updates, so its DOM (and open state) survives.
 export type Message = { key: string } & (
@@ -54,13 +61,14 @@ export type Message = { key: string } & (
   // Pruning asked for in this tab, until it lands.
   | { kind: 'pruning'; running: boolean }
   | { kind: 'text' | 'error'; text: string }
-  // Questions for the user; `open` while the session waits for the answer.
-  // `answer`: the prompt that came next, shown in the card instead of a row.
+  // Something the session waits on you for (shared/src/requests.ts); `open`
+  // while it waits. `answer`: the prompt that answered, shown in the card
+  // instead of a row, with `value` when it was a choice made on the card.
   | {
-      kind: 'ask';
-      questions: Question[];
+      kind: 'request';
+      request: UserRequest;
       open: boolean;
-      answer?: { text: string; timestamp: number };
+      answer?: { text: string; value?: string; timestamp: number };
     }
   // What was said in a voice call, back to back.
   | { kind: 'call'; lines: VoiceLine[] }
@@ -127,6 +135,11 @@ export function isTurn(entry: EntryRecord) {
   return !VoiceEntry.is(entry) && !PruneEntry.is(entry);
 }
 
+/** What a request card shows: the agent's questions, or calls to approve. */
+export type UserRequest =
+  | { kind: 'question'; questions: Question[] }
+  | ApprovalRequest;
+
 /** One question of the `ask` tool (server/src/tools/ask.ts). */
 export interface Question {
   question: string;
@@ -180,7 +193,7 @@ export function toMessages(
     for (const m of entry.model ?? [])
       if (m.role === 'toolResult') results.set(m.toolCallId, m);
   const slots = new Map(live?.tools?.map((s) => [s.callId, s]));
-  const waitingOn = pendingAsk(live, lastTurn(view));
+  const waitingOn = openRequests(live, view.entries);
 
   const toolCall = (block: PiToolCall): ToolCall => {
     const result = results.get(block.id);
@@ -212,8 +225,52 @@ export function toMessages(
     };
   };
 
+  // The questions' arguments stream in; other requests come with the result.
+  const userRequest = (block: PiToolCall): UserRequest | undefined => {
+    if (block.name === ASK)
+      return { kind: 'question', questions: questionsOf(block.arguments) };
+    const result = results.get(block.id);
+    const request = result && requestOf(result);
+    return request === 'question' ? undefined : request;
+  };
+
   type Flat = { key: string } & (Exclude<Message, Activity> | Step);
   const messages: Flat[] = [];
+  // The questions a typed prompt answers: asked since your last prompt.
+  let asking: string | undefined;
+  /**
+   * Folds an answer into its card. Right after it, the answer moves past the
+   * reply's end, so the card stands where the prompt row would: `moved`.
+   * With a note between, the card only shows it: `shown`.
+   */
+  const answered = (
+    key: string,
+    answer: { text: string; value?: string; timestamp: number },
+  ) => {
+    const at = messages.findLastIndex((m) => m.key === key);
+    const card = messages[at];
+    if (card?.kind !== 'request' || card.answer) return undefined;
+    const end = messages[at + 1];
+    if (end?.kind === 'end' && at === messages.length - 2) {
+      messages.splice(at, 2, end, { ...card, answer });
+      return 'moved';
+    }
+    messages[at] = { ...card, answer };
+    return 'shown';
+  };
+  // A card's answer outside the loaded window shows as a plain prompt.
+  const answerRow = (key: string, data: Answer, timestamp: number) => {
+    asking = undefined;
+    const answer = { text: data.label, value: data.value, timestamp };
+    if (!answered(data.call, answer))
+      messages.push({
+        key,
+        kind: 'user',
+        text: data.label,
+        images: [],
+        timestamp,
+      });
+  };
   const add = (message: PiMessage, key: string, sent?: Sent) => {
     if (message.role === 'user') {
       const content = message.content;
@@ -230,23 +287,16 @@ export function toMessages(
             text: sent.text,
           }
         : senderOf(withoutCallWords(text));
-      // Whatever you send next answers the questions, card or composer. It
-      // moves past the answer's end, so the prompt row's place stays the same.
-      const end = messages.at(-1);
-      const ask = messages.at(-2);
+      // Whatever you send next answers the questions, card or composer.
+      // Other requests take only an answer on their card.
+      const ask = sender.from ? undefined : asking;
+      if (!sender.from) asking = undefined;
       if (
-        !sender.from &&
+        ask &&
         !images.length &&
-        end?.kind === 'end' &&
-        ask?.kind === 'ask' &&
-        !ask.answer
-      ) {
-        messages.splice(-2, 2, end, {
-          ...ask,
-          answer: { text, timestamp: message.timestamp },
-        });
+        answered(ask, { text, timestamp: message.timestamp }) === 'moved'
+      )
         return;
-      }
       messages.push({
         key,
         kind: 'user',
@@ -273,14 +323,17 @@ export function toMessages(
           durationMs: block.durationMs,
         });
       // Shown as a card of its own, not a row in the activity list.
-      if (block.type === 'toolCall' && block.name === ASK)
+      const request =
+        block.type === 'toolCall' ? userRequest(block) : undefined;
+      if (request && block.type === 'toolCall') {
+        if (request.kind === 'question') asking = block.id;
         messages.push({
           key: block.id,
-          kind: 'ask',
-          questions: questionsOf(block.arguments),
-          open: block.id === waitingOn,
+          kind: 'request',
+          request,
+          open: waitingOn.has(block.id),
         });
-      else if (block.type === 'toolCall') {
+      } else if (block.type === 'toolCall') {
         // Calls with nothing between them ran as one round: one group.
         const last = messages.at(-1);
         if (
@@ -333,9 +386,18 @@ export function toMessages(
   };
   let measured: number | undefined;
   view.entries.forEach((entry, n) => {
-    if (entry.kind === 'pi.user' || SentEntry.is(entry))
+    if (
+      entry.kind === 'pi.user' ||
+      SentEntry.is(entry) ||
+      AnswerEntry.is(entry)
+    )
       end(view.entries[n - 1]?.id);
     if (entry.id > forkedAt!) divider();
+    if (AnswerEntry.is(entry)) {
+      const prompt = entry.model?.[0];
+      answerRow(`${entry.id}`, entry.data, prompt?.timestamp ?? 0);
+      return;
+    }
     if (VoiceEntry.is(entry)) {
       const line = entry.data;
       const last = messages.at(-1);
@@ -363,6 +425,7 @@ export function toMessages(
     }
     if (CompactionEntry.is(entry)) {
       settle();
+      asking = undefined;
       const text = textOf(
         (entry.model?.[0]?.content ?? []) as { type: string }[],
       );
@@ -428,15 +491,12 @@ export function toMessages(
 export function promptAt(m: { kind: string }): number | undefined {
   const row = m as Message;
   if (row.kind === 'user') return row.timestamp;
-  if (row.kind === 'ask') return row.answer?.timestamp;
+  if (row.kind === 'request') return row.answer?.timestamp;
 }
 
 function num(v: unknown) {
   return typeof v === 'number' ? v : undefined;
 }
-
-// Kept in step with server/src/tools/ask.ts, which the browser can't import.
-const ASK = 'ask';
 
 /** The arguments as they stream in: any field may still be missing. */
 function questionsOf(args: Record<string, unknown>): Question[] {
@@ -451,10 +511,6 @@ function questionsOf(args: Record<string, unknown>): Question[] {
   }));
 }
 
-/**
- * The `ask` call the session waits on: the run ended on its result and
- * nothing came after. Any prompt, an answer or not, moves on.
- */
 // The server reads Pi's live doc, the browser its projection: both keep these.
 type Run = Pick<LiveState, 'run' | 'generation' | 'runFailure'>;
 
@@ -487,12 +543,26 @@ function failureText(failure: RunFailure | undefined) {
   }
 }
 
-function pendingAsk(live: Run | undefined, newest: EntryRecord | undefined) {
-  if (live?.run) return undefined;
-  const last = newest?.model?.at(-1);
-  return last?.role === 'toolResult' && last.toolName === ASK && !last.isError
-    ? last.toolCallId
-    : undefined;
+/**
+ * The calls whose requests wait on you: made since your last prompt or
+ * answer, while no run works. A note or another session's message runs the
+ * agent but leaves them open, since only you can answer; a compaction
+ * closes them, as the agent no longer reads them.
+ */
+export function openRequests(
+  live: Run | undefined,
+  // Oldest first; the newest few are enough.
+  entries: readonly EntryRecord[],
+) {
+  const open = new Set<string>();
+  if (live?.run) return open;
+  for (const entry of entries.toReversed()) {
+    const model = entry.model ?? [];
+    if (!SentEntry.is(entry) && model.some((m) => m.role === 'user')) break;
+    for (const m of model)
+      if (m.role === 'toolResult' && requestOf(m)) open.add(m.toolCallId);
+  }
+  return open;
 }
 
 function textOf(content: readonly { type: string; text?: string }[]) {
@@ -504,24 +574,20 @@ function textOf(content: readonly { type: string; text?: string }[]) {
 /** Shared by the session list (server) and the open session (browser). */
 export function statusOf(
   live: Run | undefined,
-  newest: EntryRecord | undefined,
+  // Oldest first; the newest few are enough.
+  entries: readonly EntryRecord[],
 ): SessionStatus {
   if (live?.run) return live.generation?.retry ? 'retrying' : 'running';
   if (failureText(live?.runFailure)) return 'error';
-  if (pendingAsk(live, newest)) return 'waiting';
-  const last = newest?.model?.at(-1);
+  if (openRequests(live, entries).size) return 'waiting';
+  const last = entries.findLast(isTurn)?.model?.at(-1);
   return last?.role === 'assistant' && last.stopReason === 'error'
     ? 'error'
     : 'idle';
 }
 
 export function viewStatus(view: ProjectedView) {
-  return statusOf(liveOf(view), lastTurn(view));
-}
-
-// Voice lines come and go during a run; the status follows the agent.
-function lastTurn(view: ProjectedView) {
-  return view.entries.findLast(isTurn);
+  return statusOf(liveOf(view), view.entries);
 }
 
 function liveOf(view: ProjectedView) {

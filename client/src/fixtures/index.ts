@@ -15,6 +15,7 @@ import type {
 } from '@bica/shared/protocol';
 import { chat, type Chat, type Turn } from './conversation';
 import { MODES, datasets, type Dataset, type Mode } from './data';
+import { fixtureConnectors, fixtureToolkits } from './connectors';
 import { fixtureDiff, gitFixtures } from './git';
 import {
   fixtureAccounts,
@@ -221,6 +222,10 @@ export function fixture(topic: Topic, params: unknown) {
       return { value: cached(m, 'accounts', () => fixtureAccounts(worst)) };
     if (topic === 'plan.usage')
       return { value: cached(m, 'plan', () => fixturePlanUsage(worst)) };
+    if (topic === 'connectors')
+      return {
+        value: cached(m, 'connectors', () => fixtureConnectors(worst)),
+      };
   }
   switch (topic) {
     case 'sessions':
@@ -318,6 +323,10 @@ export function testAnswer<C extends Call>(
         ? talk?.prune
         : undefined;
   if (play) return play().then(() => null as never);
+  if (call === 'connector.toolkits' && (m === 'demo' || m === 'worst'))
+    return Promise.resolve(
+      fixtureToolkits((args as { search: string }).search) as never,
+    );
   const answer =
     call === 'session.detail'
       ? talk

@@ -31,6 +31,7 @@ import {
   streamTerminals,
   voiceHandoff,
 } from './demo-chats';
+import { approvalTurn } from './connectors';
 import { conversations, type Conversations } from './conversations';
 
 export interface Dataset {
@@ -328,7 +329,7 @@ function demo(): Dataset {
         'blog',
         blog,
         'Draft: building Bica with Bica',
-        'done',
+        'waiting',
         10 * MIN,
         {
           id: 'demo-blog',
@@ -376,7 +377,10 @@ function demo(): Dataset {
       'demo-release': { turns: releaseNotes, start: now - 2 * HOUR - MIN },
       'demo-handoff': { ...voiceHandoff, start: now - 3 * MIN },
       'demo-voice': { turns: calmerVoice, start: now - 26 * MIN },
-      'demo-blog': { turns: blogDraft, start: now - 11 * MIN },
+      'demo-blog': {
+        turns: [...blogDraft, approvalTurn(false)],
+        start: now - 11 * MIN,
+      },
       'demo-sourdough': { turns: sourdough, start: now - DAY - 3 * MIN },
     },
     git: {

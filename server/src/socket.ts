@@ -45,6 +45,14 @@ import {
   watchAccounts,
 } from './models/accounts';
 import { voiceLog } from './voice/log';
+import {
+  connectApp,
+  disconnectApp,
+  searchToolkits,
+  setKey,
+  watchConnectors,
+} from './connectors/apps';
+import { answerRequest } from './sessions/requests';
 import { addPhotos, startCall, stopCall, transcribe } from './voice/voice';
 import { watchPlanUsage } from './models/usage';
 import {
@@ -160,6 +168,14 @@ const calls: Handlers = {
   'account.add': async ({ provider }) => addAccount(provider),
   'account.useFirst': async ({ id }) => useFirst(id),
   'account.signOut': async ({ id }) => signOut(id),
+  'connector.key': async ({ key }) => setKey(key),
+  'connector.toolkits': async ({ search }) => searchToolkits(search),
+  'connector.connect': async ({ toolkit }) => connectApp(toolkit),
+  'connector.disconnect': async ({ id }) => disconnectApp(id),
+  'request.answer': async ({ session, call, value }) => {
+    await answerRequest(session, call, value);
+    return null;
+  },
   'git.stage': async (args) => stage(ref(args), args.paths, args.repo),
   'git.unstage': async (args) => unstage(ref(args), args.paths, args.repo),
   'git.commit': async (args) =>
@@ -210,6 +226,7 @@ const REPEATABLE = new Set<Call>([
   'file.read',
   'file.link',
   'path.find',
+  'connector.toolkits',
   'git.diff',
   'git.log',
   'git.show',
@@ -243,6 +260,7 @@ const topics: {
   models: (_params, sink) => watchModels(sink.snapshot),
   settings: (_params, sink) => watchSettings(sink.snapshot),
   accounts: (_params, sink) => watchAccounts(sink.snapshot),
+  connectors: (_params, sink) => watchConnectors(sink.snapshot),
   'plan.usage': (_params, sink) => watchPlanUsage(sink.snapshot),
   conversation: ({ id }, sink, have) => watchConversation(id, sink, have),
   'git.status': (params, sink) => watchStatus(ref(params), sink.snapshot),

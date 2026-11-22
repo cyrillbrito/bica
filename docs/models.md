@@ -10,7 +10,7 @@ When a plan's sign-in expires or is revoked and no other account can take the re
 
 A ChatGPT plan can sign in two ways: Sign in with ChatGPT under OpenAI, or the older OpenAI Codex (legacy). [Voice calls and dictation](./voice.md) need the legacy one.
 
-Exa isn't a model provider. Its key turns on the agent's web search and fetch ([tools.md](./tools.md)), and the free plan is enough.
+Exa isn't a model provider. Its key turns on the agent's web search and fetch ([tools.md](./tools.md)), and the free plan is enough. Composio's key isn't here either: it goes in Settings → Connected apps ([connectors.md](./connectors.md)).
 
 ## More than one account
 

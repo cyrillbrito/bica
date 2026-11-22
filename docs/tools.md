@@ -6,16 +6,19 @@ The agent works through tools. Every call carries a short summary of what it is 
 - Web search and fetch go through Exa, once its key is set ([models.md](./models.md#providers)). Both take a list: search runs its queries in parallel, and fetch reads all its URLs in one Exa request. A fetch returns at most 50,000 characters of page text, split evenly between its URLs, and a page that fails shows its error without failing the others. Fetching a YouTube link returns the video's transcript, though Exa sometimes translates it to English and has no option for the original language.
 - Terminal tools share the workspace's terminals with you ([terminals.md](./terminals.md)).
 - The session tools start, read, message, and stop other sessions ([orchestration.md](./orchestration.md#the-session-tools)).
+- Composio's tools reach your connected apps, mostly from code mode, and calls that change something wait for your approval ([connectors.md](./connectors.md)).
 
 ## Code mode
 
 Code mode, the `codemode` tool, lets the model write a short JavaScript script that calls the other tools, so it can run them in parallel, chain them, and filter big output. Only what the script prints reaches the model. It is Pi Durable's code mode: each call in a script is a tool call of its own, and a script survives a restart. Scripts can call every tool but `ask`, which ends the run.
 
+Some tools are only for scripts and aren't listed, such as Composio's search, which the `connectors` prompt section explains instead, so their schemas stay out of the prompt.
+
 Scripts can also call classifier models, which answer typed yes/no, choice, or score questions in well under a second for a fraction of a cent. That makes it cheap to label many items and read only the flagged ones.
 
 ## Asking you
 
-`ask` puts one to four multiple-choice questions to you and ends the run. Nothing waits, so a question can be answered hours later from another device. Typing in the composer answers too, and number keys pick options. A note or another session's message that comes first doesn't answer: it runs the agent with word that your answer is still to come. Once answered, the card folds into one row.
+`ask` puts one to four multiple-choice questions to you and ends the run, a [request](./requests.md) that can be answered hours later from another device. Typing in the composer answers too, and number keys pick options. A note or another session's message that comes first doesn't answer: it runs the agent with word that your answer is still to come. Once answered, the card folds into one row.
 
 ## Sources
 

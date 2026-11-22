@@ -234,6 +234,7 @@ export async function fork(id: string, at?: number) {
           'watchedBy',
           'memory',
           'projects',
+          'apps',
           'tonight',
           'archiveAfterRun',
         ] as const)

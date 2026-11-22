@@ -90,9 +90,15 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Code mode**: The `codemode` tool, which runs a short script that calls the other tools, as in Pi Durable and Cloudflare. _Avoid_: script tool
 
-**Question**: A multiple-choice question an agent puts to you with `ask`. You answer it. _Avoid_: prompt, poll
+**Request**: Something a session waits on you for, shown as a card in the transcript: questions or an approval. Its tool ends the run, and your answer comes back as the next prompt. _Avoid_: prompt, elicitation, interrupt
+
+**Question**: A multiple-choice question an agent puts to you with `ask`, one kind of request. You answer it. _Avoid_: prompt, poll
 
 **Session tools**: The tools that list, start, read, message, stop, and archive other sessions. _Avoid_: subagent tools
+
+**Connected app**: One of your apps, such as Gmail, that the agent reaches through Composio, which keeps its sign-in. Composio calls it a connected account of a toolkit, and code keeps those words where it talks to Composio. _Avoid_: connector (alone, for the app), integration, toolkit in the UI
+
+**Approval**: The yes a call to a connected app waits for before it creates, updates, or deletes something, given on its approval card, one kind of request. _Avoid_: permission, confirmation, elicitation (Composio's word for the request)
 
 ## Context
 

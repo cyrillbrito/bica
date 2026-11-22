@@ -17,6 +17,7 @@ import { contextBreakdown, type ContextBreakdown } from './context-breakdown';
 import { contextOf, contextUsage, type ContextUsage } from './context-usage';
 import { piDocs } from './pi-types';
 import type { ModelCatalog, StepDetail } from './protocol';
+import { ASK } from './requests';
 
 type Json = Record<string, unknown>;
 
@@ -45,8 +46,6 @@ export type ProjectedView = Omit<ConversationView, 'docs'> & {
 
 // Long enough for a summary, a path or a command's first line.
 const ARG_CHARS = 200;
-// Shown whole: its questions are the card.
-const ASK = 'ask';
 
 /**
  * Projects views one after another; entries never change, so each is
@@ -154,6 +153,8 @@ function slimMessage(
       details: defined({
         ...timing(m.details),
         stats: statsOf(m.details),
+        // A request's card is drawn from it (shared/src/requests.ts).
+        request: (m.details as { request?: unknown } | undefined)?.request,
       }) as never,
     };
   if (m.role !== 'assistant') return m;
@@ -172,6 +173,7 @@ function slimMessage(
       const { partialJson, ...call } = b as typeof b & {
         partialJson?: string;
       };
+      // Shown whole: its questions are the card.
       return call.name === ASK
         ? call
         : defined({

@@ -24,6 +24,7 @@ export const coding: Agent = {
     'web',
     'session-tools',
     'ask',
+    'connectors',
     'codemode',
   ],
   skills: true,

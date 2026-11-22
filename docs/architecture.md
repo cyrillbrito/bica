@@ -46,6 +46,8 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)). On the server, `worktrees.ts` makes and removes worktrees, and `workspace.ts` checks a workspace ref before file or git code touches its folder.
 - `files/` and `git/`: file and diff views, reading files, the file list, and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)). Git's diffs read file contents through `server/src/files/files.ts`, so what counts as text, media, or too large is decided once.
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).
+- `connectors/`: connected apps through Composio, its tools, and approvals ([connectors.md](./connectors.md)).
+- `requests/` (client): the frame of the cards a session waits on you with, questions and approvals; the server answers them from `sessions/requests.ts` ([requests.md](./requests.md)).
 - `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
 
 A file goes to the feature that owns it, not the one that uses it first. Features import each other freely, with no layering between them. The pieces every feature touches stay in one place each: `shared/src/protocol.ts`, the socket's table of calls in `server/src/socket.ts`, the sidebar in `client/src/app/sidebar/`, and ⌘K in `client/src/app/palette/`. A piece of one moves into its feature only when it owns state there, as terminal and kept-file rows did.
@@ -79,6 +81,7 @@ Bica's data sits in the repo's `.data/`. The browser keeps small preferences per
 | Keys and sign-ins | `auth.json`, readable only by you |
 | Plan accounts' emails and order | `accounts.json` |
 | Plan limits for the meters | `plan-usage.json` |
+| Composio's user and session ids | `composio.json` |
 | Images sent with prompts, by content hash: copies of what `harness.sqlite` holds | `attachments/` |
 | Worktrees, branches, files | git and the disk |
 

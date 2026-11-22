@@ -66,6 +66,8 @@ import RotateCcw from 'lucide/dist/esm/icons/rotate-ccw.mjs';
 import RefreshCw from 'lucide/dist/esm/icons/refresh-cw.mjs';
 import Hourglass from 'lucide/dist/esm/icons/hourglass.mjs';
 import Search from 'lucide/dist/esm/icons/search.mjs';
+import ShieldQuestion from 'lucide/dist/esm/icons/shield-question-mark.mjs';
+import TriangleAlert from 'lucide/dist/esm/icons/triangle-alert.mjs';
 import SlidersHorizontal from 'lucide/dist/esm/icons/sliders-horizontal.mjs';
 import Snowflake from 'lucide/dist/esm/icons/snowflake.mjs';
 import Sparkles from 'lucide/dist/esm/icons/sparkles.mjs';
@@ -156,6 +158,9 @@ export const PullRequestClosedIcon = icon(GitPullRequestClosed);
 export const MergedIcon = icon(GitMerge);
 export const InfoIcon = icon(Info);
 export const AlertIcon = icon(CircleAlert);
+/** A call to a connected app waiting for a yes, and one that deletes. */
+export const ApprovalIcon = icon(ShieldQuestion);
+export const WarningIcon = icon(TriangleAlert);
 export const CompactIcon = icon(ChevronsDownUp);
 export const PruneIcon = icon(Eraser);
 /** Voice calls. */

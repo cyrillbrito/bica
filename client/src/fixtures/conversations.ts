@@ -7,6 +7,7 @@ import { createSignal } from 'solid-js';
 import type { ProjectedView } from '@bica/shared/projection';
 import type { StepDetail } from '@bica/shared/protocol';
 import { chat, type Block, type ChatOptions, type Turn } from './conversation';
+import { approvalTurn } from './connectors';
 import { fixtureContext } from './usage';
 
 const MIN = 60_000;
@@ -147,8 +148,11 @@ function finished(): Turn[] {
   ];
 }
 
-/** Waiting on the `ask` tool: the session stopped on its result. */
-function asking(): Turn[] {
+/**
+ * Waiting on the `ask` tool: the session stopped on its result. The worst
+ * case waits on approval cards too.
+ */
+function asking(worst: boolean): Turn[] {
   return [
     { user: 'Write the post about the new diff view.' },
     {
@@ -193,6 +197,7 @@ function asking(): Turn[] {
         },
       ],
     },
+    ...(worst ? [approvalTurn(true)] : []),
   ];
 }
 
@@ -471,7 +476,7 @@ export function conversations(ids: {
   if (ids.asking)
     views.set(
       ids.asking,
-      withContext(answering(ids.asking, asking()), 'asking', worst),
+      withContext(answering(ids.asking, asking(worst)), 'asking', worst),
     );
   if (ids.running)
     views.set(

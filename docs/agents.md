@@ -5,7 +5,7 @@ An agent is what goes into a session: its system prompt, its model and effort, i
 - Coding: one task in one workspace, with every tool. The default.
 - Assistant: a helper for one project that keeps going for months, with memory in files ([assistant-mode.md](./assistant-mode.md)).
 - Night: finishes alone, at high effort or more, and ends with a report ([night-runs.md](./night-runs.md)). It has no `ask`, since nobody can answer.
-- Hub: coordinates other sessions with the session tools and no shell, on its own model ([hub.md](./hub.md)).
+- Hub: coordinates other sessions with the session tools and no shell, on its own model ([hub.md](./hub.md)). It has no code mode, so no [connected apps](./connectors.md) either.
 
 An agent holds nothing else. What Bica does around a session is a feature of its own that looks at which agent the session runs as:
 

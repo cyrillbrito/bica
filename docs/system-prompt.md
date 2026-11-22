@@ -1,10 +1,10 @@
 # System prompt and skills
 
-The system prompt is built from named prompt sections that every [agent](./agents.md) shares, as in the Pi coding agent. Edits apply to running sessions. The sections that change least come first, so a change keeps most of the prompt cache.
+The system prompt is built from named prompt sections that every [agent](./agents.md) shares, as in the Pi coding agent. Edits apply to running sessions. The memory index, the hub's project list, and the connected apps are copies taken at a session's first prompt and after each compaction, so their changes don't break the prompt cache. The sections that change least come first, so a change keeps most of the prompt cache.
 
 1. What Bica is and what this session does.
 2. The tools the session has, one line each, with their rules, such as git staying read-only unless asked. A session without a tool gets neither its line nor its rules.
-3. The declarations of the tools code mode scripts can call.
+3. The connected apps and how to reach them ([connectors.md](./connectors.md)), then the declarations of the tools code mode scripts can call.
 4. Project instructions: your `~/.bica/AGENTS.md`, then the `AGENTS.md` or `CLAUDE.md` of each folder down to the workspace, then the memory index, the hub's project list, the skills, and the workspace's path.
 5. Rules shared by kind: handoffs to child sessions, and keeping memory for long-lived sessions such as [assistant mode](./assistant-mode.md) and the [hub](./hub.md).
 6. The agent's own role, such as a [night run](./night-runs.md)'s rules to finish alone.

@@ -203,6 +203,34 @@ export interface Accounts {
   signIn: SignIn | null;
 }
 
+/** An app connected through Composio (docs/connectors.md). */
+export interface ConnectedApp {
+  // Composio's connected account id.
+  id: string;
+  // Composio's toolkit slug: gmail.
+  toolkit: string;
+  name: string;
+  logo: string | null;
+  // Composio's status word: ACTIVE, INITIATED, EXPIRED, FAILED, INACTIVE.
+  status: string;
+  createdAt: number;
+}
+
+export interface Connectors {
+  // The saved Composio key's last 4 characters; null: no key.
+  keyHint: string | null;
+  apps: ConnectedApp[];
+  // Composio couldn't be reached or refused the key; null: fine.
+  error: string | null;
+}
+
+/** An app in Composio's catalog that Connect can add. */
+export interface AppChoice {
+  slug: string;
+  name: string;
+  logo: string | null;
+}
+
 /** A folder sessions run in; git is optional. */
 export interface Project {
   id: string;
@@ -558,6 +586,19 @@ export interface Calls {
   'account.useFirst': { args: { id: string }; result: null };
   // Forgets a saved sign-in or key, with its email and limits.
   'account.signOut': { args: { id: string }; result: null };
+  // Saves the Composio key once Composio accepts it; null removes it.
+  'connector.key': { args: { key: string | null }; result: null };
+  // Composio's catalog, searched by name.
+  'connector.toolkits': { args: { search: string }; result: AppChoice[] };
+  // Starts connecting an app: the sign-in page to open.
+  'connector.connect': { args: { toolkit: string }; result: string };
+  // Removes a connected app and revokes its access.
+  'connector.disconnect': { args: { id: string }; result: null };
+  // Answers a request on its card with one of its choices (docs/requests.md).
+  'request.answer': {
+    args: { session: string; call: string; value: string };
+    result: null;
+  };
   // Absent paths: everything.
   // repo, on every git call: a submodule's path; absent, the workspace's own
   // repo. Paths are from the workspace; without paths, everything in repo.
@@ -654,6 +695,7 @@ export interface Topics {
   models: { params: Record<string, never>; value: ModelCatalog };
   settings: { params: Record<string, never>; value: Settings };
   accounts: { params: Record<string, never>; value: Accounts };
+  connectors: { params: Record<string, never>; value: Connectors };
   // null: no such conversation.
   conversation: { params: { id: string }; value: ProjectedView | null };
   // null: not a git repository.

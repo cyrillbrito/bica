@@ -46,6 +46,7 @@ export type ExtensionName =
   | 'session-tools'
   | 'ask'
   | 'codemode'
+  | 'connectors'
   | 'hub-file-tools'
   | 'hub-session-tools'
   | 'hub-terminal-tools';

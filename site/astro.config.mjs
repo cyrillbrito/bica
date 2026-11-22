@@ -75,6 +75,7 @@ export default defineConfig({
             'docs/features/tools',
             'docs/features/instructions',
             'docs/features/context',
+            'docs/features/connected-apps',
             'docs/features/orchestration',
             'docs/features/night-runs',
             'docs/features/assistant-mode',

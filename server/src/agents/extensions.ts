@@ -12,6 +12,7 @@ import { CodingTools, HubFileTools } from '../tools/coding';
 import { ToolSummary } from '../tools/summary';
 import { createWebTools } from '../tools/web';
 import { exaKey } from '../models/exa';
+import { Connectors } from '../connectors/tools';
 import { install } from '../harness';
 import { SessionDoc, agentIdOf } from '../sessions/session-doc';
 import { HubSessionTools, SessionTools } from '../orchestration/tools';
@@ -99,6 +100,8 @@ const BY_NAME: Record<string, Extension> = {
   web: createWebTools(exaKey),
   'session-tools': SessionTools,
   ask: AskTool,
+  // Composio's tools read the key per call, like the web tools.
+  connectors: Connectors,
   codemode: Codemode,
   'hub-file-tools': HubFileTools,
   'hub-session-tools': HubSessionTools,

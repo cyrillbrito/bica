@@ -89,6 +89,8 @@ const KEY_PREFIX: Record<string, string> = {
   anthropic: 'sk-ant-',
   openai: 'sk-',
   openrouter: 'sk-or-',
+  // A project key; Composio's consumer keys (ck_) only reach its MCP server.
+  composio: 'ak_',
 };
 
 /** An API key: one word, long enough, and the provider's usual start. */
