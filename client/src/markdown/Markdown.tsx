@@ -23,6 +23,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { openPath, showPath } from '../files/files';
 
 import Mermaid from './Mermaid';
+import Properties from './Properties';
 import { createSmoothText } from './smooth-text';
 import { CODE_THEME } from '../files/pierre';
 
@@ -183,6 +184,33 @@ const pathlinks: MarkdownExtension = {
     },
   },
 };
+// Obsidian's `[[Note]]`, `[[Note|label]]`, and `![[embed]]`. They resolve
+// by name across a vault, which Bica can't, so they read as links but don't open.
+const WIKI = /^!?\[\[([^[\]|\n]+?)(?:\|([^[\]\n]+))?\]\]/;
+const wikilinks: MarkdownExtension = {
+  name: 'wikilinks',
+  inlineParser: {
+    markers: '[!',
+    parse({ source, index, inLink }) {
+      if (inLink) return;
+      const found = WIKI.exec(source.slice(index));
+      if (!found) return;
+      const target = found[1]!.trim();
+      return {
+        node: {
+          type: 'inlineComponent',
+          name: 'wikilink',
+          attributes: {},
+          tagName: 'span',
+          properties: { class: 'wikilink', title: target },
+          children: [{ type: 'text', value: found[2]?.trim() || target }],
+        },
+        length: found[0].length,
+      };
+    },
+  },
+};
+
 type Node = { type: string; value?: string; children?: Node[] };
 function linkCodePaths(node: Node): void {
   if (node.type === 'link' || !node.children) return;
@@ -203,10 +231,12 @@ function linkCodePaths(node: Node): void {
 // Model output is untrusted: TanStack escapes raw HTML and drops unsafe URLs.
 // Heading ids would change as a streamed heading grows.
 const options = {
-  extensions: [streamingMarkdownExtension(), autolinks, pathlinks],
+  extensions: [streamingMarkdownExtension(), autolinks, pathlinks, wikilinks],
   frontmatter: false,
   headingIds: false,
 };
+// Files only: in a reply, a leading `---` is a rule more often than metadata.
+const fileOptions = { ...options, frontmatter: true };
 
 /**
  * Re-parses the whole text on every update (it's fast), then renders each
@@ -219,18 +249,25 @@ export default function Markdown(props: {
   cwd?: string;
   // A reply that may still grow: added text types in. Read once.
   streaming?: boolean;
+  // A whole file: leading YAML frontmatter shows as properties.
+  frontmatter?: boolean;
 }) {
   const navigate = useNavigate();
   const streaming = untrack(() => props.streaming);
   const smooth = streaming ? createSmoothText(() => props.text) : undefined;
+  const text = () => (smooth ? smooth.text() : props.text);
+  const parsed = createMemo(
+    () => parseMarkdown(text(), props.frontmatter ? fileOptions : options),
+    { name: 'markdownDocument' },
+  );
   const blocks = createMemo(
     () => {
-      const text = smooth ? smooth.text() : props.text;
-      const nodes = parseMarkdown(text, options).children;
+      const source = text();
+      const nodes = parsed().children;
       return nodes.map((node, i) => {
         // A diagram renders once its fence closes, not on every streamed line.
         const closed =
-          i < nodes.length - 1 || /\n(```|~~~)\s*$/.test(text.trimEnd());
+          i < nodes.length - 1 || /\n(```|~~~)\s*$/.test(source.trimEnd());
         if (node.type === 'code' && node.lang === 'mermaid' && closed)
           return { key: `${i}:mermaid:${node.value}`, mermaid: node.value };
         linkCodePaths(node);
@@ -276,6 +313,13 @@ export default function Markdown(props: {
         else window.open(link.href, '_blank', 'noopener');
       }}
     >
+      <Show when={parsed().frontmatter?.trim()}>
+        {(yaml) => (
+          <Loading>
+            <Properties yaml={yaml()} />
+          </Loading>
+        )}
+      </Show>
       <For each={blocks()} keyed={(b) => b.key}>
         {(block, i) => {
           const n = untrack(i);

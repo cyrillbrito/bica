@@ -30,6 +30,7 @@
         "lucide": "^1.70.0",
         "mermaid": "^12.3.0",
         "solid-js": "^2.0.0-rc.21",
+        "yaml": "^2.9.1",
       },
       "devDependencies": {
         "@solidjs/diagnostics": "^2.0.0-rc.21",

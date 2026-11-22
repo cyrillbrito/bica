@@ -832,6 +832,10 @@
     & a {
       @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
     }
+    /* Obsidian links Bica can't open: the link color, no underline. */
+    & .wikilink {
+      @apply text-accent;
+    }
     & :not(pre) > code {
       @apply rounded-sm bg-well px-1 py-px font-mono text-[0.85em];
     }
