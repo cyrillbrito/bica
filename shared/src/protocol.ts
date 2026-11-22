@@ -210,6 +210,8 @@ export interface ConnectedApp {
   toolkit: string;
   name: string;
   logo: string | null;
+  // What it signed in as, such as a Gmail address; null until Composio knows.
+  account: string | null;
   // Composio's status word: ACTIVE, INITIATED, EXPIRED, FAILED, INACTIVE.
   status: string;
   createdAt: number;

@@ -96,7 +96,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Session tools**: The tools that list, start, read, message, stop, and archive other sessions. _Avoid_: subagent tools
 
-**Connected app**: One of your apps, such as Gmail, that the agent reaches through Composio, which keeps its sign-in. Composio calls it a connected account of a toolkit, and code keeps those words where it talks to Composio. _Avoid_: connector (alone, for the app), integration, toolkit in the UI
+**Connected app**: One of your apps, such as Gmail, that the agent reaches through Composio, which keeps its sign-in. Composio calls it a connected account of a toolkit, and code keeps those words where it talks to Composio. An app connected twice, such as two Gmail addresses, is two connected apps, each with its own account. _Avoid_: connector (alone, for the app), integration, toolkit in the UI
 
 **Approval**: The yes a call to a connected app waits for before it creates, updates, or deletes something, given on its approval card, one kind of request. _Avoid_: permission, confirmation, elicitation (Composio's word for the request)
 
@@ -212,7 +212,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Provider**: Where models come from, connected in Settings by a plan sign-in or an API key, as in pi-ai. _Avoid_: vendor, backend
 
-**Account**: One sign-in to a provider. A plan can have more than one, taking turns. _Avoid_: login, credential
+**Account**: One sign-in to a provider, or to a connected app. A plan can have more than one, taking turns. _Avoid_: login, credential
 
 **Effort**: How hard a model thinks on a request, as Anthropic and OpenAI name it. _Avoid_: thinking level (pi-ai's name), reasoning
 
