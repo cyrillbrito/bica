@@ -230,9 +230,13 @@ export default function MessageRow(props: {
               <div class="flex items-center gap-1.5 text-meta text-muted">
                 <VoiceIcon />
                 Voice call
-                <time datetime={new Date(c().lines[0]!.at).toISOString()}>
-                  · {clockTime(c().lines[0]!.at)}
-                </time>
+                <Show when={c().lines[0]?.at}>
+                  {(at) => (
+                    <time datetime={new Date(at()).toISOString()}>
+                      · {clockTime(at())}
+                    </time>
+                  )}
+                </Show>
               </div>
               <For each={c().lines}>
                 {(line) => (
@@ -249,6 +253,14 @@ export default function MessageRow(props: {
                   </p>
                 )}
               </For>
+              <Show when={c().live}>
+                {(live) => (
+                  <p class="text-ui" aria-live="polite">
+                    <span class="mr-1.5 font-medium text-accent">Voice</span>
+                    {live()}
+                  </p>
+                )}
+              </Show>
             </div>
           )}
         </Match>

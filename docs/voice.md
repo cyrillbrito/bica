@@ -2,7 +2,7 @@
 
 A voice call lets you talk to a session. The sound-wave button in the send spot starts one while nothing is typed, as in ChatGPT, and on the home page it starts a new session with a call on it. While the agent works, stop takes the spot and the call button sits beside it.
 
-During the call, the composer becomes the call panel: a level meter, what is being said, the model picker, mute, and a red end button. Each finished line moves into the transcript.
+During the call, the composer becomes the call panel: a level meter, what you are saying, the model picker, mute, and a red end button. Your words stay in the panel until their line is saved, as a typed prompt stays in the composer until sent. The voice's replies show in the transcript as they are spoken, under a Voice call heading, while the panel says "Speaking".
 
 ## How it works
 

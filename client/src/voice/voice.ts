@@ -5,6 +5,7 @@ import { toPromptImage } from '../sessions/images';
 import { soundOn } from '../ui/sound';
 import { errorText } from '../ui/errors';
 import { stored } from '../ui/stored';
+import type { Message } from '@bica/shared/transcript';
 
 // Development only: `?voice=off` shows the app as it is without the sign-in
 // calls and dictation need, kept for the tab like `?data=`. `?voice=on`
@@ -174,6 +175,25 @@ const [call, setCall] = createSignal<CallState | undefined>(undefined, {
   name: 'voiceCall',
 });
 export { call };
+
+/**
+ * The transcript with what the voice is saying right now at its end, so its
+ * replies read in the conversation as they are spoken. Your own words stay in
+ * the call panel until their line is saved, as a typed prompt stays in the
+ * composer until sent.
+ */
+export function withLiveVoice(sessionId: string, list: Message[]): Message[] {
+  const c = call();
+  const live = c?.talking === 'voice' && c.caption?.trim();
+  if (c?.sessionId !== sessionId || !live) return list;
+  const last = list.at(-1);
+  if (last?.kind !== 'call')
+    return [...list, { key: 'live-voice', kind: 'call', lines: [], live }];
+  // The saved line can land before the caption clears; show it once.
+  const saved = last.lines.at(-1);
+  if (saved?.who === 'voice' && saved.text.startsWith(live)) return list;
+  return [...list.slice(0, -1), { ...last, live }];
+}
 
 let current:
   | {

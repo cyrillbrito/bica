@@ -70,8 +70,9 @@ export type Message = { key: string } & (
       open: boolean;
       answer?: { text: string; value?: string; timestamp: number };
     }
-  // What was said in a voice call, back to back.
-  | { kind: 'call'; lines: VoiceLine[] }
+  // What was said in a voice call, back to back. `live`: what the voice is
+  // saying right now, in the tab on the call, until its line is saved.
+  | { kind: 'call'; lines: VoiceLine[]; live?: string }
   | Activity
 );
 

@@ -80,7 +80,7 @@ import { isBusy } from '@bica/shared/status';
 import type { ProjectedView } from '@bica/shared/projection';
 import { SessionId } from '../../sessions/step-detail';
 import { hideThinking } from '../../sessions/thinking';
-import { call, startCall } from '../../voice/voice';
+import { call, startCall, withLiveVoice } from '../../voice/voice';
 import {
   promptAt,
   toMessages,
@@ -215,7 +215,8 @@ export default function Session(props: RouteProps<'/s/:id'>) {
       const list = messages();
       const changes = summary()?.handoffs ?? [];
       const pruning = isPruning(props.params.id!);
-      if (!changes.length && !pruning) return list;
+      if (!changes.length && !pruning)
+        return withLiveVoice(props.params.id!, list);
       const out = [...list];
       for (const h of changes.toSorted((a, b) => b.at - a.at)) {
         const i = out.findIndex((m) => (promptAt(m) ?? -1) >= h.at);
@@ -231,7 +232,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
           kind: 'pruning',
           running: !!view()?.docs['pi.live']?.run,
         });
-      return out;
+      return withLiveVoice(props.params.id!, out);
     },
     { name: 'transcriptRows' },
   );
