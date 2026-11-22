@@ -116,14 +116,19 @@ export const VoiceEntry = entryKind<VoiceLine>('bica.voice');
 // A handoff from a call carries what was said since the last one, as
 // Codex's voice sends a transcript delta, so the agent reads the user's own
 // words and not only the voice's version. The transcript shows those lines
-// already, so the prompt row leaves them out.
+// already, so the prompt row leaves them out. Every handoff carries the
+// block, even with no lines, since it also tells the agent its reply gets
+// spoken: the system prompt can't, as a call comes and goes mid-session.
 const CALL_WORDS = /\n\n<voice_call>\n[\s\S]*<\/voice_call>$/;
 
-/** A handoff with the call's lines since the last one appended. */
+const SPOKEN = `This request came from a voice call, and the voice speaks your reply to the user. Lead with the answer in a sentence or two of plain speech, and keep the rest short, without headings, bold labels, or tables: they hear it before they read it.`;
+
+const HEARD = `What was said in the call since the last request. It is transcribed from speech, so it may hold misheard words, half sentences, and corrections: go by the latest, and ask when a detail is unclear. Voice lines are the voice's own answers, given without you: when one is wrong, such as about who you are, correct it in your reply.`;
+
+/** A handoff from a call, with the call's lines since the last one. */
 export function withCallWords(request: string, lines: string[]) {
-  return lines.length
-    ? `${request}\n\n<voice_call>\nWhat was said in the voice call since the last request. It is transcribed from speech, so it may hold misheard words, half sentences, and corrections: go by the latest, and ask when a detail is unclear.\n\n${lines.join('\n')}\n</voice_call>`
-    : request;
+  const heard = lines.length ? `\n\n${HEARD}\n\n${lines.join('\n')}` : '';
+  return `${request}\n\n<voice_call>\n${SPOKEN}${heard}\n</voice_call>`;
 }
 
 export function withoutCallWords(text: string) {

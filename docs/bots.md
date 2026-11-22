@@ -87,7 +87,7 @@ A session with no parent is yours, whoever started it ([orchestration.md](./orch
 
 A bot hears what any parent hears: each run its child sessions end. A question or failure further down reaches it through the child session, which passes up what it can't settle in its own reply. To follow a session it doesn't lead, such as one you started or one it messaged for you, it watches it until that thread closes ([orchestration.md](./orchestration.md#watching)).
 
-On a [voice call](./voice.md), what it says after a note is spoken too, so you hear results and questions without asking.
+On a [voice call](./voice.md), what it says after a note is spoken too, so you hear results and questions without asking. The voice speaks as the bot, with its name and the tone in its `SOUL.md`, and it hears your projects and open session titles right.
 
 ## Its workspace
 

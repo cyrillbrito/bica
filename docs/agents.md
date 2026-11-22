@@ -1,6 +1,6 @@
 # Agents
 
-An agent is what goes into a session: its system prompt, its model and effort, its extensions with their tools, and its skills. Every session runs as one agent. Pi Durable uses the same word for the bundle a conversation runs with, and so do Claude Code, opencode, and eve.
+An agent is what goes into a session: its system prompt, its model and effort, its extensions with their tools, its skills, and its voice brief, which tells a [voice call](./voice.md#what-the-voice-is-told) who the voice is and which names to hear. Every session runs as one agent. Pi Durable uses the same word for the bundle a conversation runs with, and so do Claude Code, opencode, and eve.
 
 - Coding: one task in one workspace, with every tool. The default.
 - Night: finishes alone, at high effort or more, and ends with a report ([night-runs.md](./night-runs.md)). It has no `ask`, since nobody can answer.

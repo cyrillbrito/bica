@@ -63,6 +63,21 @@ export interface SectionInput {
   bot?: Bot;
 }
 
+/** What an agent's voice brief reads: the session's folder, and its bot. */
+export type VoiceInput = Pick<SectionInput, 'cwd' | 'bot'>;
+
+/**
+ * What a voice call on a session of this agent is told on top of the call's
+ * own rules (server/src/voice/voice.ts), which know nothing of agents.
+ */
+export interface VoiceBrief {
+  // Who the voice is to the user, and what they talk to it about.
+  identity: string;
+  // Names the user may say, most likely first, so the voice hears and
+  // spells them right. The call cuts the list to fit.
+  names: string[];
+}
+
 type Rendered = string | null | undefined;
 export type Section =
   | string
@@ -94,6 +109,8 @@ export interface Agent {
   sections: Partial<
     Record<Exclude<SectionKey, 'skills' | 'artifacts' | 'long_lived'>, Section>
   >;
+  // Its voice on a call (docs/voice.md).
+  voice: (s: VoiceInput) => Promise<VoiceBrief>;
 }
 
 // The opening of every prompt, around the agent's own first lines. Pi

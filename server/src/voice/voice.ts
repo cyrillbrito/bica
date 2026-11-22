@@ -1,9 +1,7 @@
-import { basename } from 'node:path';
 import type { EntryId } from '@earendil-works/pi-durable';
 
 import type { PromptImage } from '@bica/shared/protocol';
 import { withCallWords, type VoiceLine } from '@bica/shared/transcript';
-import { currentBranch, trackedFiles } from '../git/commands';
 import { models } from '../models/registry';
 import { voiceLog } from './log';
 import { voiceSession } from './session';
@@ -46,8 +44,14 @@ const CLAIM_MS = 2000;
 // How long without a new piece of the user's transcript counts as them having
 // stopped, when GPT-Live never closes their turn.
 const USER_QUIET_MS = 3000;
+// The names the voice gets to hear right, most likely first.
+const NAMES_CHARS = 3000;
 
-const INSTRUCTIONS = `You are the voice of a coding assistant. The user talks to you about one ongoing session with a coding agent.
+// The session's agent says who the voice is and goes first (VoiceBrief in
+// server/src/agents/common.ts); these are the call's own rules. GPT-Live
+// answers some things itself, such as "who are you", and calls itself
+// ChatGPT unless told otherwise.
+const INSTRUCTIONS = `That is who you are on this call: answer questions about yourself from it, and never call yourself ChatGPT.
 
 Answer briefly and conversationally, without markdown. Don't greet or speak just because the call connected; wait for the user.
 
@@ -55,7 +59,7 @@ Backchannel policy: Use few backchannels, and never start an answer while the us
 
 Interruption policy: Stop speaking when the user interrupts. Listen to what they say. Keep listening while the user pauses to think, and let them finish before you answer. Don't treat a cough, music, or nearby conversation as a new request.
 
-The agent has the project, its notes and code, and the tools. For anything that needs them (reading, searching, coding, running commands, checking), create a client delegation once the user has finished the request. Never do that work yourself or answer it from memory. Pass the user's own words, as close to what you heard as you can: don't rephrase or summarize them. Add only what makes the request stand alone, such as what "that" refers to. The agent also gets what was said in the call.
+Behind you, the agent has the tools: files, code, notes, the user's sessions, and the web. For anything that needs them (reading, searching, coding, running commands, checking), create a client delegation once the user has finished the request. Never do that work yourself or answer it from memory. Pass the user's own words, as close to what you heard as you can: don't rephrase or summarize them. Add only what makes the request stand alone, such as what "that" refers to. The agent also gets what was said in the call.
 
 A request while work is running joins that work at once, so give a correction ("no, the other branch") or an addition ("also run the tests") its own delegation right away. When the user wants something done after the current work, delegate it now in their words, instead of promising to do it later.
 
@@ -168,22 +172,23 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   const id = crypto.randomUUID();
   // Context appended after connect reads as a turn to answer, so the voice
   // spoke first. In the instructions it is only background.
-  const [recent, settings, words] = await Promise.all([
+  const [recent, settings, brief] = await Promise.all([
     session.recent(6000),
     session.settings(),
-    projectWords(session.cwd),
+    session.brief(),
   ]);
   // GPT-Live has no speed setting: sent at connect, it kills the call at once.
   const speed = settings?.speed ?? 1;
   const instructions = [
+    brief.identity,
     INSTRUCTIONS,
     speed < 0.95 &&
       `Speak ${speed < 0.85 ? 'very slowly' : 'slowly'}, with clear pauses between sentences.`,
     speed > 1.05 && 'Speak quickly.',
     settings?.instructions &&
       `The user's own instructions for calls in this session. Where they differ from the above (language, pace, length, whether to answer yourself), follow these:\n\n${settings.instructions}`,
-    words &&
-      `Names in this project, so you hear and spell them right when the user says them: ${words}`,
+    brief.names.length &&
+      `Names the user may say, so you hear and spell them right: ${nameList(brief.names)}`,
     recent && `Recent conversation in this session:\n\n${recent}`,
   ]
     .filter(Boolean)
@@ -335,10 +340,15 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
   };
   // The start of the user's unfinished line that a handoff already carried.
   let carried = '';
-  const callWords = () => {
+  const callWords = (request = '') => {
     const lines = said.splice(0);
     carried = turns.you.text.trim();
     if (carried) lines.push(`User: ${carried}`);
+    // The voice passes the user's own words, so the request is often their
+    // last line again.
+    const last = lines.at(-1);
+    if (last?.startsWith('User: ') && sameWords(last.slice(6), request))
+      lines.pop();
     let length = lines.join('\n').length;
     while (lines.length > 1 && length > CALL_WORDS_CHARS)
       length -= lines.shift()!.length + 1;
@@ -361,7 +371,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       await session.abort();
       return finish(delegation, 'I stopped the current work.');
     }
-    const prompt = withCallWords(request, callWords());
+    const prompt = withCallWords(request, callWords(request));
     const images = takePhotos();
     waiting.push(delegation);
     // Long runs: keep telling the voice the work is alive, so it waits.
@@ -530,36 +540,29 @@ function ago(at: number) {
     : `${Math.round(seconds / 60)} minutes ago`;
 }
 
-/**
- * The branch and the project's file and folder names. Spoken, a name like
- * "CommitBox" or "pi-durable" is easy to mishear; written out, the voice
- * catches it, like a food app that hears a restaurant name better once it
- * knows the restaurants nearby. '' outside a git folder.
+/*
+ * Spoken, a name like "CommitBox" or "Bica" is easy to mishear ("Bika");
+ * written out, the voice catches it, like a food app that hears a
+ * restaurant name better once it knows the restaurants nearby. Repeats and
+ * blanks go, and the list stops at the first name that doesn't fit.
  */
-async function projectWords(folder: () => Promise<string>) {
-  try {
-    const cwd = await folder();
-    const [files, branch] = await Promise.all([
-      trackedFiles(cwd),
-      currentBranch(cwd),
-    ]);
-    const names = new Set<string>();
-    if (branch) names.add(branch);
-    for (const path of files) {
-      for (const part of path.split('/').slice(0, -1)) names.add(part);
-      // Without the extension: people say "CommitBox", not "CommitBox dot tsx".
-      const name = basename(path).replace(/\.[^.]+$/, '');
-      if (name && !/^(index|README)$/i.test(name)) names.add(name);
-    }
-    let out = '';
-    for (const name of names) {
-      if (out.length + name.length > 3000) break;
-      out += (out ? ', ' : '') + name;
-    }
-    return out;
-  } catch {
-    return '';
+function nameList(names: string[]) {
+  let out = '';
+  for (const name of new Set(names.filter(Boolean))) {
+    if (out.length + name.length > NAMES_CHARS) break;
+    out += (out ? ', ' : '') + name;
   }
+  return out;
+}
+
+/** The same words, whatever the case, punctuation, and spacing. */
+function sameWords(a: string, b: string) {
+  const words = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
+  return words(a) === words(b);
 }
 
 function chunks(text: string) {

@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { AGENTS } from '@bica/shared/agents';
+import { isOwnProject } from '@bica/shared/projects';
 import type { Bot } from '@bica/shared/protocol';
 import {
   BASE_SECTIONS,
@@ -9,7 +10,10 @@ import {
   shortReplies,
   type Agent,
   type SectionInput,
+  type VoiceInput,
 } from '../agents/common';
+import { listProjects } from '../projects/projects';
+import { listSessions } from '../sessions/store';
 import { BOT_FILES } from './store';
 
 // A bot (docs/bots.md): one long-lived session the user talks to about all
@@ -95,6 +99,43 @@ const TALK = [
   `- The user often listens by voice. Write sentences that read well aloud. Name a file or folder ("the video in bica-visuals") instead of its full path, and a session by its title, unless they ask for the path or the id. Quote commands and errors exactly.`,
 ];
 
+// Enough of SOUL.md for the voice's tone, next to the call's own rules.
+const VOICE_SOUL_CHARS = 2000;
+
+/**
+ * On a call, the voice is the bot: its name, and the tone in its SOUL.md.
+ * It talks about all the work, so it hears the projects and the open
+ * sessions' titles, newest first, rather than one folder's files.
+ */
+async function voice({ bot }: VoiceInput) {
+  const name = bot?.name ?? 'the bot';
+  const [soul, projects, sessions] = await Promise.all([
+    bot
+      ? readFile(join(bot.homePath, BOT_FILES.soul), 'utf8').catch(() => '')
+      : '',
+    listProjects(),
+    listSessions(),
+  ]);
+  const tone = soul.trim().slice(0, VOICE_SOUL_CHARS);
+  return {
+    identity: [
+      `You are ${name}, the user's bot in Bica, their app for coding agents. ${name} keeps track of all their work: their projects, their sessions, and what each waits on. When they ask who you are, you are ${name}.`,
+      tone && `How ${name} talks, from its SOUL.md:\n\n${tone}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
+    names: [
+      'Bica',
+      name,
+      ...projects.filter(isOwnProject).map((p) => p.name),
+      ...sessions
+        .filter((s) => !s.archivedAt && s.bot !== bot?.id)
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .map((s) => s.title),
+    ],
+  };
+}
+
 export const bot: Agent = {
   id: 'bot',
   ...AGENTS.bot,
@@ -124,4 +165,5 @@ export const bot: Agent = {
     role,
     replies: shortReplies(...TALK),
   },
+  voice,
 };

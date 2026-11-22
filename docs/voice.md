@@ -13,16 +13,30 @@ During the call, the composer becomes the call panel: a level meter, what is bei
 
 GPT-Live is only the voice. It listens, talks, can be interrupted, and decides when something needs the agent. The session does the work with its own model and tools. Handoffs arrive as ordinary prompts, so everything stays in the transcript, and they act as typed ones: they bring an archived session back, a session held for tonight refuses them, and they end the agent's wait in `terminal_read`.
 
-- A handoff carries your own words: the voice is asked not to rephrase you, and Bica adds what was said in the call since the last handoff. The transcript shows those lines once, in the call.
+- A handoff carries your own words: the voice is asked not to rephrase you, and Bica adds what was said in the call since the last handoff, leaving out your last line when the request already repeats it. The transcript shows those lines once, in the call.
+- Every handoff tells the agent that its reply will be spoken, so it leads with the answer in a sentence or two of plain speech, with no headings or bold labels. Since the voice answers some things by itself, the agent also sees the voice's lines, and corrects one that got something wrong.
 - A handoff while the agent works joins the run at once, so "no, the other branch" lands before the wrong thing is done. Handoffs that joined the same run share one reply, spoken once.
 - Progress reaches the voice as quiet commentary, and the final reply as the result to speak. Long runs never time out.
 - A run the call didn't start is spoken too, such as a [bot](./bots.md)'s run after a note that a session finished or asks something.
 - A result that is ready while you talk waits until you finish.
-- The voice knows the recent conversation, so "continue" makes sense, and the project's file names, so it passes names like "CommitBox" on spelled right.
 - "How's it going" gets the agent's latest turn and how long ago it was, and "stop" stops the run.
 - The photo button in the call panel adds photos, and on a phone it can open the camera. The voice can't see them, so they wait on the server and go with the next handoff: take a picture, then ask "what's wrong with this?". If you say nothing for 5 seconds, they go to the agent on their own, and its reply comes back as an update. Photos still waiting when the call ends go too, with what was said since the last handoff. The call panel says "Sending the photo to the agent…" until the photo has gone, as `pi-live-codex` keeps its attached badge, so a photo never looks handled while it waits.
 
-Voice settings, in the session's ⋯ menu in the top bar, set a session's speed and instructions such as "talk with me in simple French".
+## What the voice is told
+
+The voice module, `server/src/voice/`, is only the call: the WebRTC line, handoffs, and the call's own rules. It knows nothing about bots or projects. What the voice is told at the start of a call comes from four places, in this order:
+
+1. The session's [agent](./agents.md) says who the voice is, and gives the names you may say. To you, the voice and the agent are one: the voice speaks the agent's results as its own work, and takes its name. Without that, GPT-Live answers "who are you" by itself and says it is ChatGPT.
+2. The call's rules: when to talk, when to hand off, and how to speak results.
+3. The session's voice settings, in its ⋯ menu in the top bar: speed, and instructions such as "talk with me in simple French".
+4. The recent conversation, so "continue" makes sense.
+
+Each agent decides its own part:
+
+- Coding and Night: the voice is that session's agent. Its names are "Bica", the branch, and the project's file and folder names, such as "CommitBox".
+- Bot: the voice is the [bot](./bots.md), with its name and the tone in its `SOUL.md`. It talks about all your work, so its names are "Bica", the bot's name, your projects, and your open sessions' titles, newest first.
+
+The call writes the names out so the voice hears and spells them right, and cuts the list at about 3,000 characters.
 
 ## Hold music
 

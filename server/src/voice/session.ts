@@ -1,4 +1,5 @@
 import {
+  AgentDoc,
   LiveDoc,
   type ConversationId,
   type EntryId,
@@ -11,15 +12,14 @@ import {
   withoutCallWords,
   type VoiceLine,
 } from '@bica/shared/transcript';
+import { getAgent } from '../agents/registry';
+import { getBot } from '../bots/store';
 import { context, getHarness } from '../harness';
 import { VOICE_TITLE, retitle } from '../sessions/names';
 import { submit } from '../sessions/prompts';
 import { textOf } from '../sessions/read';
-import {
-  getConversation,
-  sessionMeta,
-  sessionWorkspace,
-} from '../sessions/store';
+import { agentIdOf } from '../sessions/session-doc';
+import { getConversation, sessionMeta } from '../sessions/store';
 
 /** The text an entry's last assistant or user message says. */
 function entryText(entry: EntryRecord | undefined) {
@@ -37,7 +37,20 @@ export async function voiceSession(sessionId: string) {
   let named = false;
   return {
     settings: async () => (await sessionMeta(id))?.voice,
-    cwd: async () => (await sessionWorkspace(id)).cwd,
+    /**
+     * Who the voice is and the names it should hear, from the session's
+     * agent, which knows what its sessions are about (docs/agents.md).
+     */
+    async brief() {
+      const [meta, agent] = await Promise.all([
+        sessionMeta(id),
+        harness.snapshot(AgentDoc, id, context),
+      ]);
+      return getAgent(agentIdOf(meta)).voice({
+        cwd: agent?.cwd ?? '',
+        bot: getBot(meta?.bot),
+      });
+    },
     busy: async () => !!(await harness.snapshot(LiveDoc, id, context))?.run,
     abort: () => conversation.abort(context),
 
