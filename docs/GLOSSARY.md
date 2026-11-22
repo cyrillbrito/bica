@@ -140,9 +140,9 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Housekeeping**: What Bica does to a long-lived session while it sits idle: pruning, a memory save, and compaction, as OpenClaw names it. _Avoid_: upkeep, tending, maintenance
 
-**Memory files**: Markdown files in a bot's home, or a session's workspace, where an agent keeps what lasts, as Claude Code and OpenClaw keep memory. _Avoid_: notes (that is Bica's), memories
+**Memory files**: Markdown files in a bot's home, where it keeps what lasts, as Claude Code and OpenClaw keep memory. _Avoid_: notes (that is Bica's), memories
 
-**Memory index**: The memory file loaded into the system prompt, `MEMORY.md` or `PROFILE.md`. _Avoid_: profile, memory doc
+**Memory index**: The `MEMORY.md` in a bot's home, loaded into its system prompt. _Avoid_: profile, memory doc
 
 **Memory save**: A run Bica asks for before housekeeping compacts, where the agent writes to its memory files. OpenClaw calls it a memory flush. _Avoid_: memory dump
 

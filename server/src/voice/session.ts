@@ -17,24 +17,34 @@ import { getBot } from '../bots/store';
 import { context, getHarness } from '../harness';
 import { VOICE_TITLE, retitle } from '../sessions/names';
 import { submit } from '../sessions/prompts';
-import { textOf } from '../sessions/read';
+import { readSession, recentMessages, textOf } from '../sessions/read';
+import { onRunEnd } from '../sessions/runs';
 import { agentIdOf } from '../sessions/session-doc';
 import { getConversation, sessionMeta } from '../sessions/store';
 
-/** The text an entry's last assistant or user message says. */
-function entryText(entry: EntryRecord | undefined) {
-  return textOf(entry?.model?.at(-1)?.content ?? '');
+/** How a run ended: the reply that ends it, and what it waits on the user for. */
+export type Ending = { answer?: EntryId; text: string; waits: string[] };
+
+function lastMessage(entry: EntryRecord | undefined) {
+  return entry?.model?.at(-1);
 }
 
 /**
  * What a voice call (server/src/voice/voice.ts) does with its session: hand it
- * work, follow its progress, and keep what was said in the transcript.
+ * work, follow its runs, and keep what was said in the transcript.
  */
 export async function voiceSession(sessionId: string) {
   const conversation = await getConversation(sessionId);
   const id: ConversationId = conversation.id;
   const harness = await getHarness();
   let named = false;
+
+  const ending = async (entry: EntryRecord | undefined): Promise<Ending> => ({
+    answer: entry?.id,
+    text: textOf(lastMessage(entry)?.content ?? ''),
+    waits: (await readSession(sessionId)).waits,
+  });
+
   return {
     settings: async () => (await sessionMeta(id))?.voice,
     /**
@@ -54,28 +64,20 @@ export async function voiceSession(sessionId: string) {
     busy: async () => !!(await harness.snapshot(LiveDoc, id, context))?.run,
     abort: () => conversation.abort(context),
 
-    /** The last prompts and replies, newest last, at most `chars` long. */
+    /** The last prompts and replies, at most about `chars` long. */
     async recent(chars: number) {
-      const page = await conversation.entries({}, 40, undefined, context);
       const lines: string[] = [];
       let length = 0;
-      for (const entry of page.items) {
-        const role = entry.model?.at(-1)?.role;
-        if (role !== 'user' && role !== 'assistant') continue;
-        const text = withoutCallWords(entryText(entry)).slice(0, 1500);
-        if (!text) continue;
-        lines.unshift(`${role === 'user' ? 'User' : 'Agent'}: ${text}`);
+      for (const m of (await recentMessages(sessionId, 12)).toReversed()) {
+        const text = withoutCallWords(m.text).slice(0, 1500);
         if ((length += text.length) > chars) break;
+        lines.unshift(`${m.from === 'prompt' ? 'User' : 'Agent'}: ${text}`);
       }
       return lines.join('\n\n');
     },
 
-    /**
-     * The text of each turn the agent writes: `final` for the reply that
-     * ends a run, else a turn that called tools. Errors and aborts are left
-     * out: their handoff says it stopped.
-     */
-    onStep(listener: (text: string, final: EntryId | undefined) => void) {
+    /** The text of each turn that called tools while a run works. */
+    onProgress(listener: (text: string) => void) {
       // An entry can be committed again, e.g. when its thinking folds.
       const seen = new Set<EntryId>();
       const observation = harness.observeCommits({
@@ -83,18 +85,16 @@ export async function voiceSession(sessionId: string) {
           for (const change of changes) {
             if (change.type !== 'entry' || change.value.conversationId !== id)
               continue;
-            const message = change.value.model?.at(-1);
-            if (message?.role !== 'assistant' || seen.has(change.value.id))
+            const message = lastMessage(change.value);
+            if (
+              message?.role !== 'assistant' ||
+              message.stopReason !== 'toolUse'
+            )
               continue;
-            const { stopReason } = message;
-            if (stopReason !== 'toolUse' && stopReason !== 'stop') continue;
+            if (seen.has(change.value.id)) continue;
             seen.add(change.value.id);
-            const text = entryText(change.value);
-            if (text)
-              listener(
-                text,
-                stopReason === 'stop' ? change.value.id : undefined,
-              );
+            const text = textOf(message.content);
+            if (text) listener(text);
           }
         },
         end: () => {},
@@ -103,16 +103,34 @@ export async function voiceSession(sessionId: string) {
     },
 
     /**
-     * Sends a handoff to the session and resolves with its reply. While a
-     * run works, the handoff joins it, as Codex's voice does, so a
-     * correction lands before the outdated work is done. A session started
-     * for the call is named after what was first asked.
+     * Each run of this session that ends with a reply or a request. Errors
+     * and aborts are left out: the handoff they cut short says it stopped.
+     */
+    onRunEnd(listener: (ending: Ending) => void) {
+      return onRunEnd(async (ended) => {
+        if (ended !== id) return;
+        const page = await conversation.entries({}, 10, undefined, context);
+        const last = page.items.find(
+          (e) => lastMessage(e)?.role === 'assistant',
+        );
+        const stop = lastMessage(last);
+        if (stop?.role !== 'assistant') return;
+        if (stop.stopReason === 'stop' || stop.stopReason === 'toolUse')
+          listener(await ending(last));
+      });
+    },
+
+    /**
+     * Sends a handoff and resolves with how the run ended. While a run
+     * works, the handoff joins it, as Codex's voice does, so a correction
+     * lands before the outdated work is done. A session started for the
+     * call is named after what was first asked.
      */
     async ask(
       request: string,
       title = request,
       images: PromptImage[] = [],
-    ): Promise<{ answer?: EntryId; text: string }> {
+    ): Promise<Ending> {
       if (!named) {
         named = true;
         void retitle(id, title, VOICE_TITLE);
@@ -126,15 +144,13 @@ export async function voiceSession(sessionId: string) {
         'steer',
       );
       const settled = await submission.wait(context);
+      if (!settled.answer)
+        return {
+          text: `It stopped without an answer (${settled.reason}).`,
+          waits: [],
+        };
       const answer = settled.answer;
-      return answer
-        ? {
-            answer,
-            text: entryText(
-              await harness.commit((tx) => tx.entry(answer), context),
-            ),
-          }
-        : { text: `It stopped without an answer (${settled.reason}).` };
+      return ending(await harness.commit((tx) => tx.entry(answer), context));
     },
 
     /** What was said, in the transcript but outside the agent's context. */

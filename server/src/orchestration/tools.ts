@@ -193,26 +193,14 @@ const sessionRead = defineTool({
     const parts = [
       `${named(s)} in ${s.cwd}: ${s.archivedAt ? 'archived' : STATUS[s.status]}.${whose}${watched}${last}`,
     ];
-    if (s.status === 'waiting' && recent.questions.length)
+    if (s.waits.length)
       parts.push(
-        `It asks the user:\n${recent.questions
-          .map(
-            (q, i) =>
-              `${i + 1}. ${q.question}\n${q.options
-                .map(
-                  (o) =>
-                    `   - ${o.label}${o.description ? `: ${o.description}` : ''}`,
-                )
-                .join('\n')}`,
-          )
-          .join(
-            '\n',
-          )}\nAnswer for the user with session_send only if they told you the answer.`,
+        `It waits for the user:\n${s.waits.map((w) => `- ${w}`).join('\n')}\nAnswer a question for the user with session_send only if they told you the answer.`,
       );
     parts.push(
       count === 1
         ? `Last reply:\n${s.reply || '(none yet)'}`
-        : recent.messages
+        : recent
             .map(
               (m) => `${m.from === 'prompt' ? 'Prompt' : 'Reply'}:\n${m.text}`,
             )

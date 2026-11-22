@@ -2,9 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AgentId } from '@bica/shared/agents';
 import type { Bot, ModelChoice, ThinkingLevel } from '@bica/shared/protocol';
-import { isOwnProject } from '@bica/shared/projects';
 import { BICA_HOME } from '../storage';
-import { listProjects } from '../projects/projects';
 
 // What every agent is made of, and the parts they share (docs/agents.md).
 // Each agent is one file next to this one, registered in registry.ts.
@@ -104,11 +102,14 @@ export interface Agent {
   // Lists the skills found for its folder (skills.ts).
   skills: boolean;
   // Its instructions, by prompt section. A key it leaves out isn't rendered.
-  // Not `skills`, `artifacts`, or `long_lived`: the `skills` flag and
-  // isLongLived give those.
+  // Not `skills` or `artifacts`: the `skills` flag gives those.
   sections: Partial<
-    Record<Exclude<SectionKey, 'skills' | 'artifacts' | 'long_lived'>, Section>
+    Record<Exclude<SectionKey, 'skills' | 'artifacts'>, Section>
   >;
+  // What its prompt shows as copies, the `memory` and `projects` sections:
+  // taken at the first prompt and after each compaction, so edits in
+  // between don't break the prompt cache (sessions/prompts.ts).
+  copies?: (cwd: string) => Promise<{ memory: string; projects: string }>;
   // Its voice on a call (docs/voice.md).
   voice: (s: VoiceInput) => Promise<VoiceBrief>;
 }
@@ -213,7 +214,6 @@ export const BASE_SECTIONS = {
       .map((r) => `- ${r}`)
       .join('\n') || null,
   project_context: (s) => projectContext(s.cwd),
-  memory: (s) => s.memory,
   cwd: (s) => s.cwd,
 } satisfies Agent['sections'];
 
@@ -241,59 +241,6 @@ ${lines.join('\n')}
 - Go longer only when they ask you to explain, walk through, or plan, and still answer first. Before anything destructive or irreversible, say what will happen and confirm.
 
 Before sending, cut an opening that announces and a closing that recaps or offers more help, and end with at most one question or next step. The first and last lines alone should say what happened and what to do next.`;
-}
-
-// For the long-lived agent, Bot, which Bica keeps small while idle (server/src/sessions/housekeeping.ts): the files are the long-term memory,
-// and replies carry what pruning would otherwise take away.
-export const LONG_LIVED = `This session lasts weeks or months. Bica clears old tool output and compacts older turns on its own, so the memory files are the long-term record:
-- Search them before relying on anything from earlier, and say so when they hold nothing.
-- Write decisions, preferences, open tasks, and lasting facts in the same reply they come up in, and quick notes the user dictates where they belong. Keep what they said or you verified and that will still matter in months. Let moods, one-off details, and guesses go.
-- Replace a line that changed instead of adding one, and split a note that grows too long, leaving a one-line pointer in the index.
-- Say in your reply what you learned from tools that matters later: their output gets cleared.`;
-
-// The memory index, loaded with the instructions so the agent never has to
-// remember to read it. The first name found wins.
-const MEMORY_FILES = ['MEMORY.md', 'PROFILE.md'];
-const MEMORY_LIMIT = 8_000;
-
-/**
- * The memory index in `cwd`, as an instructions section, or '' when there is
- * none. Taken once and kept until the next compaction (server/src/sessions/prompts.ts),
- * because the agent edits it mid-session and each change would break the
- * prompt cache.
- */
-export async function loadMemory(cwd: string) {
-  for (const name of MEMORY_FILES) {
-    const path = join(cwd, name);
-    const text = (await readFile(path, 'utf8').catch(() => null))?.trim();
-    if (!text) continue;
-    // Cut loudly, never silently: the agent should know it sees only part.
-    const body =
-      text.length > MEMORY_LIMIT
-        ? `${text.slice(0, MEMORY_LIMIT)}\n\n[Cut at ${MEMORY_LIMIT} of ${text.length} characters. Read the file for the rest, and make it shorter.]`
-        : text;
-    return `This is ${path} as it was when this session started or last compacted. Your edits since then are in the file, not here.\n\n<memory_file path="${path}">\n${body}\n</memory_file>`;
-  }
-  return '';
-}
-
-/**
- * Every project with its main folder and worktrees, for an agent with a
- * `projects` section. Taken with the memory index, at the start and after
- * each compaction, so it doesn't break the prompt cache; `list` has the live
- * state.
- */
-export async function projectList() {
-  const lines = (await listProjects())
-    .filter(isOwnProject)
-    .flatMap((p) => [
-      `- ${p.name}`,
-      ...p.workspaces.map(
-        (w) =>
-          `  - ${w.main ? 'main' : `worktree ${w.branch ?? '(detached)'}`}: ${w.path}`,
-      ),
-    ]);
-  return `Bica's projects as they were when this session started or last compacted. Pass one of these paths as session_start's \`folder\`. \`list\` shows what changed since, and every session's status.\n\n${lines.join('\n')}`;
 }
 
 // Same names and order as the Pi coding agent.

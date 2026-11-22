@@ -121,9 +121,9 @@ export const VoiceEntry = entryKind<VoiceLine>('bica.voice');
 // spoken: the system prompt can't, as a call comes and goes mid-session.
 const CALL_WORDS = /\n\n<voice_call>\n[\s\S]*<\/voice_call>$/;
 
-const SPOKEN = `This request came from a voice call, and the voice speaks your reply to the user. Lead with the answer in a sentence or two of plain speech, and keep the rest short, without headings, bold labels, or tables: they hear it before they read it.`;
+const SPOKEN = `From a voice call: your reply is spoken to the user. Lead with the answer in a sentence or two of plain speech, and keep the rest short, without headings, bold, or tables.`;
 
-const HEARD = `What was said in the call since the last request. It is transcribed from speech, so it may hold misheard words, half sentences, and corrections: go by the latest, and ask when a detail is unclear. Voice lines are the voice's own answers, given without you: when one is wrong, such as about who you are, correct it in your reply.`;
+const HEARD = `Said in the call since the last request, transcribed from speech, so expect misheard words and corrections: go by the latest, and ask when a detail is unclear. Voice lines are the voice answering alone: correct any that are wrong.`;
 
 /** A handoff from a call, with the call's lines since the last one. */
 export function withCallWords(request: string, lines: string[]) {

@@ -31,7 +31,7 @@ Bica tells sessions about each other with notes: prompts from Bica itself, sent 
 | ends a run | its parent, and the sessions that watch it |
 | is archived | nobody |
 
-Nothing goes further up the tree. When a child session asks you something or fails, its parent is told to settle it only if what it was told covers it, and otherwise to say it in its own reply, which its parent hears in turn. So a question climbs one step at a time, and a bot hears of a session further down only through the child session it leads.
+Nothing goes further up the tree. When a child session waits on you, with a question or an approval card, or fails, its parent is told to settle it only if what it was told covers it, and otherwise to say it in its own reply, which its parent hears in turn. So a question climbs one step at a time, and a bot hears of a session further down only through the child session it leads.
 
 A message from `session_send` is one prompt to the receiver. The sender hears back only when the receiver answers with a message of its own, or when it would get a note anyway, and the message tells the receiver which.
 
@@ -45,7 +45,7 @@ Any session can watch a session it doesn't lead, such as one you started or one 
 
 - `list` shows every project, workspace, session, and terminal. Agents are told to leave the rest alone unless you name it.
 - `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree, optionally held for the [night run](./night-runs.md). With `detached`, it has no parent.
-- `session_read` returns a session's status, who leads it, the questions it waits on, and its last messages.
+- `session_read` returns a session's status, who leads it, the questions and approval cards it waits on, and its last messages.
 - `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.
 - `session_archive` archives a finished session, and can remove its worktree when nothing would be lost. A session can archive itself only when you told it to. A running session, itself included, goes once its turn ends, after its last reply: a child session that reports done with `session_send` is still in that turn. A turn that ends with an error or a question keeps it open.

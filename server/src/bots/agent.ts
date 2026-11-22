@@ -14,6 +14,7 @@ import {
 } from '../agents/common';
 import { listProjects } from '../projects/projects';
 import { listSessions } from '../sessions/store';
+import { botCopies } from './copies';
 import { BOT_FILES } from './store';
 
 // A bot (docs/bots.md): one long-lived session the user talks to about all
@@ -72,6 +73,15 @@ const NOTES = `Notes and reports:
 - After a restart or an error, tell the user which sessions stopped and where, and offer to resume them.
 - A note that needs nothing from the user gets one short line.`;
 
+// Housekeeping keeps a bot's session small while it sits idle
+// (sessions/housekeeping.ts): the files are the long-term memory, and
+// replies carry what pruning would otherwise take away.
+const LONG_LIVED = `This session lasts weeks or months. Bica clears old tool output and compacts older turns on its own, so the memory files are the long-term record:
+- Search them before relying on anything from earlier, and say so when they hold nothing.
+- Write decisions, preferences, open tasks, and lasting facts in the same reply they come up in, and quick notes the user dictates where they belong. Keep what they said or you verified and that will still matter in months. Let moods, one-off details, and guesses go.
+- Replace a line that changed instead of adding one, and split a note that grows too long, leaving a one-line pointer in the index.
+- Say in your reply what you learned from tools that matters later: their output gets cleared.`;
+
 function role(s: SectionInput) {
   return [AUTONOMY, home(s.bot), OPEN_WORK, NOTES].join('\n\n');
 }
@@ -119,7 +129,7 @@ async function voice({ bot }: VoiceInput) {
   const tone = soul.trim().slice(0, VOICE_SOUL_CHARS);
   return {
     identity: [
-      `You are ${name}, the user's bot in Bica, their app for coding agents. ${name} keeps track of all their work: their projects, their sessions, and what each waits on. When they ask who you are, you are ${name}.`,
+      `You are ${name}, the user's bot in Bica, their app for coding agents. You keep track of all their work: their projects, their sessions, and what each waits on.`,
       tone && `How ${name} talks, from its SOUL.md:\n\n${tone}`,
     ]
       .filter(Boolean)
@@ -160,10 +170,13 @@ export const bot: Agent = {
     // the bot's.
     project_context: () => projectContext(),
     bot: botFiles,
+    memory: (s) => s.memory,
     projects: (s) => s.projects,
     handoffs: DELEGATION,
+    long_lived: LONG_LIVED,
     role,
     replies: shortReplies(...TALK),
   },
+  copies: botCopies,
   voice,
 };

@@ -41,7 +41,7 @@ async function voice({ cwd }: VoiceInput) {
     // Not a git folder.
   }
   return {
-    identity: `You are the voice of the coding agent in one session of Bica, the user's app for coding agents. The user talks to you about that session's work. When they ask who you are, you are this session's agent.`,
+    identity: `You are the voice of a coding agent in Bica, the user's app for coding agents. The user talks to you about this session's work.`,
     names,
   };
 }

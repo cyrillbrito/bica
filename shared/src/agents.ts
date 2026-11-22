@@ -27,8 +27,8 @@ export function isAgent(value: unknown): value is AgentId {
 }
 
 // A bot's session lasts months, so housekeeping prunes and compacts it while
-// it sits idle (server/src/sessions/housekeeping.ts). It also gets the
-// `long_lived` prompt section (server/src/agents/extensions.ts).
+// it sits idle (server/src/sessions/housekeeping.ts), and its prompt says
+// so (server/src/bots/agent.ts).
 export function isLongLived(agent: AgentId) {
   return agent === 'bot';
 }

@@ -1,6 +1,5 @@
-import { LiveDoc, type ConversationId } from '@earendil-works/pi-durable';
+import type { ConversationId } from '@earendil-works/pi-durable';
 
-import { context, getHarness } from '../harness';
 import { archiveWithWorktree } from '../projects/worktrees';
 import { tell } from '../sessions/notes';
 import {
@@ -9,50 +8,16 @@ import {
   readSession,
   recentMessages,
 } from '../sessions/read';
-import {
-  editSession,
-  getConversation,
-  listSessions,
-  parentOf,
-} from '../sessions/store';
-
-// When a run ends, its parent gets a note, and so do the sessions that watch
-// it (docs/orchestration.md). The last run state seen of every session tells when a
-// run ends.
-const runState = new Map<ConversationId, boolean>();
-let watching: Promise<void> | undefined;
+import { editSession, getConversation, parentOf } from '../sessions/store';
 
 /**
- * Follows every session's runs for good, from startup, so a run's end is
- * heard with no tab open, after a restart too.
+ * When a run ends, its parent gets a note, and so do the sessions that watch
+ * it (docs/orchestration.md). Subscribed to sessions/runs.ts at startup.
  */
-export function watchRuns() {
-  return (watching ??= (async () => {
-    const harness = await getHarness();
-    harness.observeCommits({
-      advance: ({ changes }) => {
-        for (const change of changes)
-          if (change.type === 'document' && change.record.kind === 'pi.live')
-            runChanged(
-              change.conversationId,
-              change.kind === 'change' && !!change.value.run,
-            );
-      },
-      end: (end) => console.error('[notes] commits ended', end),
-    });
-    // Runs a restart left unfinished resume; their end must still be heard.
-    await Promise.all(
-      (await listSessions()).map(async ({ id }) => {
-        const conversation = Number(id) as ConversationId;
-        const live = await harness.snapshot(LiveDoc, conversation, context);
-        if (live?.run && !runState.has(conversation))
-          runState.set(conversation, true);
-      }),
-    );
-  })().catch((error) => {
-    watching = undefined;
-    throw error;
-  }));
+export function reportRunEnd(id: ConversationId) {
+  void runEnded(id)
+    .then(() => archiveIfAsked(id))
+    .catch((error) => console.error('[note]', error));
 }
 
 /** The session `watcher` starts or stops hearing each run this session ends. */
@@ -81,16 +46,6 @@ export async function unwatch(id: string) {
       watcher,
       `The user stopped your watch on ${named(s)}: you hear no more of its turns.`,
     );
-}
-
-function runChanged(id: ConversationId | undefined, running: boolean) {
-  if (id === undefined) return;
-  const was = runState.get(id);
-  runState.set(id, running);
-  if (running || !was) return;
-  void runEnded(id)
-    .then(() => archiveIfAsked(id))
-    .catch((error) => console.error('[note]', error));
 }
 
 /**
@@ -126,10 +81,8 @@ async function runEnded(id: ConversationId) {
   let what = `finished its turn. Its last reply:\n\n${s.reply || '(none)'}`;
   if (s.status === 'error')
     what = `stopped with an error. Its last reply:\n\n${s.reply || '(none)'}`;
-  if (s.status === 'waiting') {
-    const { questions } = await recentMessages(String(id), 1);
-    what = `is waiting for the user's answer to:\n${questions.map((q) => `- ${q.question} (${q.options.map((o) => o.label).join(' / ')})`).join('\n') || s.reply}`;
-  }
+  if (s.status === 'waiting')
+    what = `is waiting for the user:\n${s.waits.map((w) => `- ${w}`).join('\n') || s.reply}`;
   // Its parent may itself be a child session, so the question climbs one
   // step at a time instead of every session above hearing it.
   const passUp =
@@ -140,7 +93,7 @@ async function runEnded(id: ConversationId) {
   // reply, so writing to a child session costs the parent no run of its own.
   const words =
     (await lastSender(String(id))) === 'user'
-      ? (await recentMessages(String(id), 2)).messages.findLast(
+      ? (await recentMessages(String(id), 2)).findLast(
           (m) => m.from === 'prompt',
         )?.text
       : undefined;

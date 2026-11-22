@@ -12,7 +12,6 @@ import { PruneEntry, pruneEdits, prunedTokens } from '@bica/shared/prune';
 import type { ModelChoice, PromptImage } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
 import { getAgent } from '../agents/registry';
-import { loadMemory, projectList } from '../agents/common';
 import { connectedAppsLine } from '../connectors/apps';
 import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
@@ -136,11 +135,10 @@ export async function recordSender(id: ConversationId, from: Sender) {
 }
 
 /**
- * Takes the memory index, the connected apps, and the project list for an
- * agent with a `projects` section such as a bot's, when the session holds
- * no copy: at its first prompt and after a compaction (store.ts). The prompt sections
- * show the copies (server/src/agents/registry.ts), since the agent
- * edits memory mid-session and every change would be sent again. Every
+ * Takes the connected apps, and the agent's own copies such as a bot's
+ * memory index and project list (Agent.copies), when the session holds none:
+ * at its first prompt and after a compaction (store.ts). The prompt sections
+ * show the copies, so edits in between don't break the prompt cache. Every
  * prompt path calls it, voice included.
  */
 export async function keepCopies(id: ConversationId) {
@@ -160,12 +158,14 @@ export async function keepCopies(id: ConversationId) {
     meta.apps !== undefined
   )
     return;
+  const [copies, apps] = await Promise.all([
+    getAgent(agentIdOf(meta)).copies?.(agent.cwd),
+    meta?.apps ?? connectedAppsLine(),
+  ]);
   const taken = {
-    memory: meta?.memory ?? (await loadMemory(agent.cwd)),
-    projects:
-      meta?.projects ??
-      (getAgent(agentIdOf(meta)).sections.projects ? await projectList() : ''),
-    apps: meta?.apps ?? (await connectedAppsLine()),
+    memory: meta?.memory ?? copies?.memory ?? '',
+    projects: meta?.projects ?? copies?.projects ?? '',
+    apps,
   };
   await editSession(id, (meta) => void Object.assign(meta, taken));
 }

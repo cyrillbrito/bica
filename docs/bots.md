@@ -60,7 +60,7 @@ It needs a model with a known cache lifetime, which means Anthropic's.
 
 ## The memory index
 
-Every session, a bot's or not, starts with the memory index in its system prompt: `MEMORY.md`, or `PROFILE.md`, in its workspace, or a bot's home. Bica takes a copy when the session starts and refreshes it only after a compaction, automatic or not, so the prompt cache holds. A long index is cut, and the agent is told so. A bot's session keeps a copy of your project list the same way.
+A bot's session starts with the memory index, the `MEMORY.md` in its home, in its system prompt. Other sessions get none: a project's agent instructions go in its `AGENTS.md`. Bica takes a copy when the session starts and refreshes it only after a compaction, automatic or not, so the prompt cache holds. A long index is cut, and the agent is told so. A bot's session keeps a copy of your project list the same way.
 
 ## What it can do
 

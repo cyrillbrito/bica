@@ -5,7 +5,8 @@ import { serveBlob } from './git/blob';
 import { serveDownload } from './files/download';
 import { installAgents } from './agents/extensions';
 import { startNight } from './night-runs/night';
-import { watchRuns } from './orchestration/notes';
+import { reportRunEnd } from './orchestration/notes';
+import { onRunEnd, watchRuns } from './sessions/runs';
 import { startWorktreeCleanup } from './projects/cleanup';
 import { serveAttachment } from './sessions/attachments';
 import { startHousekeeping } from './sessions/housekeeping';
@@ -70,6 +71,7 @@ export function serve(
   startNight();
   // Opens the harness, which resumes runs a restart left unfinished, and
   // follows them at once: a parent hears when one ends, open tab or not.
+  onRunEnd(reportRunEnd);
   void watchRuns().catch((error) => console.error('[sessions]', error));
   return server;
 }

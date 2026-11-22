@@ -5,7 +5,6 @@ import {
   type Extension,
   type PromptInput,
 } from '@earendil-works/pi-durable';
-import { isLongLived } from '@bica/shared/agents';
 import { AskTool } from '../tools/ask';
 import { Codemode } from '../tools/codemode';
 import { CodingTools } from '../tools/coding';
@@ -21,7 +20,6 @@ import { getBot } from '../bots/store';
 import { coding } from './coding';
 import {
   HEAD_SECTIONS,
-  LONG_LIVED,
   TAIL_SECTIONS,
   type Agent,
   type SectionInput,
@@ -41,9 +39,6 @@ async function renderSection(
     return agent.skills ? skillsSection(input.cwd) : undefined;
   // Building one takes the artifacts skill, so only agents with skills.
   if (key === 'artifacts') return agent.skills ? artifactsSection() : undefined;
-  // From isLongLived, so the prompt and housekeeping can't disagree.
-  if (key === 'long_lived')
-    return isLongLived(agent.id) ? LONG_LIVED : undefined;
   const render = agent.sections[key];
   return typeof render === 'function' ? render(input) : render;
 }
@@ -87,8 +82,8 @@ const BicaPrompt = defineExtension({
  * The rest, after the tools: the folder's files, the agent's role, and the
  * reply rules. Durable sends only the sections that changed, so AGENTS.md and
  * skill edits apply from the next request without breaking the prompt cache.
- * Memory and a bot's project list are copies kept in SessionDoc
- * (server/src/sessions/prompts.ts). The name predates the folder sections and
+ * A bot's memory and project list are copies kept in SessionDoc
+ * (Agent.copies). The name predates the folder sections and
  * stays, since sessions store their extension list.
  */
 const BicaContext = defineExtension({

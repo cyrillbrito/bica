@@ -17,6 +17,8 @@ GPT-Live is only the voice. It listens, talks, can be interrupted, and decides w
 - Every handoff tells the agent that its reply will be spoken, so it leads with the answer in a sentence or two of plain speech, with no headings or bold labels. Since the voice answers some things by itself, the agent also sees the voice's lines, and corrects one that got something wrong.
 - A handoff while the agent works joins the run at once, so "no, the other branch" lands before the wrong thing is done. Handoffs that joined the same run share one reply, spoken once.
 - Progress reaches the voice as quiet commentary, and the final reply as the result to speak. Long runs never time out.
+- A run that ends on an approval card or a question isn't done, and often has no reply text. The result says what it waits for, such as "an approval card: GMAIL_BATCH_MODIFY_MESSAGES. It hasn't run yet", so the voice tells you to answer it instead of saying the work is done. Your answer starts a new run, which comes back as an update.
+- The voice is told to say it's checking only when it hands something off: GPT-Live otherwise says "on it" with nothing running.
 - A run the call didn't start is spoken too, such as a [bot](./bots.md)'s run after a note that a session finished or asks something.
 - A result that is ready while you talk waits until you finish.
 - "How's it going" gets the agent's latest turn and how long ago it was, and "stop" stops the run.
@@ -24,10 +26,18 @@ GPT-Live is only the voice. It listens, talks, can be interrupted, and decides w
 
 ## What the voice is told
 
-The voice module, `server/src/voice/`, is only the call: the WebRTC line, handoffs, and the call's own rules. It knows nothing about bots or projects. What the voice is told at the start of a call comes from four places, in this order:
+The voice module, `server/src/voice/`, is only the call, and knows nothing about bots or projects:
+
+- `openai.ts` is the wire: the sign-in, the WebRTC offer, the sideband socket, and context sent in pieces under the size cap.
+- `prompt.ts` holds every word GPT-Live is told, laid out as OpenAI's [GPT-Live prompting guide](https://developers.openai.com/api/docs/guides/live-prompting) suggests: who it is, then its backchannel, interruption, and delegation policies, kept short since the guide finds overlapping rules do harm.
+- `heard.ts` keeps what was said, for the transcript and the next handoff.
+- `session.ts` is the session side. A run's end and what it waits on come from the same places that tell a parent session ([orchestration.md](./orchestration.md#who-hears-what)): `sessions/runs.ts` and `readSession`.
+- `voice.ts` ties them together.
+
+What the voice is told at the start of a call comes from four places, in this order:
 
 1. The session's [agent](./agents.md) says who the voice is, and gives the names you may say. To you, the voice and the agent are one: the voice speaks the agent's results as its own work, and takes its name. Without that, GPT-Live answers "who are you" by itself and says it is ChatGPT.
-2. The call's rules: when to talk, when to hand off, and how to speak results.
+2. The call's rules: when to talk, when to hand off, and how to speak results. Fillers and listening sounds are allowed now and then, not in every turn.
 3. The session's voice settings, in its ⋯ menu in the top bar: speed, and instructions such as "talk with me in simple French".
 4. The recent conversation, so "continue" makes sense.
 
@@ -37,6 +47,8 @@ Each agent decides its own part:
 - Bot: the voice is the [bot](./bots.md), with its name and the tone in its `SOUL.md`. It talks about all your work, so its names are "Bica", the bot's name, your projects, and your open sessions' titles, newest first.
 
 The call writes the names out so the voice hears and spells them right, and cuts the list at about 3,000 characters.
+
+The ChatGPT route ignores the instructions sent when the call is set up, and refuses to change them later. Without them the voice answers as ChatGPT and follows none of Bica's rules. So once the call starts, Bica sends the first three parts again as silent context, the channel the voice reads without speaking, as OpenClaw found ([openclaw#199052](https://github.com/openclaw/openclaw/pull/199052)). Each part starts with a label saying it is setup from Bica, not you, and to stay quiet until you speak: without it, the voice took the rules for you talking and answered them as the call connected. The recent conversation goes only at setup, since context sent after the call starts can read as a turn to answer. The `rules sent` line in the call log shows when the rules went.
 
 ## Hold music
 
@@ -69,5 +81,7 @@ If the mic sends pure silence from the start, without even room noise, the call 
 - [SomaFM: how to link to us](https://somafm.com/linktous/): the official stream links.
 - openai/codex [methods_v2.rs](https://github.com/openai/codex/blob/f1affbac/codex-rs/codex-api/src/endpoint/realtime_websocket/methods_v2.rs) and [#18761](https://github.com/openai/codex/pull/18761): Codex's voice passes "the user's own words", steers a running task, and sends what was said since the last handoff.
 - ChatGPT, [ChatGPT Voice](https://learn.chatgpt.com/docs/features/voice): progress, blockers, and results from Codex tasks come back while you talk.
+- OpenAI, [Prompting GPT-Live](https://developers.openai.com/api/docs/guides/live-prompting) and [Delegation and tools](https://developers.openai.com/api/docs/guides/live-delegation): the policy headings, "delegate when" lists, and that a spoken "I'm checking that" doesn't start any work.
+- OpenClaw [#199052](https://github.com/openclaw/openclaw/pull/199052): GPT-Live on the ChatGPT route ignores setup instructions but follows them as `commentary` context sent after `session.started`.
 - oh-my-pi's [live protocol](https://github.com/can1357/oh-my-pi/blob/403931b9/packages/coding-agent/src/live/protocol.ts): `session.context.append` on the same Codex route.
 - [How I make apps feel premium](https://youtu.be/MXLF8b15GhQ): a calorie app gives its dictation the nearby restaurant names so it hears them right.

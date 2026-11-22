@@ -54,11 +54,10 @@ export type SessionMeta = {
   // The bots' sessions that watch it (session_watch), which hear each run
   // it ends.
   watchedBy?: string[];
-  // The memory index as the agent sees it (loadMemory), '' for none. Unset:
+  // A bot's memory index as it sees it (bots/copies.ts), '' for none. Unset:
   // taken again on the next prompt, as after a compaction.
   memory?: string;
-  // The project list for an agent with a `projects` section, such as a
-  // bot's, kept like `memory`.
+  // A bot's project list, kept like `memory`.
   projects?: string;
   // The connected apps line (server/src/connectors/apps.ts), kept like
   // `memory`; '' without a Composio key.
