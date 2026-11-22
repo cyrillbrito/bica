@@ -314,11 +314,7 @@ export default function Markdown(props: {
       }}
     >
       <Show when={parsed().frontmatter?.trim()}>
-        {(yaml) => (
-          <Loading>
-            <Properties yaml={yaml()} />
-          </Loading>
-        )}
+        {(yaml) => <Properties yaml={yaml()} />}
       </Show>
       <For each={blocks()} keyed={(b) => b.key}>
         {(block, i) => {

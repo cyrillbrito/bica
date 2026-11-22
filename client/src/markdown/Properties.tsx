@@ -1,5 +1,7 @@
 import type { JSX } from '@solidjs/web';
-import { For, Match, Show, Switch, lazy } from 'solid-js';
+import { For, Match, Show, Switch } from 'solid-js';
+
+import { parseFrontmatter } from './frontmatter';
 
 import { tagClass } from '../ui/Tag';
 
@@ -142,31 +144,21 @@ function Rows(props: { object: Record<string, unknown>; depth: number }) {
  * A Markdown file's YAML frontmatter as a list of keys and values, like
  * Obsidian's Properties. YAML that isn't a map of keys shows as written.
  */
-// Loaded on first use: most pages have no frontmatter.
-const Properties = lazy(async () => {
-  const { parse } = await import('yaml');
-  return {
-    default: (props: { yaml: string }) => {
-      const data = () => {
-        try {
-          return parse(props.yaml, { maxAliasCount: 50 }) as unknown;
-        } catch {
-          return undefined;
-        }
-      };
-      return (
-        <div class="border-b border-line pb-3.5 font-ui text-ui">
-          <Switch fallback={<pre>{props.yaml}</pre>}>
-            <Match
-              when={isObject(data()) && (data() as Record<string, unknown>)}
-            >
-              {(object) => <Rows object={object()} depth={0} />}
-            </Match>
-          </Switch>
-        </div>
-      );
-    },
+export default function Properties(props: { yaml: string }) {
+  const data = () => {
+    try {
+      return parseFrontmatter(props.yaml);
+    } catch {
+      return undefined;
+    }
   };
-});
-
-export default Properties;
+  return (
+    <div class="border-b border-line pb-3.5 font-ui text-ui">
+      <Switch fallback={<pre>{props.yaml}</pre>}>
+        <Match when={isObject(data()) && (data() as Record<string, unknown>)}>
+          {(object) => <Rows object={object()} depth={0} />}
+        </Match>
+      </Switch>
+    </div>
+  );
+}
