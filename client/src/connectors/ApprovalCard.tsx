@@ -147,7 +147,11 @@ export default function ApprovalCard(props: {
 
 // flag: mark the item that deletes, when it isn't the only one.
 function Item(props: { item: ApprovalItem; flag: boolean }) {
-  const entries = () => Object.entries(props.item.args ?? {});
+  // The account leads the arguments, so a send says which address it's from.
+  const entries = () => [
+    ...(props.item.account ? [['account', props.item.account] as const] : []),
+    ...Object.entries(props.item.args ?? {}),
+  ];
   return (
     <div class="flex min-w-0 flex-col gap-2">
       <div class="flex min-w-0 items-center gap-2">

@@ -3,6 +3,7 @@ import type { ToolExecutionApi } from '@earendil-works/pi-durable';
 
 import type { ApprovalItem, ApprovalRequest } from '@bica/shared/requests';
 import { onAnswer } from '../sessions/requests';
+import { accountNamed } from './apps';
 import {
   executeMeta,
   toolInfo,
@@ -150,7 +151,9 @@ export function outcome(
 
 // One call as the card shows it, to match a new question to the old.
 function callOf(item: ApprovalItem) {
-  return item.tool ? `${item.tool} ${JSON.stringify(item.args)}` : item.message;
+  return item.tool
+    ? `${item.account ?? ''} ${item.tool} ${JSON.stringify(item.args)}`
+    : item.message;
 }
 
 // Composio's own fallback, should a question come without a schema.
@@ -175,11 +178,17 @@ function fieldOf(request: InputRequest | undefined) {
 async function itemOf(request: InputRequest): Promise<ApprovalItem> {
   const message = request.message ?? '';
   const match = /([A-Z][A-Z0-9_]+)\((\{[\s\S]*\})\)\s*$/.exec(message);
+  // Composio names the account when the app has several: on your "gmail_x" account.
+  const accountId = /on your "([^"]+)" account/.exec(message)?.[1];
+  const account = accountId
+    ? ((await accountNamed(accountId)) ?? accountId)
+    : null;
   if (!match)
     return {
       tool: null,
       app: null,
       logo: null,
+      account,
       args: null,
       message,
       // Unknown, so treated as the worst.
@@ -197,6 +206,7 @@ async function itemOf(request: InputRequest): Promise<ApprovalItem> {
     tool,
     app: kit?.name ?? info?.toolkit?.name ?? null,
     logo: kit?.meta?.logo ?? info?.toolkit?.logo ?? null,
+    account,
     args,
     message,
     danger: info ? !!info.tags?.includes('destructiveHint') : true,

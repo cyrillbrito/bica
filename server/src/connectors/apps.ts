@@ -21,16 +21,46 @@ type Account = {
   status: string;
   toolkit?: { slug?: string };
   created_at?: string;
+  // The id Composio's session tools name the account by: gmail_asop-nodus.
+  word_id?: string;
+  // Composio fills displayName with the app's own name for the sign-in, such
+  // as the Gmail address, once the connection is active.
+  data?: { displayName?: string };
+  state?: { val?: { displayName?: string } };
 };
 
 // A sign-in link nobody finished stays INITIATED until Composio expires it.
 const STALE_LINK_MS = 30 * 60_000;
 
-async function listApps(): Promise<ConnectedApp[]> {
+async function listAccounts() {
   const { items = [] } = await composio<{ items?: Account[] }>(
     '/connected_accounts',
     { query: { user_ids: await userId(), limit: 100 } },
   );
+  return items;
+}
+
+function accountName(a: Account) {
+  return a.state?.val?.displayName ?? a.data?.displayName ?? null;
+}
+
+/**
+ * The sign-in an account id stands for, such as a Gmail address, for the
+ * approval card; Composio's session tools name accounts by word id.
+ */
+export async function accountNamed(id: string) {
+  try {
+    const found = (await listAccounts()).find(
+      (a) => a.word_id === id || a.id === id,
+    );
+    return found ? accountName(found) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function listApps(): Promise<ConnectedApp[]> {
+  const items = await listAccounts();
   const apps = await Promise.all(
     items.map(async (a): Promise<ConnectedApp | undefined> => {
       const toolkit = a.toolkit?.slug;
@@ -47,6 +77,7 @@ async function listApps(): Promise<ConnectedApp[]> {
         toolkit,
         name: info?.name ?? toolkit,
         logo: info?.meta?.logo ?? null,
+        account: accountName(a),
         status: a.status,
         createdAt,
       };
@@ -141,11 +172,20 @@ export function connectedAppsLine(): Promise<string> {
   const text = (async () => {
     if (!(await composioKey())) return '';
     try {
-      const names = (await listApps())
-        .filter((a) => a.status === 'ACTIVE')
-        .map((a) => a.name);
+      // Each app once, with the accounts it's signed in as, so the agent
+      // knows when an app has several: Gmail (ana@example.com, ana@work.com).
+      const accounts = new Map<string, string[]>();
+      for (const a of await listApps())
+        if (a.status === 'ACTIVE')
+          accounts.set(a.name, [
+            ...(accounts.get(a.name) ?? []),
+            ...(a.account ? [a.account] : []),
+          ]);
+      const names = [...accounts].map(([name, signIns]) =>
+        signIns.length ? `${name} (${signIns.join(', ')})` : name,
+      );
       return names.length
-        ? `Connected apps: ${[...new Set(names)].join(', ')}.`
+        ? `Connected apps: ${names.join(', ')}.`
         : 'No app is connected yet.';
     } catch {
       return "Composio didn't answer when this session started, so which apps are connected is unknown: search to find out.";

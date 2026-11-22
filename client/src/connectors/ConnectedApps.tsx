@@ -126,8 +126,14 @@ export default function ConnectedApps() {
           muted={app.status !== 'ACTIVE'}
         />
         <span class="flex min-w-0 flex-1 flex-col">
-          <span class="truncate font-medium" title={app.name}>
-            {app.name}
+          <span
+            class="truncate"
+            title={app.account ? `${app.name}, ${app.account}` : app.name}
+          >
+            <span class="font-medium">{app.name}</span>
+            <Show when={app.account}>
+              {(account) => <span class="text-muted"> {account()}</span>}
+            </Show>
           </span>
           <span class="flex min-w-0 items-center gap-2">
             <Show

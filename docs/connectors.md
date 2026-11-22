@@ -8,7 +8,15 @@ Settings → Connected apps starts with a field for a Composio project API key. 
 
 The card then shows which key is saved, with Remove key, and lists your apps with their status. Connect app searches Composio's catalog and opens the app's sign-in page, and the row turns Connected once you finish. Disconnect removes the app and revokes its access. The agent can also send a sign-in link in the chat when it needs an app that isn't connected.
 
-Bica makes one Composio user and one Composio session for itself, saved in `.data/composio.json`, and makes a new session when the key changes.
+Bica makes one Composio user and one Composio session for itself, saved in `.data/composio.json`, and makes a new session when the key or the session's config changes.
+
+## More than one account
+
+An app can be connected more than once, such as a personal and a work Gmail: Connect app again and sign in with the other account. Each shows as its own row, with the address or name it signed in as, which Composio reads from the app once the sign-in is done.
+
+Composio's sessions use only the newest account of each app unless multi-account mode is on, so Bica's session turns it on, with explicit selection. The prompt's apps line names each app's accounts, such as "Gmail (ana@example.com, ana@work.example)". Search lists them under the app's connection status, each with an id such as `gmail_coffee-licit` and its email. A call to an app with several then needs `account` set to one of those ids. Without it the call fails and Composio names the choices, so the agent never quietly picks the wrong account. An approval card shows which account the call runs on.
+
+`composio_manage_connections` lists an app's accounts by default. Its `add` makes a new sign-in link every time it's called, even for an app already connected. Composio's tool can also rename and remove accounts, but Bica's copy offers only list and add: it's script-only, so a removal would skip approval. Disconnect in Settings removes one.
 
 ## What the agent sees
 

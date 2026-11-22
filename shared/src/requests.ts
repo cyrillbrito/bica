@@ -17,6 +17,9 @@ export interface ApprovalItem {
   tool: string | null;
   app: string | null;
   logo: string | null;
+  // The account it runs on, such as a Gmail address, when the app has
+  // several; cards from before multi-account mode don't have it.
+  account?: string | null;
   args: Record<string, unknown> | null;
   // Composio's own description of the call, shown when `tool` is null.
   message: string;

@@ -16,10 +16,14 @@ const API = `${process.env.BICA_COMPOSIO_URL ?? 'https://backend.composio.dev'}/
 
 // Composio asks before any tool hinted to create, update, or delete, and its
 // remote workbench and bash are off: Bica has code mode and bash, and
-// Composio says scripts there can slip past approvals.
+// Composio says scripts there can slip past approvals. Without multi-account
+// mode a session sees only the newest connection of each app, so a second
+// Gmail is invisible; with explicit selection, a call to an app with several
+// fails and names them rather than quietly using the newest.
 const SESSION_CONFIG = {
   workbench: { enable: false },
   tags: { require_approval: ['createHint', 'updateHint', 'destructiveHint'] },
+  multi_account: { enable: true, require_explicit_selection: true },
 };
 
 type Saved = {

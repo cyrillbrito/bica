@@ -39,11 +39,13 @@ export function fixtureConnectors(worst: boolean): Connectors {
     status: string,
     ago: number,
     withLogo = true,
+    account: string | null = null,
   ) => ({
     id: `ca_${slug}_${ago}`,
     toolkit: slug,
     name,
     logo: withLogo ? logo(slug) : null,
+    account,
     status,
     createdAt: now - ago * MIN,
   });
@@ -52,7 +54,8 @@ export function fixtureConnectors(worst: boolean): Connectors {
       keyHint: 'x7Qe',
       error: null,
       apps: [
-        app('gmail', 'Gmail', 'ACTIVE', 3 * 24 * 60),
+        app('gmail', 'Gmail', 'ACTIVE', 3 * 24 * 60, true, 'ana@example.com'),
+        app('gmail', 'Gmail', 'ACTIVE', 24 * 60, true, 'ana@work.example'),
         app('slack', 'Slack', 'INITIATED', 2),
         app('github', 'GitHub', 'EXPIRED', 40 * 24 * 60),
       ],
@@ -69,7 +72,14 @@ export function fixtureConnectors(worst: boolean): Connectors {
         60,
         false,
       ),
-      app('gmail', 'Gmail', 'ACTIVE', 3000),
+      app(
+        'gmail',
+        'Gmail',
+        'ACTIVE',
+        3000,
+        true,
+        'a.very.long.address.for.someone.at.an.organisation@subdomain.example-corporation.co.uk',
+      ),
       app('gmail', 'Gmail', 'INITIATED', 1),
       app('slack', 'Slack', 'FAILED', 90),
       app('github', 'GitHub', 'EXPIRED', 9000),
@@ -100,6 +110,9 @@ export function approvalTurn(worst: boolean): Turn {
         tool: 'GMAIL_SEND_EMAIL',
         app: 'Gmail',
         logo: logo('gmail'),
+        account: worst
+          ? 'a.very.long.address.for.someone.at.an.organisation@subdomain.example-corporation.co.uk'
+          : 'ana@work.example',
         danger: false,
         message: 'Send an email',
         args: worst

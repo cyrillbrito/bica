@@ -18,7 +18,13 @@ const HINTS: Record<string, string> = {
 };
 const ran: string[] = [];
 
-type Call = { tool_slug: string; arguments: Record<string, string> };
+type Call = {
+  tool_slug: string;
+  arguments: Record<string, string>;
+  account?: string;
+};
+// What the last session Bica made asked of Composio.
+let sessionConfig: { multi_account?: { enable?: boolean } } = {};
 
 const composio = Bun.serve({
   port: 0,
@@ -28,18 +34,24 @@ const composio = Bun.serve({
       arguments?: { tools: Call[] };
       input_responses?: Record<string, { content: { decision: string } }>;
     };
-    if (path === '/tool_router/session')
+    if (path === '/tool_router/session') {
+      sessionConfig = body as typeof sessionConfig;
       return Response.json({ session_id: 'trs_test' });
+    }
+    // Two Gmail accounts, as Composio lists them.
     if (path === '/connected_accounts')
       return Response.json({
         items: [
-          {
-            id: 'ca_gmail',
-            status: 'ACTIVE',
-            toolkit: { slug: 'gmail' },
-            created_at: new Date().toISOString(),
-          },
-        ],
+          ['ca_home', 'gmail_home-word', 'ana@example.com'],
+          ['ca_work', 'gmail_work-word', 'ana@work.example'],
+        ].map(([id, word, email]) => ({
+          id,
+          word_id: word,
+          status: 'ACTIVE',
+          toolkit: { slug: 'gmail' },
+          created_at: new Date().toISOString(),
+          state: { val: { displayName: email } },
+        })),
       });
     if (path === '/toolkits/gmail')
       return Response.json({ slug: 'gmail', name: 'Gmail', meta: {} });
@@ -63,7 +75,7 @@ const composio = Bun.serve({
               `elicit_${i}`,
               {
                 type: 'elicitation',
-                message: `Your agent wants to run the following tool:\n\n${c.tool_slug}(${JSON.stringify(c.arguments)})`,
+                message: `Your agent wants to run the following tool${c.account ? ` on your "${c.account}" account` : ''}:\n\n${c.tool_slug}(${JSON.stringify(c.arguments)})`,
                 requested_schema: {
                   properties: {
                     decision: {
@@ -132,7 +144,7 @@ function writeApps(...tools: Call[]) {
   );
 }
 
-test("a session's prompt names the connected apps", async () => {
+test("a session's prompt names the connected apps and each one's accounts", async () => {
   const tab = await bica.connect();
   const { projectId } = await bica.project(tab, 'apps-prompt');
   let request: Context | undefined;
@@ -149,7 +161,12 @@ test("a session's prompt names the connected apps", async () => {
   await tab
     .watch('sessions', {})
     .until((l) => l.some((s) => s.id === id && s.status === 'done'));
-  expect(shows(request, 'Connected apps: Gmail.')).toBe(true);
+  expect(
+    shows(
+      request,
+      'Connected apps: Gmail (ana@example.com, ana@work.example).',
+    ),
+  ).toBe(true);
   expect(shows(request, 'tools.composio_search_tools(')).toBe(true);
 });
 
@@ -169,6 +186,7 @@ test('a read runs at once, and a send or a delete ends the turn on a card that r
       writeApps({
         tool_slug: c.tool,
         arguments: { to: 'priya@example.com', subject: 'Q3 numbers' },
+        account: 'gmail_work-word',
       }),
       fauxAssistantMessage('All done'),
     );
@@ -183,6 +201,8 @@ test('a read runs at once, and a send or a delete ends the turn on a card that r
     );
     // The read ran without asking; the gated call waits, with nothing running.
     expect(ran).toEqual(['GMAIL_FETCH_EMAILS']);
+    // Without it, Composio's session sees only the newest Gmail.
+    expect(sessionConfig.multi_account?.enable).toBe(true);
     const conversation = tab.watch('conversation', { id });
     const card = requestIn(
       (await conversation.until((v) => !!v && !!requestIn(v)))!,
@@ -191,6 +211,7 @@ test('a read runs at once, and a send or a delete ends the turn on a card that r
     expect(card.request.items[0]).toMatchObject({
       tool: c.tool,
       app: 'Gmail',
+      account: 'ana@work.example',
       args: { to: 'priya@example.com' },
     });
     expect(card.request.choices.some((x) => x.value === 'always_approve')).toBe(
