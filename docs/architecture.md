@@ -40,8 +40,8 @@ The client can't import the server, because its `package.json` doesn't list it.
 Inside the client and the server, code is grouped by feature, and a feature has the same folder name on both sides: terminals is `client/src/terminals` and `server/src/terminals`. A feature gets a folder on a side once it has two files there. A single file joins the feature it builds on: the Tonight strip sits in `client/src/sessions`, and housekeeping in `server/src/sessions`.
 
 - `sessions/`: the transcript, the composer, prompts and the queue, notes from Bica, archive, and housekeeping ([sessions.md](./sessions.md)).
-- `orchestration/`: sessions working with other sessions, built on `sessions/`: the session tools, parents and child sessions, Detach, watching, and the notes when a run ends ([orchestration.md](./orchestration.md)). The hub builds on it from its own folder.
-- `agents/` (server): Coding and Assistant, the shared prompt sections, the registry that lists every agent, and `extensions.ts`, which installs the extensions behind the names agents pick into Pi Durable's registry at startup ([agents.md](./agents.md), [system-prompt.md](./system-prompt.md)). `tools/` holds the agent's general tools, and `harness.ts` opens Pi Durable ([tools.md](./tools.md)).
+- `orchestration/`: sessions working with other sessions, built on `sessions/`: the session tools, parents and child sessions, Detach, watching, and the notes when a run ends ([orchestration.md](./orchestration.md)). Bots build on it from their own folder.
+- `agents/` (server): Coding, the shared prompt sections, the registry that lists every agent, and `extensions.ts`, which installs the extensions behind the names agents pick into Pi Durable's registry at startup ([agents.md](./agents.md), [system-prompt.md](./system-prompt.md)). `tools/` holds the agent's general tools, and `harness.ts` opens Pi Durable ([tools.md](./tools.md)).
 - `models/`: models, keys, sign-ins, and plan accounts ([models.md](./models.md)). The rest of the folder works the same for every provider: what Bica knows about particular ones sits in `known-providers.ts`, and Exa's key in `exa.ts`.
 - `projects/`: projects, worktrees, chats, pull requests, and the workspace the current page is about ([projects.md](./projects.md)). On the server, `worktrees.ts` makes and removes worktrees, and `workspace.ts` checks a workspace ref before file or git code touches its folder.
 - `files/` and `git/`: file and diff views, reading files, the file list, and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)). Git's diffs read file contents through `server/src/files/files.ts`, so what counts as text, media, or too large is decided once.
@@ -49,7 +49,8 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `connectors/`: connected apps through Composio, its tools, and approvals ([connectors.md](./connectors.md)).
 - `artifacts/`: the HTML report pages agents build, with the kit, its themes, and the artifacts skill on the server, and the list and viewer in the client ([artifacts.md](./artifacts.md)). The kit's own code runs in the artifact's page, so it is plain JavaScript the server serves as text.
 - `requests/` (client): the frame of the cards a session waits on you with, questions and approvals; the server answers them from `sessions/requests.ts` ([requests.md](./requests.md)).
-- `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
+- `bots/`: the bots you make, their store in `bots.json`, the Bot agent, the Watching strip, the dialog, and sidebar rows ([bots.md](./bots.md)). Each bot's workspace is listed as a project by `projects/`, which reads the store and nothing else of `bots/`.
+- `terminals/`, `voice/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Bots and Night define their agents in their own folders.
 
 A file goes to the feature that owns it, not the one that uses it first. Features import each other freely, with no layering between them. The pieces every feature touches stay in one place each: `shared/src/protocol.ts`, the socket's table of calls in `server/src/socket.ts`, the sidebar in `client/src/app/sidebar/`, and ⌘K in `client/src/app/palette/`. A piece of one moves into its feature only when it owns state there, as terminal and kept-file rows did.
 
@@ -78,6 +79,8 @@ Bica's data sits in the repo's `.data/`. The browser keeps small preferences per
 | --- | --- |
 | Sessions, transcripts, queues | `harness.sqlite` |
 | Projects | `projects.json` |
+| Bots, in sidebar order | `bots.json` |
+| Bots' homes, unless one picked another folder: their files and memory | `bots/<id>/` |
 | Settings | `settings.json` |
 | Keys and sign-ins | `auth.json`, readable only by you |
 | Plan accounts' emails and order | `accounts.json` |

@@ -28,6 +28,8 @@ import { Tag, type Tone } from '../ui/Tag';
 import TextArea from '../ui/TextArea';
 import { ThinkingLoader } from '../ui/ThinkingLoader';
 import StatusDot, { STATUS } from '../sessions/StatusDot';
+import BotMark from '../bots/BotMark';
+import { BOT_COLORS } from '@bica/shared/bots';
 import Working from '../sessions/Working';
 import { toast } from '../ui/Toast';
 import { Trend } from '../ui/Trend';
@@ -145,6 +147,19 @@ function Colors() {
           )}
         </For>
       </div>
+      <Row>
+        <For each={BOT_COLORS}>
+          {(color) => (
+            <span class="flex items-center gap-1.5 text-meta text-muted">
+              <BotMark bot={{ name: color, color }} />
+              <BotMark bot={{ name: color, color }} size="md" />
+              {color}
+            </span>
+          )}
+        </For>
+        <BotMark bot={{ name: '🦊 Fox', color: 'amber' }} />
+        <BotMark bot={{ name: '王秀英', color: 'rose' }} size="md" />
+      </Row>
       <Row>
         <For each={INKS}>
           {([name, cls]) => (
@@ -397,7 +412,7 @@ function Overlays() {
               label: 'Agent',
               options: [
                 { id: 'coding', label: 'Coding' },
-                { id: 'assistant', label: 'Assistant' },
+                { id: 'night', label: 'Night' },
               ],
             },
           ]}

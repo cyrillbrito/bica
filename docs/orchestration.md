@@ -28,9 +28,10 @@ Bica tells sessions about each other with notes: prompts from Bica itself, sent 
 
 | When a session... | A note goes to |
 | --- | --- |
-| ends a run | its parent, and the hubs that watch it |
-| ends a run with a question for you, or an error | also every hub |
+| ends a run | its parent, and the sessions that watch it |
 | is archived | nobody |
+
+Nothing goes further up the tree. When a child session asks you something or fails, its parent is told to settle it only if what it was told covers it, and otherwise to say it in its own reply, which its parent hears in turn. So a question climbs one step at a time, and a bot hears of a session further down only through the child session it leads.
 
 A message from `session_send` is one prompt to the receiver. The sender hears back only when the receiver answers with a message of its own, or when it would get a note anyway, and the message tells the receiver which.
 
@@ -38,9 +39,7 @@ Every prompt you didn't type, a note, a message, or the task from `session_start
 
 ## Watching
 
-The [hub](./hub.md) can watch a session it doesn't lead, such as one you started or one it messaged for you. While it watches, it hears each run that session ends, as it does for its child sessions. The session shows a "Hub watching" strip, and Stop there ends the watch and tells the hub. The hub stops a watch itself once that thread closes, and archiving ends it too.
-
-Only the hub watches. Other sessions hear only from their child sessions, and ask the receiver of a message to answer back.
+Any session can watch a session it doesn't lead, such as one you started or one it messaged for you. While it watches, it hears each run that session ends, as it does for its child sessions. Agents watch when you or their instructions ask, or when they need the result of a message; [bots](./bots.md) do it most. The watched session shows a "Watched by" strip naming its watchers, a bot by its name, and Stop there ends every watch and tells the watchers. A session stops a watch itself once that thread closes. Archiving either side ends it: an archived session has no turns to hear, and an archived watcher leaves every watch it held.
 
 ## The session tools
 
@@ -50,7 +49,7 @@ Only the hub watches. Other sessions hear only from their child sessions, and as
 - `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.
 - `session_archive` archives a finished session, and can remove its worktree when nothing would be lost. A session can archive itself only when you told it to. A running session, itself included, goes once its turn ends, after its last reply: a child session that reports done with `session_send` is still in that turn. A turn that ends with an error or a question keeps it open.
-- `session_watch`, the hub's alone, starts or stops a watch.
+- `session_watch` starts or stops a watch.
 
 The tools name sessions by title, then id, and agents are told to name them to you by title alone.
 
@@ -60,5 +59,5 @@ The tools name sessions by title, then id, and agents are told to name them to y
 - Pi's custom messages, with a `customType` for the renderer and `content` for the model ([extensions](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)), and Pi Durable's input `entry`, which `bica.sent` uses. Claude Code wraps teammate messages in a `<teammate-message>` tag that its UI parses, and a missed parse shows the raw tag ([#52554](https://github.com/anthropics/claude-code/issues/52554)); Codex sends a typed `agent_message` with its author ([#28368](https://github.com/openai/codex/pull/28368)). Bica keeps a label for the model and the sender in structured data, as Codex does.
 - Claude's desktop app, whose nested sessions report each turn to the session that started them ([changelog](https://claude.com/docs/cowork/changelog)). Its `detach_session` is the model for Detach. Users asked to keep the nesting but stop the reports ([#104683](https://github.com/anthropics/claude-code/issues/104683)), which a detached start covers.
 - Zendesk and Intercom stop their bot once a human takes a conversation, and [`pi-cmux-orchestrator`](https://www.npmjs.com/package/@mporenta/pi-cmux-orchestrator) holds back the orchestrator once you type in one of its sessions.
-- Claude Projects, [a coordinator with threads](https://support.claude.com/en/articles/9517075-what-are-projects), hears only from the threads it started, which is why the hub can watch others too.
+- Claude Projects, [a coordinator with threads](https://support.claude.com/en/articles/9517075-what-are-projects), hears only from the threads it started, which is why a bot can watch others too.
 - The subscribe button of GitHub issues and Linear, where you pick what you hear about.

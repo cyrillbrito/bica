@@ -262,12 +262,6 @@ const terminalStop = defineTool({
   },
 });
 
-// The hub reads its child sessions' terminals but types into none (docs/hub.md).
-export const HubTerminalTools = defineExtension({
-  name: 'hub-terminal-tools',
-  tools: [terminalRead],
-});
-
 export const TerminalTools = defineExtension({
   name: 'terminal-tools',
   tools: [terminalStart, terminalRead, terminalSend, terminalStop],

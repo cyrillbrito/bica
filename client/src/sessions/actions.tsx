@@ -13,8 +13,6 @@ import { copyText } from '../ui/clipboard';
 import type { MenuItem } from '../ui/ContextMenu';
 import {
   ArchiveIcon,
-  AssistantIcon,
-  CodeIcon,
   CopyIcon,
   ExternalIcon,
   ForkIcon,
@@ -30,7 +28,6 @@ import { archiveWithChildren } from './ArchiveDialog';
 import {
   forkSession,
   markSeen,
-  setAgent,
   setArchived,
   stopSession,
   useSessions,
@@ -42,7 +39,6 @@ export type SessionActionId =
   | 'unread'
   | 'rename'
   | 'fork'
-  | 'assistant'
   | 'archive'
   | 'unarchive'
   | 'new-tab'
@@ -140,14 +136,16 @@ export function useSessionActions() {
             void markSeen(s.id, false);
           },
         },
-      {
+      // A bot's session goes by the bot's name, and is the bot's one
+      // session: Start a new session in its menu resets it.
+      !s.bot && {
         id: 'rename',
         label: 'Rename',
         icon: PencilIcon,
         words: 'title',
         run: rename,
       },
-      {
+      !s.bot && {
         id: 'fork',
         label: 'Fork',
         icon: ForkIcon,
@@ -158,41 +156,27 @@ export function useSessionActions() {
             navigate(paths.s(id)());
           }),
       },
-      s.agent === 'coding' && {
-        id: 'assistant',
-        label: 'Turn on assistant mode',
-        icon: AssistantIcon,
-        words: 'long-running memory notes',
-        hint: 'Keeps notes in memory files and stays small while idle. Rebuilds the prompt cache once.',
-        run: () => void setAgent(s.id, 'assistant'),
-      },
-      s.agent === 'assistant' && {
-        id: 'assistant',
-        label: 'Turn off assistant mode',
-        icon: CodeIcon,
-        hint: 'Back to a coding session. Rebuilds the prompt cache once.',
-        run: () => void setAgent(s.id, 'coding'),
-      },
-      live
-        ? {
-            id: 'archive',
-            label: 'Archive',
-            icon: ArchiveIcon,
-            words: 'hide done close',
-            // Hidden but still spending tokens would be a surprise.
-            disabled: busy ? 'Still running' : undefined,
-            run: () =>
-              void archiveWithChildren(s, sessions(), (ids) => {
-                // Leave a session that's about to vanish from the list.
-                if (ids.some(isOpen)) navigate(paths());
-              }),
-          }
-        : {
-            id: 'unarchive',
-            label: 'Unarchive',
-            icon: RestoreIcon,
-            run: () => void setArchived([s], false),
-          },
+      !s.bot &&
+        (live
+          ? {
+              id: 'archive',
+              label: 'Archive',
+              icon: ArchiveIcon,
+              words: 'hide done close',
+              // Hidden but still spending tokens would be a surprise.
+              disabled: busy ? 'Still running' : undefined,
+              run: () =>
+                void archiveWithChildren(s, sessions(), (ids) => {
+                  // Leave a session that's about to vanish from the list.
+                  if (ids.some(isOpen)) navigate(paths());
+                }),
+            }
+          : {
+              id: 'unarchive',
+              label: 'Unarchive',
+              icon: RestoreIcon,
+              run: () => void setArchived([s], false),
+            }),
       {
         id: 'new-tab',
         label: 'Open in new tab',

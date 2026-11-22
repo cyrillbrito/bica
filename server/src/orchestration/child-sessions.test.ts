@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
+import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Context } from '@earendil-works/pi-ai';
 import {
@@ -328,14 +329,33 @@ test('a session archives itself once its turn ends, only when the user asked', a
     .until((c) => shows(c, 'All done, archiving'));
 });
 
-test('the hub hears each turn of a session it watches, until the user stops the watch', async () => {
+test('a bot hears each turn of a session it watches, until the user stops the watch, and nothing of the sessions it has no tie to', async () => {
   const tab = await bica.connect();
   const { projectId } = await bica.project(tab, 'watched');
-  await tab.request('settings.update', {
-    hubFolder: join(bica.root, 'hub'),
+  const workspace = join(bica.root, 'repos');
+  await mkdir(workspace, { recursive: true });
+  const id = await tab.request('bot.create', {
+    name: 'Ada',
+    color: 'teal',
+    workspace,
   });
   script = {
     Solowork: ['Files listed', 'Watched answer', 'Unwatched answer'],
+    Loner: [
+      fauxAssistantMessage(
+        fauxToolCall('ask', {
+          questions: [
+            {
+              question: 'Tabs or spaces?',
+              header: 'Indent',
+              options: [{ label: 'Tabs' }, { label: 'Spaces' }],
+            },
+          ],
+          summary: 'Ask the user',
+        }),
+        { stopReason: 'toolUse' },
+      ),
+    ],
   };
   const { id: watched } = await tab.request('session.create', {
     projectId,
@@ -354,29 +374,37 @@ test('the hub hears each turn of a session it watches, until the user stops the 
     'Watching',
   ];
   await settled(tab, watched);
-  const hub = await tab.request('hub.open', {});
+  const bot = await tab.request('bot.open', { id });
   await tab.request('session.submit', {
-    id: hub,
+    id: bot,
     prompt: 'Watch it for me',
     requestId: crypto.randomUUID(),
   });
   await sessionsOf(tab).until((l) =>
-    l.some((s) => s.id === watched && s.watchedBy.includes(hub)),
+    l.some((s) => s.id === watched && s.watchedBy.includes(bot)),
   );
-  await settled(tab, hub);
+  await settled(tab, bot);
 
-  const hubChat = tab.watch('conversation', { id: hub });
+  const botChat = tab.watch('conversation', { id: bot });
   await tab.request('session.submit', {
     id: watched,
     prompt: 'Again',
     requestId: crypto.randomUUID(),
   });
-  await hubChat.until((c) => shows(c, 'Watched answer'));
+  await botChat.until((c) => shows(c, 'Watched answer'));
 
-  await settled(tab, watched, hub);
+  await settled(tab, watched, bot);
   await tab.request('session.unwatch', { id: watched });
-  await hubChat.until((c) => shows(c, 'stopped your watch'));
-  await settled(tab, hub);
+  await botChat.until((c) => shows(c, 'stopped your watch'));
+  await settled(tab, bot);
+  const { id: loner } = await tab.request('session.create', {
+    projectId,
+    prompt: 'Loner: pick an indent',
+    requestId: crypto.randomUUID(),
+  });
+  await sessionsOf(tab).until((l) =>
+    l.some((s) => s.id === loner && s.status === 'waiting'),
+  );
   await tab.request('session.submit', {
     id: watched,
     prompt: 'Once more',
@@ -385,6 +413,44 @@ test('the hub hears each turn of a session it watches, until the user stops the 
   await tab
     .watch('conversation', { id: watched })
     .until((c) => shows(c, 'Unwatched answer'));
-  await settled(tab, watched, hub);
-  expect(shows(hubChat.value, 'Unwatched answer')).toBe(false);
+  await settled(tab, watched, bot);
+  expect(shows(botChat.value, 'Unwatched answer')).toBe(false);
+  expect(shows(botChat.value, 'Tabs or spaces?')).toBe(false);
+});
+
+test('any session can watch another, and an archived watcher leaves its watchedBy', async () => {
+  const tab = await bica.connect();
+  const { projectId } = await bica.project(tab, 'watchers');
+  script = { Quietwork: ['Done quietly'] };
+  const { id: watched } = await tab.request('session.create', {
+    projectId,
+    prompt: 'Quietwork: tidy up',
+    requestId: crypto.randomUUID(),
+  });
+  await settled(tab, watched);
+  script['Keep an eye'] = [
+    fauxAssistantMessage(
+      fauxToolCall('session_watch', {
+        id: watched,
+        watch: true,
+        summary: 'Watch it',
+      }),
+      { stopReason: 'toolUse' },
+    ),
+    'Watching',
+  ];
+  const { id: watcher } = await tab.request('session.create', {
+    projectId,
+    prompt: 'Keep an eye on the tidy up',
+    requestId: crypto.randomUUID(),
+  });
+  await sessionsOf(tab).until((l) =>
+    l.some((s) => s.id === watched && s.watchedBy.includes(watcher)),
+  );
+  await settled(tab, watcher);
+
+  await tab.request('session.archive', { id: watcher, archived: true });
+  await sessionsOf(tab).until((l) =>
+    l.some((s) => s.id === watched && !s.watchedBy.includes(watcher)),
+  );
 });

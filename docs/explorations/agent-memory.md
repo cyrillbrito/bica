@@ -1,6 +1,6 @@
 # Agent memory
 
-Ideas from Anthropic's [The components of agent memory](https://www.anthropic.com/research/components-of-agent-memory) for the [assistant](../assistant-mode.md) and the [hub](../hub.md). Today both write memory files during the session, and a memory save runs before each compaction. Nothing ever goes back over those files later to check or tidy them. The post's main idea, dreaming, is that missing step.
+Ideas from Anthropic's [The components of agent memory](https://www.anthropic.com/research/components-of-agent-memory) for [bots](../bots.md). Today a bot writes memory files during its session, and a memory save runs before each compaction. Nothing ever goes back over those files later to check or tidy them. The post's main idea, dreaming, is that missing step.
 
 ## What the post found
 
@@ -14,11 +14,11 @@ Ideas from Anthropic's [The components of agent memory](https://www.anthropic.co
 
 ## What Bica could do
 
-- A dreaming pass for the assistant and the hub. It reads the transcripts since the last pass and the memory folder, then fixes notes the transcripts contradict, merges duplicates, deletes what went stale, and keeps `MEMORY.md` a short index. It could run as part of [housekeeping](../assistant-mode.md#housekeeping) or as a [night run](../night-runs.md), so it costs no attention during the day.
+- A dreaming pass for each bot. It reads the transcripts since the last pass and the memory folder, then fixes notes the transcripts contradict, merges duplicates, deletes what went stale, and keeps `MEMORY.md` a short index. It could run as part of [housekeeping](../bots.md#housekeeping) or as a [night run](../night-runs.md), so it costs no attention during the day.
 - Changes stay reviewable. The memory files are plain markdown, often in a Git repo or notes vault, so a pass ends with a diff the user can read, and its report says what it changed and why.
-- The hub dreams across sessions. It sees every session's transcript, so it could spot corrections the user keeps repeating and propose a line for `AGENTS.md` or a memory file, instead of each session learning it again.
+- A bot dreams across sessions. It can read every session's transcript, so it could spot corrections the user keeps repeating and propose a line for `AGENTS.md` or a memory file, instead of each session learning it again.
 - Search over past transcripts as a tool. The post suggests transcript search as the base of memory, with notes on top. Pi Durable already stores every transcript in SQLite.
-- Keep the memory prompt short. The assistant prompt already says what memory is for. Check it doesn't grow into rules about what to write.
+- Keep the memory prompt short. The bot's prompt already says what memory is for. Check it doesn't grow into rules about what to write.
 
 ## Open questions
 

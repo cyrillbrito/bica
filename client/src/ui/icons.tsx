@@ -2,6 +2,7 @@ import { Dynamic } from '@solidjs/web';
 import { For } from 'solid-js';
 // One module per icon: the `lucide` barrel ships every icon in dev.
 import Archive from 'lucide/dist/esm/icons/archive.mjs';
+import BotShape from 'lucide/dist/esm/icons/bot.mjs';
 import AudioLines from 'lucide/dist/esm/icons/audio-lines.mjs';
 import ArrowDown from 'lucide/dist/esm/icons/arrow-down.mjs';
 import ArrowUp from 'lucide/dist/esm/icons/arrow-up.mjs';
@@ -72,7 +73,6 @@ import TriangleAlert from 'lucide/dist/esm/icons/triangle-exclamation-point.mjs'
 import SlidersHorizontal from 'lucide/dist/esm/icons/sliders-horizontal.mjs';
 import Snowflake from 'lucide/dist/esm/icons/snowflake.mjs';
 import Sparkles from 'lucide/dist/esm/icons/sparkles.mjs';
-import InfinityShape from 'lucide/dist/esm/icons/infinity.mjs';
 import Square from 'lucide/dist/esm/icons/square.mjs';
 import SunMoon from 'lucide/dist/esm/icons/sun-moon.mjs';
 import Sun from 'lucide/dist/esm/icons/sun.mjs';
@@ -83,7 +83,6 @@ import Eye from 'lucide/dist/esm/icons/eye.mjs';
 import Unlink from 'lucide/dist/esm/icons/unlink.mjs';
 import Trash from 'lucide/dist/esm/icons/trash.mjs';
 import Undo2 from 'lucide/dist/esm/icons/undo-2.mjs';
-import Waypoints from 'lucide/dist/esm/icons/waypoints.mjs';
 import Wrench from 'lucide/dist/esm/icons/wrench.mjs';
 import X from 'lucide/dist/esm/icons/x.mjs';
 
@@ -173,8 +172,7 @@ export const ReadIcon = icon(MailOpen);
 export const MicOffIcon = icon(MicOff);
 /** Written by a model. */
 export const SparkleIcon = icon(Sparkles);
-export const AssistantIcon = icon(InfinityShape);
-export const HubIcon = icon(Waypoints);
+export const BotIcon = icon(BotShape);
 export const ArtifactIcon = icon(FileChartColumn);
 
 // Transcript steps.

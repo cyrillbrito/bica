@@ -35,7 +35,7 @@ A terminal an agent starts has that session as its parent, as a [child session](
 
 Terminals you open have no parent. Unlike a session, a terminal is closed, not archived: its process is gone, so there is nothing to bring back.
 
-The [hub](./hub.md) gets only `terminal_read`, to read any terminal without typing into it.
+A [bot](./bots.md) has the same terminal tools, but its prompt has it only read terminals with `terminal_read`, since anything that keeps running belongs in a session. Sessions in its workspace get terminals like any other.
 
 ## Sources
 

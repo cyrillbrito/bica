@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from '@solidjs/router';
 
 import type { SessionSummary } from '@bica/shared/protocol';
+import { openBotDialog } from '../../bots/BotDialog';
 import { openInEditor, workspaceHref } from '../../files/files';
 import { openEditProject } from '../../projects/EditProject';
 import { openProjectPicker } from '../../projects/ProjectPicker';
@@ -11,6 +12,7 @@ import { isWorkspacePage, paths } from '../../router';
 import { copyText } from '../../ui/clipboard';
 import type { MenuEntry } from '../../ui/ContextMenu';
 import {
+  BotIcon,
   CodeIcon,
   CopyIcon,
   DeleteIcon,
@@ -113,7 +115,7 @@ export function createSidebarMenus(options: { rename: (id: string) => void }) {
           },
         ] satisfies MenuEntry[])
       : []),
-    ...(g.target && !g.worktree && g.projectKey !== CHATS_ID
+    ...(g.target && !g.worktree && !g.bot && g.projectKey !== CHATS_ID
       ? ([
           {
             label: 'Edit project',
@@ -170,6 +172,14 @@ export function createSidebarMenus(options: { rename: (id: string) => void }) {
         onSelect: () => {
           closeDrawer();
           openProjectPicker();
+        },
+      },
+      {
+        label: 'New bot',
+        icon: <BotIcon />,
+        onSelect: () => {
+          closeDrawer();
+          openBotDialog();
         },
       },
       'separator',

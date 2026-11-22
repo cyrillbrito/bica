@@ -1,6 +1,10 @@
 import { useLocation, useNavigate } from '@solidjs/router';
 
 import { closeDrawer, toggleSidePanel, toggleSidebar } from '../../ui/layout';
+import { isOwnProject } from '@bica/shared/projects';
+import BotMark from '../../bots/BotMark';
+import { openBotDialog } from '../../bots/BotDialog';
+import { useBots } from '../../bots/bots';
 import {
   CHATS_ID,
   currentTarget,
@@ -19,15 +23,13 @@ import { useCurrentWorkspace } from '../../projects/projects';
 import { workspaceHref } from '../../files/files';
 import { pageOf, paths } from '../../router';
 import { openProjectPicker } from '../../projects/ProjectPicker';
-import { setStartAgent } from '../../sessions/StartComposer';
 import StatusDot from '../../sessions/StatusDot';
 import {
   ArrowDownIcon,
-  AssistantIcon,
   BranchIcon,
   CheckIcon,
   FolderIcon,
-  HubIcon,
+  BotIcon,
   SidePanelIcon,
   KeyboardIcon,
   PencilIcon,
@@ -53,11 +55,14 @@ export function useCommands() {
   const projects = useProjects();
   const terminals = useTerminals();
   const workspace = useCurrentWorkspace();
+  const bots = useBots();
 
   const sessionId = () => {
     const page = pageOf(location);
     return page.kind === 's' ? page.id : undefined;
   };
+  // Set on a bot's own session.
+  const botId = () => sessions().find((s) => s.id === sessionId())?.bot;
 
   const { actionsFor, startIn, openTerminalIn } = useSessionActions();
 
@@ -117,10 +122,10 @@ export function useCommands() {
                 id: `t:${p.id}:${w.path}`,
                 label: workspaceName(p, w.path),
                 hint: w.branch ?? undefined,
-                icon: FolderIcon,
+                icon: p.bot ? BotIcon : FolderIcon,
                 run: () => startIn({ projectId: p.id, cwd: w.path }),
               })),
-              ...(p.git
+              ...(p.git && !p.bot
                 ? [
                     {
                       id: `t:${p.id}:new`,
@@ -142,7 +147,7 @@ export function useCommands() {
 
   const workspaceItems = (): Command[] =>
     projects()
-      .filter((p) => p.id !== CHATS_ID)
+      .filter(isOwnProject)
       .flatMap((p) =>
         p.workspaces.map((w) => ({
           id: `w:${p.id}:${w.path}`,
@@ -206,6 +211,34 @@ export function useCommands() {
     ],
   });
 
+  const botActions = (): Command[] => {
+    const bot = bots().find((b) => b.id === botId());
+    if (!bot) return [];
+    return [
+      {
+        id: 'b:edit',
+        label: 'Edit bot',
+        hint: bot.name,
+        words: 'settings rename color instructions soul',
+        icon: SettingsIcon,
+        group: 'This bot',
+        run: () => openBotDialog(bot.id),
+      },
+    ];
+  };
+
+  const botItems = (): Command[] =>
+    bots()
+      .filter((b) => b.id !== botId())
+      .map((b) => ({
+        id: `bot:${b.id}`,
+        label: b.name,
+        words: 'bot',
+        icon: () => <BotMark bot={b} />,
+        group: 'Bots',
+        run: () => navigate(paths.b(b.id)()),
+      }));
+
   // The open session's own actions, as in its menus. Ones that can't run now
   // are left out, since ⌘K has no disabled rows.
   const sessionActions = (): Command[] => {
@@ -250,24 +283,12 @@ export function useCommands() {
         page: targetsPage,
       },
       {
-        id: 'a:assistant',
-        label: 'New assistant session',
-        hint: here,
-        words: 'assistant mode long-running memory notes helper',
-        icon: AssistantIcon,
+        id: 'a:new-bot',
+        label: 'New bot',
+        words: 'create agent assistant',
+        icon: BotIcon,
         group,
-        run: () => {
-          newSessionHere();
-          setStartAgent('assistant');
-        },
-      },
-      {
-        id: 'a:hub',
-        label: 'Hub',
-        words: 'orchestrator coordinator home inbox',
-        icon: HubIcon,
-        group,
-        run: () => navigate(paths.hub()),
+        run: () => openBotDialog(),
       },
       {
         id: 'a:next',
@@ -368,6 +389,7 @@ export function useCommands() {
                 b.updatedAt - a.updatedAt,
             )
             .map((s) => sessionItem(s)),
+          ...botItems(),
           ...workspaceItems(),
           ...terminals().map((t) => ({
             id: `term:${t.id}`,
@@ -377,6 +399,7 @@ export function useCommands() {
             icon: TerminalIcon,
             run: () => navigate(paths.t(t.id)()),
           })),
+          ...botActions(),
           ...sessionActions(),
           ...actions(),
         ];
@@ -388,6 +411,8 @@ export function useCommands() {
       return [
         ...waiting.slice(0, 9).map((s) => sessionItem(s, 'Needs you')),
         ...recent.map((s) => sessionItem(s, 'Recent')),
+        ...botItems(),
+        ...botActions(),
         ...sessionActions(),
         ...actions(),
       ];

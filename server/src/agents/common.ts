@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AgentId } from '@bica/shared/agents';
-import type { ModelChoice, ThinkingLevel } from '@bica/shared/protocol';
+import type { Bot, ModelChoice, ThinkingLevel } from '@bica/shared/protocol';
+import { isOwnProject } from '@bica/shared/projects';
 import { BICA_HOME } from '../storage';
-import { CHATS_ID, listProjects } from '../projects/projects';
+import { listProjects } from '../projects/projects';
 
 // What every agent is made of, and the parts they share (docs/agents.md).
 // Each agent is one file next to this one, registered in registry.ts.
@@ -11,8 +12,8 @@ import { CHATS_ID, listProjects } from '../projects/projects';
 /**
  * The prompt's sections, in the order they render. First the Pi coding
  * agent's default prompt (preamble, tools, rules, project context, skills,
- * cwd), then what makes the agent different, so switching between Coding,
- * Assistant, and Night keeps most of the prompt cache. `replies` renders
+ * cwd), then what makes the agent different, so switching between Coding
+ * and Night keeps most of the prompt cache. `replies` renders
  * last, after every tool's own section (registry.ts).
  */
 // Pi's order, with the tool sections (codemode) between the rules and the
@@ -21,6 +22,7 @@ import { CHATS_ID, listProjects } from '../projects/projects';
 export const HEAD_SECTIONS = ['preamble', 'tools', 'rules'] as const;
 export const TAIL_SECTIONS = [
   'project_context',
+  'bot',
   'memory',
   'projects',
   'skills',
@@ -47,17 +49,18 @@ export type ExtensionName =
   | 'session-tools'
   | 'ask'
   | 'codemode'
-  | 'connectors'
-  | 'hub-file-tools'
-  | 'hub-session-tools'
-  | 'hub-terminal-tools';
+  | 'connectors';
 
-/** What a section reads: the session's tools, folder, and kept copies. */
+/**
+ * What a section reads: the session's tools, folder, and kept copies, and
+ * for a bot's session, the bot.
+ */
 export interface SectionInput {
   tools: readonly string[];
   cwd: string;
   memory?: string;
   projects?: string;
+  bot?: Bot;
 }
 
 type Rendered = string | null | undefined;
@@ -174,7 +177,7 @@ const TOOL_GUIDE: { tools: string[]; line: string; rules?: string[] }[] = [
 function guide(s: SectionInput) {
   return TOOL_GUIDE.flatMap((g) => {
     const tools = g.tools.filter((t) => s.tools.includes(t));
-    // A group's rules are about all of its tools, e.g. the hub's terminal_read
+    // A group's rules are about all of its tools, e.g. a bot's terminal_read
     // alone doesn't start terminals.
     const rules = tools.length === g.tools.length ? g.rules : undefined;
     return tools.length ? [{ ...g, tools, rules }] : [];
@@ -223,16 +226,7 @@ ${lines.join('\n')}
 Before sending, cut an opening that announces and a closing that recaps or offers more help, and end with at most one question or next step. The first and last lines alone should say what happened and what to do next.`;
 }
 
-// For agents that hand work to child sessions, assistant and hub: what makes
-// a child session's start and report work without the conversation behind them
-// (docs/hub.md, Sources).
-export const HANDOFFS = `Handoffs to other sessions:
-- A session_start prompt stands alone, like a ticket: the goal, the files and findings it needs, the boundaries (what not to touch, when to ask, and no merging, pushing, or committing to main unless the user asked), what done looks like, and the report it ends with: status, result, the checks it ran and couldn't run, where long output went, and what it needs next.
-- When a child session finishes, check its report against the ticket before you call it done.
-- One session per thread: continue a thread with session_send to its session, so its context stays warm. Code work gets its own worktree (\`worktree: true\`).`;
-
-// For the long-lived agents, assistant and hub, which Bica keeps small while
-// idle (server/src/sessions/housekeeping.ts): the files are the long-term memory,
+// For the long-lived agent, Bot, which Bica keeps small while idle (server/src/sessions/housekeeping.ts): the files are the long-term memory,
 // and replies carry what pruning would otherwise take away.
 export const LONG_LIVED = `This session lasts weeks or months. Bica clears old tool output and compacts older turns on its own, so the memory files are the long-term record:
 - Search them before relying on anything from earlier, and say so when they hold nothing.
@@ -274,7 +268,7 @@ export async function loadMemory(cwd: string) {
  */
 export async function projectList() {
   const lines = (await listProjects())
-    .filter((p) => p.id !== CHATS_ID)
+    .filter(isOwnProject)
     .flatMap((p) => [
       `- ${p.name}`,
       ...p.workspaces.map(
@@ -308,10 +302,11 @@ async function contextFile(dir: string) {
  * Like Pi: the user's own `~/.bica/AGENTS.md` first, for every project, then
  * one file per folder from the root down to `cwd`, so the nearest comes last.
  * A copy with the same text is skipped, as in a worktree nested in its repo.
+ * Without `cwd`, the user's own file alone.
  */
-async function projectContext(cwd: string) {
+export async function projectContext(cwd?: string) {
   const dirs = [];
-  for (let dir = cwd; ; dir = dirname(dir)) {
+  for (let dir = cwd; dir; dir = dirname(dir)) {
     dirs.unshift(dir);
     if (dirname(dir) === dir) break;
   }

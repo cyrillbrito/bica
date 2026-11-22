@@ -10,6 +10,7 @@ import type {
   PromptImage,
   ThinkingLevel,
 } from '@bica/shared/protocol';
+import { isOwnProject } from '@bica/shared/projects';
 import { context, getHarness } from '../harness';
 import { agentChoice, atLeast } from '../agents/choice';
 import { getAgent, selection } from '../agents/registry';
@@ -19,6 +20,7 @@ import {
   getProject,
   listProjects,
 } from '../projects/projects';
+import { getBot } from '../bots/store';
 import { createWorktree } from '../projects/worktrees';
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
@@ -81,6 +83,10 @@ export async function createSession({
     worktree = false;
   }
   const project = await getProject(projectId);
+  if (worktree && project.bot)
+    throw new Error(
+      "A bot's workspace has no worktrees: pass a project folder from your projects list",
+    );
   // The branch needs a name now, so the title is waited for here.
   const named = worktree ? await nameSession(prompt) : '';
   let warning: string | undefined;
@@ -143,9 +149,10 @@ export async function createSession({
 /**
  * A session started by another session's agent: a normal, ownerless coding
  * session, or a night one from a night run, in the parent's folder, another workspace of any project, or a new
- * worktree of that project. It takes the parent's model, except from a hub,
- * whose fast model is picked for routing, not for the work. `effort`
- * overrides the effort; a level the model lacks is clamped.
+ * worktree of that project; from a bot's session, in the bot's workspace by
+ * default. It takes the parent's model, except from a bot, whose model is
+ * picked for talking and routing, not for the work. `effort` overrides the
+ * effort; a level the model lacks is clamped.
  */
 export async function spawnSession(
   parent: ConversationId,
@@ -162,13 +169,19 @@ export async function spawnSession(
     sessionMeta(parent),
     harness.snapshot(AgentDoc, parent, context),
   ]);
-  let projectId = meta?.projectId;
-  let cwd = parentAgent?.cwd;
+  const bot = getBot(meta?.bot);
+  let projectId = bot?.id ?? meta?.projectId;
+  let cwd = bot?.workspace ?? parentAgent?.cwd;
   if (folder) {
     const path = folder.replace(/\/+$/, '');
-    const owner = (await listProjects()).find((p) =>
+    const owners = (await listProjects()).filter((p) =>
       p.workspaces.some((w) => w.path === path),
     );
+    // Two bots may share a workspace, and a project may sit in it too.
+    const owner =
+      owners.find(isOwnProject) ??
+      owners.find((p) => p.id === projectId) ??
+      owners[0];
     if (!owner)
       throw new Error(`${path} is not a folder or worktree of any project`);
     projectId = owner.id;
@@ -177,7 +190,7 @@ export async function spawnSession(
   if (!projectId || !cwd)
     throw new Error('Pass `folder`: a project folder or worktree');
   let choice: ModelChoice | undefined =
-    agentIdOf(meta) !== 'hub' && parentAgent?.model && parentAgent.thinkingLevel
+    agentIdOf(meta) !== 'bot' && parentAgent?.model && parentAgent.thinkingLevel
       ? { model: parentAgent.model, thinkingLevel: parentAgent.thinkingLevel }
       : undefined;
   if (effort) {
@@ -206,6 +219,10 @@ export async function spawnSession(
  */
 export async function fork(id: string, at?: number) {
   const conversation = await getConversation(id);
+  // A second session claiming the bot would be odd; starting over is
+  // archiving its session (docs/bots.md).
+  if ((await sessionMeta(conversation.id))?.bot)
+    throw new Error("A bot's session can't be forked");
   const entry = at ?? (await newestEntry(conversation.id))?.id;
   if (entry === undefined) throw new Error('Nothing to fork yet');
   const forked = await conversation.fork(

@@ -1,7 +1,8 @@
 // The wire format of the one WebSocket (docs/realtime-communication.md).
 // Shared by server/src/socket.ts and client/src/socket/socket.ts; types only.
 import type { Op } from '@earendil-works/chord/delta';
-import type { AgentId, PickableAgent } from './agents';
+import type { AgentId } from './agents';
+import type { BotColor } from './bots';
 import type { ProjectedView } from './projection';
 
 // A run in progress (or backing off after a provider error), or none: failed,
@@ -42,7 +43,7 @@ export interface SessionSummary {
   parent: string | null;
   // Each time it left its parent, or went back to it.
   handoffs: InCharge[];
-  // The hubs that watch it and hear each run it ends.
+  // The bots' sessions that watch it and hear each run it ends.
   watchedBy: string[];
   // Its worktree was removed: the branch and PR it had then; null: not. Named
   // when removing was called clean up, and stored so.
@@ -50,6 +51,8 @@ export interface SessionSummary {
   // The agent it runs as: its tools, instructions, and model
   // (docs/agents.md).
   agent: AgentId;
+  // The bot whose own session this is (docs/bots.md); null: not a bot's.
+  bot: string | null;
   // How its voice calls sound; null: the defaults.
   voice: VoiceSettings | null;
   // The first prompt, held for tonight's run (docs/night-runs.md); null:
@@ -100,7 +103,7 @@ export interface ModelChoice {
 
 /**
  * Bica's settings, the same on every device: the models new sessions and side
- * jobs use, the hub, night runs, and git habits.
+ * jobs use, night runs, and git habits.
  */
 export interface Settings extends ModelChoice {
   // `provider/modelId`s; empty: every available model.
@@ -112,10 +115,6 @@ export interface Settings extends ModelChoice {
   // Ask for the long prompt cache: 1 hour on Claude, 24 hours on some OpenAI
   // models. False: the 5-minute default.
   longCache: boolean;
-  // The hub's folder (docs/hub.md); null: not picked yet.
-  hubFolder: string | null;
-  // The hub's model and effort; null: Bica's pick for it.
-  hubModel: ModelChoice | null;
   // When night runs start, as local "HH:MM" (docs/night-runs.md).
   nightStart: string;
   // Which defaults still come from the server's env (PI_MODEL, PI_FAST_MODEL)
@@ -242,12 +241,53 @@ export interface Project {
   tickets?: string;
   // Its main folder stays in the sidebar's list, never in Parked.
   pinned?: boolean;
+  // A bot's workspace, which Bica lists as a project under the bot's id and
+  // name, so its sessions get terminals and panels like any other.
+  bot?: true;
   // The main folder, or every worktree of its repo; never empty.
   workspaces: Workspace[];
 }
 
 /** What the Edit project dialog changes. */
 export type ProjectEdit = Pick<Project, 'name'>;
+
+/** A long-lived agent the user made, with its own session (docs/bots.md). */
+export interface Bot {
+  id: string;
+  name: string;
+  color: BotColor;
+  // The folder of its files and memory as stored; null: the default, in
+  // Bica's data folder.
+  home: string | null;
+  // Where the home is, either way.
+  homePath: string;
+  // The folder that holds the user's repos, where the sessions it starts
+  // outside a project run.
+  workspace: string;
+}
+
+/** The files in a bot's home that its prompt loads. */
+export interface BotFiles {
+  // AGENTS.md: its instructions.
+  instructions: string;
+  // SOUL.md: how it talks, its opinions and boundaries.
+  soul: string;
+  // USER.md: what it knows about the user.
+  user: string;
+}
+
+/** What the bot dialog sets; `bot.update` takes any part of it. */
+export interface BotEdit {
+  name: string;
+  color: BotColor;
+  // An absolute folder that exists; `~` expands.
+  workspace: string;
+  // null: the default home. `~` expands.
+  home?: string | null;
+  // Written into the home. `before` is the text the dialog read: a file the
+  // bot changed since is refused, so the dialog never erases its edits.
+  files?: Partial<Record<keyof BotFiles, { before: string; text: string }>>;
+}
 
 /** A project's main folder or one of its git worktrees. */
 export interface Workspace {
@@ -485,8 +525,6 @@ export interface Calls {
       requestId: string;
       // Absent: the agent's default.
       choice?: ModelChoice;
-      // Absent: coding.
-      agent?: PickableAgent;
       // Starts in a new worktree named after the session, instead of `cwd`.
       worktree?: boolean;
       // Holds the prompt for tonight's run instead of sending it.
@@ -533,7 +571,7 @@ export interface Calls {
   };
   // Takes a session from its parent: it's yours from now on.
   'session.detach': { args: { id: string }; result: null };
-  // Ends every hub's watch on a session.
+  // Ends every bot's watch on a session.
   'session.unwatch': { args: { id: string }; result: null };
   // Takes a queued prompt back; null: it was already sent.
   'session.withdraw': {
@@ -558,13 +596,17 @@ export interface Calls {
   // Prunes old tool output from the model context (shared/src/prune.ts).
   // Named when pruning was called clean up.
   'session.cleanup': { args: { id: string }; result: null };
-  // Changing it later breaks the prompt cache once.
-  'session.agent': {
-    args: { id: string; agent: PickableAgent };
-    result: null;
-  };
-  // The hub's session id, started first if there is none.
-  'hub.open': { args: Record<string, never>; result: string };
+  // A new bot's id.
+  'bot.create': { args: BotEdit; result: string };
+  'bot.update': { args: { id: string } & Partial<BotEdit>; result: null };
+  // Archives its session and the sessions in its workspace, and closes their
+  // terminals. The sessions it started in projects become the user's. Its
+  // home stays on disk.
+  'bot.delete': { args: { id: string }; result: null };
+  // The bot's session id, started first if there is none.
+  'bot.open': { args: { id: string }; result: string };
+  // Its files' current text, '' for a missing one.
+  'bot.files': { args: { id: string }; result: BotFiles };
   // Applies from the next call.
   'session.voice': { args: { id: string; voice: VoiceSettings }; result: null };
   // A new session with the history up to entry `at` (absent: all); its id.
@@ -718,6 +760,8 @@ export interface Calls {
 export interface Topics {
   sessions: { params: Record<string, never>; value: SessionSummary[] };
   projects: { params: Record<string, never>; value: Project[] };
+  // In the order of bots.json, which is the sidebar's.
+  bots: { params: Record<string, never>; value: Bot[] };
   models: { params: Record<string, never>; value: ModelCatalog };
   settings: { params: Record<string, never>; value: Settings };
   accounts: { params: Record<string, never>; value: Accounts };

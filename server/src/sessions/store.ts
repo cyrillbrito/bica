@@ -177,6 +177,7 @@ export async function summarize(
     watchedBy: meta?.watchedBy ?? [],
     cleanedUp: meta?.cleanedUp ?? null,
     agent: agentIdOf(meta),
+    bot: meta?.bot ?? null,
     voice: meta?.voice ?? null,
     tonight: meta?.tonight || null,
     stuck,

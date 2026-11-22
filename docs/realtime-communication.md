@@ -12,7 +12,7 @@ Browser (one socket per tab)                  Server (dev machine)
 
   subscribe   (sub, topic, params) ──▶        live state: session list,
   unsubscribe (sub)                ──▶        a conversation, git status,
-  snapshot    (sub, n, value)      ◀──        files, settings, terminals
+  snapshot    (sub, n, value)      ◀──        bots, files, settings, terminals
   changes     (sub, n, ops)        ◀──
 ```
 

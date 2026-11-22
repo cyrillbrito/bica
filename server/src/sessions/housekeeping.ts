@@ -18,11 +18,10 @@ import { markSeen } from './meta';
 import { pruneContext, compact, submit } from './prompts';
 import { listSessions } from './store';
 
-// Housekeeping: Bica keeps long-lived sessions, assistant mode
-// (docs/assistant-mode.md) and the hub (docs/hub.md), small while they sit
-// idle. Pruning runs once the cache is cold, when it is free. The memory
-// save and compaction call the model, so they run just before the cache expires, while reading
-// it is still cheap.
+// Housekeeping: Bica keeps long-lived sessions, the bots' sessions
+// (docs/bots.md), small while they sit idle. Pruning runs once the cache is
+// cold, when it is free. The memory save and compaction call the model, so
+// they run just before the cache expires, while reading it is still cheap.
 
 const MINUTE = 60_000;
 const WARM_MARGIN = 5 * MINUTE;

@@ -39,7 +39,7 @@ While the agent works, sending steers: the prompt joins the current run after th
 
 ## Other sessions
 
-Agents start and follow sessions of their own, which stay normal sessions you can open and write to. A session an agent started shows a "Parent in charge" strip, and one the hub watches a "Hub watching" strip. [orchestration.md](./orchestration.md) covers who leads a session and who hears of its runs.
+Agents start and follow sessions of their own, which stay normal sessions you can open and write to. A session an agent started shows a "Parent in charge" strip, and one another session watches, usually a [bot](./bots.md)'s, a "Watched by" strip. [orchestration.md](./orchestration.md) covers who leads a session and who hears of its runs.
 
 ## Composer
 
@@ -54,7 +54,7 @@ Agents start and follow sessions of their own, which stay normal sessions you ca
 
 ## Forks
 
-A fork is a new session with another one's history up to a chosen reply. It runs in the same workspace, so files are shared, not rolled back. It keeps the project, agent, and voice of the original, and it is yours: it has no [parent](./orchestration.md).
+A fork is a new session with another one's history up to a chosen reply. It runs in the same workspace, so files are shared, not rolled back. It keeps the project, agent, and voice of the original, and it is yours: it has no [parent](./orchestration.md). A bot's own session can't be renamed, forked, or archived; Start a new session in its menu replaces it instead ([bots.md](./bots.md#its-session)).
 
 ## Status
 
@@ -75,7 +75,7 @@ Read state lives on the server, so opening a session on the phone marks it read 
 
 ## Session actions
 
-A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, assistant mode on or off, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
+A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
 
 ## Archiving
 

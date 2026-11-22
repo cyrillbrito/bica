@@ -2,7 +2,6 @@ import { useNavigate } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 
 import { useSettings } from '../settings';
-import type { PickableAgent } from '@bica/shared/agents';
 import type { PromptImage } from '@bica/shared/protocol';
 import { startSession } from './sessions';
 import { startCall } from '../voice/voice';
@@ -12,13 +11,6 @@ import ModelPicker from '../models/ModelPicker';
 import { MoonIcon } from '../ui/icons';
 import { errorText } from '../ui/errors';
 import { toast } from '../ui/Toast';
-
-// What the home page's next session runs as; ⌘K's "New assistant session"
-// sets it, and leaving the home page sets it back.
-const [startAgent, setStartAgent] = createSignal<PickableAgent>('coding', {
-  name: 'startAgent',
-});
-export { setStartAgent, startAgent };
 
 export interface StartTarget {
   projectId: string;
@@ -32,8 +24,6 @@ export interface StartTarget {
  */
 export default function StartComposer(props: {
   target: StartTarget | undefined;
-  // Absent: coding.
-  agent?: PickableAgent;
   // Where the typed draft is kept, e.g. "new" on the home page.
   draft: string;
   placeholder?: string;
@@ -65,7 +55,6 @@ export default function StartComposer(props: {
       images,
       choice(),
       t.worktree || undefined,
-      props.agent ?? 'coding',
       tonight || undefined,
     );
     navigate(paths.s(id));

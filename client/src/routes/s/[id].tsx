@@ -29,6 +29,11 @@ import {
 } from '../../orchestration/orchestration';
 import ParentStrip from '../../orchestration/ParentStrip';
 import WatchStrip from '../../orchestration/WatchStrip';
+import { archiveBotSession, openBot, useBots } from '../../bots/bots';
+import BotMark from '../../bots/BotMark';
+import { openBotDialog } from '../../bots/BotDialog';
+import WatchingStrip from '../../bots/WatchingStrip';
+import { toast } from '../../ui/Toast';
 import StuckStrip from '../../sessions/StuckStrip';
 import TonightStrip from '../../sessions/TonightStrip';
 import Queue from '../../sessions/Queue';
@@ -41,7 +46,15 @@ import TitleInput from '../../sessions/TitleInput';
 import TopBar from '../../app/TopBar';
 import { IconButton } from '../../ui/Button';
 import Empty from '../../ui/Empty';
-import { CloseIcon, ParentIcon, SessionIcon, VoiceIcon } from '../../ui/icons';
+import {
+  ArchiveIcon,
+  CloseIcon,
+  DeleteIcon,
+  ParentIcon,
+  PencilIcon,
+  SessionIcon,
+  VoiceIcon,
+} from '../../ui/icons';
 import { drawer, setNoPanels } from '../../ui/layout';
 import {
   openFromSearch,
@@ -60,7 +73,6 @@ import {
   stopSession,
   tonightAction,
   useConversation,
-  useHub,
   useSessions,
 } from '../../sessions/sessions';
 import { pageFocused } from '../../ui/focus';
@@ -86,7 +98,12 @@ export default function Session(props: RouteProps<'/s/:id'>) {
     () => sessions().find((s) => s.id === props.params.id),
     { name: 'sessionSummary' },
   );
-  const title = () => summary()?.title || '…';
+  const bots = useBots();
+  // Set when this is a bot's own session, which goes by the bot's name.
+  const bot = createMemo(() => bots().find((b) => b.id === summary()?.bot), {
+    name: 'sessionBot',
+  });
+  const title = () => bot()?.name ?? (summary()?.title || '…');
   const titleRef = createArrival(
     () => summary()?.title,
     () => props.params.id!,
@@ -171,14 +188,20 @@ export default function Session(props: RouteProps<'/s/:id'>) {
     end?.setAttribute('data-show', '');
     shown = end;
   };
-  // The hub has its own page; links and notifications to it land there.
-  const hub = useHub();
-  createEffect(
-    () => !!hub() && hub()!.id === props.params.id,
-    (isHub) => {
-      if (isHub) navigate(paths.hub(), { replace: true });
-    },
-    { name: 'hubRedirect' },
+  // The bot whose session is the parent, so the parent shows by the bot's name.
+  const parentBot = createMemo(
+    () => bots().find((b) => b.id === parent()?.bot),
+    { name: 'parentBot' },
+  );
+  const watchers = createMemo(
+    () =>
+      (summary()?.watchedBy ?? []).flatMap((id) => {
+        const s = sessions().find((s) => s.id === id);
+        if (!s) return [];
+        const bot = bots().find((b) => b.id === s.bot);
+        return [{ id, name: bot?.name ?? (s.title || 'New session'), bot }];
+      }),
+    { name: 'watchers' },
   );
   const forkAt = async (at: number) =>
     navigate(paths.s(await forkSession(props.params.id!, at))());
@@ -268,6 +291,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
   const sessionMenu = (): MenuEntry[] => {
     const s = summary();
     if (!s) return [];
+    const b = bot();
     return [
       ...actionsFor(s, () => setRenaming(true))
         .filter((a) => a.id !== 'new-tab')
@@ -278,6 +302,7 @@ export default function Session(props: RouteProps<'/s/:id'>) {
         icon: <VoiceIcon />,
         onSelect: () => voiceDialog?.showModal(),
       },
+      ...(b ? botMenu(b.id, s.id, navigate) : []),
     ];
   };
   // A session opens where it was left, or at its newest message.
@@ -328,7 +353,12 @@ export default function Session(props: RouteProps<'/s/:id'>) {
           </>
         }
       >
-        <AgentBadge agent={summary()?.agent ?? 'coding'} />
+        <Show
+          when={bot()}
+          fallback={<AgentBadge agent={summary()?.agent ?? 'coding'} />}
+        >
+          {(b) => <BotMark bot={b()} size="md" />}
+        </Show>
         {/* The open session is always read: only show a state worth noticing. */}
         <Ready>
           {(v) => (
@@ -338,33 +368,42 @@ export default function Session(props: RouteProps<'/s/:id'>) {
           )}
         </Ready>
         <Show
-          when={renaming()}
+          when={!bot()}
           fallback={
-            // Negative margin on the h1, not the button: on the button it
-            // shrinks the h1 below the button's width, always truncating.
-            <h1 class="-mx-1.5 min-w-0">
-              <button
-                class="block max-w-full truncate rounded-md px-1.5 py-0.5 font-semibold transition-colors hover:bg-hover"
-                title="Rename"
-                onClick={() => setRenaming(true)}
-              >
-                <span ref={titleRef}>{title()}</span>
-              </button>
+            <h1 dir="auto" class="min-w-0 truncate font-semibold">
+              {title()}
             </h1>
           }
         >
-          <TitleInput
-            id={props.params.id!}
-            value={summary()?.title ?? ''}
-            onClose={() => setRenaming(false)}
-            class="-mx-1.5 max-w-120 py-0.5 font-semibold"
-          />
+          <Show
+            when={renaming()}
+            fallback={
+              // Negative margin on the h1, not the button: on the button it
+              // shrinks the h1 below the button's width, always truncating.
+              <h1 class="-mx-1.5 min-w-0">
+                <button
+                  class="block max-w-full truncate rounded-md px-1.5 py-0.5 font-semibold transition-colors hover:bg-hover"
+                  title="Rename"
+                  onClick={() => setRenaming(true)}
+                >
+                  <span ref={titleRef}>{title()}</span>
+                </button>
+              </h1>
+            }
+          >
+            <TitleInput
+              id={props.params.id!}
+              value={summary()?.title ?? ''}
+              onClose={() => setRenaming(false)}
+              class="-mx-1.5 max-w-120 py-0.5 font-semibold"
+            />
+          </Show>
         </Show>
         <Show when={parent()}>
           {(parent) => (
             <a
               class="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-meta text-accent-ink transition-colors hover:bg-hover [&_svg]:size-3.5"
-              href={paths.s(parent().id)}
+              href={paths.s(parent().id)()}
               title="Its parent session is in charge. Open the parent."
             >
               <ParentIcon />
@@ -373,6 +412,9 @@ export default function Session(props: RouteProps<'/s/:id'>) {
           )}
         </Show>
       </TopBar>
+      <Show when={bot()}>
+        <WatchingStrip sessionId={props.params.id!} />
+      </Show>
       <div class="relative flex min-h-0 flex-1 flex-col">
         <div
           ref={stick.scroller}
@@ -389,11 +431,12 @@ export default function Session(props: RouteProps<'/s/:id'>) {
               {(parent) => (
                 <a
                   class={[RULE, 'min-w-0 self-center hover:text-fg']}
-                  href={paths.s(parent().id)}
+                  href={paths.s(parent().id)()}
                 >
                   <SessionIcon />
                   <span class="truncate">
-                    Started by {parent().title || 'another session'}
+                    Started by{' '}
+                    {parentBot()?.name ?? (parent().title || 'another session')}
                   </span>
                 </a>
               )}
@@ -425,14 +468,16 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                       keyed={(m) => m.key}
                       fallback={
                         <div class="text-center text-muted">
-                          No messages yet
+                          {bot()
+                            ? `Tell ${bot()!.name} what you're working on.`
+                            : 'No messages yet'}
                         </div>
                       }
                     >
                       {(m) => (
                         <MessageRow
                           message={m()}
-                          onFork={forkAt}
+                          onFork={bot() ? undefined : forkAt}
                           onAnswer={(text) => {
                             stick.follow();
                             return sendPrompt(props.params.id!, text, []);
@@ -478,7 +523,9 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                   hold={held()}
                   onHoldEdit={(id, text) => tonightAction(id, 'save', text)}
                   placeholder={
-                    held() !== null ? 'What to do tonight…' : undefined
+                    held() !== null
+                      ? 'What to do tonight…'
+                      : bot() && `Tell ${bot()!.name}…`
                   }
                   sendLabel={held() !== null ? 'Run now' : undefined}
                   busy={busy()}
@@ -506,11 +553,13 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                           <Show when={summary()?.parent}>
                             <ParentStrip
                               parent={parent()}
+                              bot={parentBot()}
                               onDetach={() => detachSession(props.params.id!)}
                             />
                           </Show>
                           <Show when={summary()?.watchedBy.length}>
                             <WatchStrip
+                              watchers={watchers()}
                               onStop={() => unwatchSession(props.params.id!)}
                             />
                           </Show>
@@ -610,4 +659,36 @@ export default function Session(props: RouteProps<'/s/:id'>) {
       />
     </Show>
   );
+}
+
+// A bot's session's own entries, in place of Fork and Archive.
+function botMenu(
+  botId: string,
+  sessionId: string,
+  navigate: (to: string, opts: { replace: boolean }) => void,
+): MenuEntry[] {
+  return [
+    'separator',
+    {
+      label: 'Edit bot',
+      icon: <PencilIcon />,
+      onSelect: () => openBotDialog(botId),
+    },
+    {
+      label: 'Start a new session',
+      hint: 'Archives this one. Its memory stays in its home.',
+      icon: <ArchiveIcon />,
+      onSelect: () =>
+        void archiveBotSession(sessionId)
+          .then(() => openBot(botId))
+          .then((id) => navigate(paths.s(id)(), { replace: true }))
+          .catch((error: unknown) => toast.error(error)),
+    },
+    {
+      label: 'Delete bot',
+      icon: <DeleteIcon />,
+      danger: true,
+      onSelect: () => openBotDialog(botId, { delete: true }),
+    },
+  ];
 }

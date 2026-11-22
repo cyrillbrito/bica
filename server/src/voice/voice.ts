@@ -285,7 +285,7 @@ export async function startCall(sessionId: string, sdp: string, trace: string) {
       if (waiting[0]) append(text, waiting[0], 'commentary');
       return;
     }
-    // A run the call didn't start, such as the hub hearing that a session
+    // A run the call didn't start, such as a bot hearing that a session
     // finished: the voice tells the user, as Codex's voice brings back
     // results and blockers on its own.
     setTimeout(() => {

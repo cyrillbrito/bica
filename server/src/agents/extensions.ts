@@ -8,15 +8,16 @@ import {
 import { isLongLived } from '@bica/shared/agents';
 import { AskTool } from '../tools/ask';
 import { Codemode } from '../tools/codemode';
-import { CodingTools, HubFileTools } from '../tools/coding';
+import { CodingTools } from '../tools/coding';
 import { ToolSummary } from '../tools/summary';
 import { createWebTools } from '../tools/web';
 import { exaKey } from '../models/exa';
 import { Connectors } from '../connectors/tools';
 import { install } from '../harness';
 import { SessionDoc, agentIdOf } from '../sessions/session-doc';
-import { HubSessionTools, SessionTools } from '../orchestration/tools';
-import { HubTerminalTools, TerminalTools } from '../terminals/tools';
+import { SessionTools } from '../orchestration/tools';
+import { TerminalTools } from '../terminals/tools';
+import { getBot } from '../bots/store';
 import { coding } from './coding';
 import {
   HEAD_SECTIONS,
@@ -62,6 +63,7 @@ function on(key: SectionKey, options?: { tag: boolean }) {
         cwd: input.agent.cwd ?? '',
         memory: meta?.memory || undefined,
         projects: meta?.projects || undefined,
+        bot: getBot(meta?.bot),
       });
       return text ?? undefined;
     },
@@ -85,7 +87,7 @@ const BicaPrompt = defineExtension({
  * The rest, after the tools: the folder's files, the agent's role, and the
  * reply rules. Durable sends only the sections that changed, so AGENTS.md and
  * skill edits apply from the next request without breaking the prompt cache.
- * Memory and the hub's project list are copies kept in SessionDoc
+ * Memory and a bot's project list are copies kept in SessionDoc
  * (server/src/sessions/prompts.ts). The name predates the folder sections and
  * stays, since sessions store their extension list.
  */
@@ -106,9 +108,6 @@ const BY_NAME: Record<string, Extension> = {
   // Composio's tools read the key per call, like the web tools.
   connectors: Connectors,
   codemode: Codemode,
-  'hub-file-tools': HubFileTools,
-  'hub-session-tools': HubSessionTools,
-  'hub-terminal-tools': HubTerminalTools,
   'bica-replies': BicaContext,
   'bica-tool-summary': ToolSummary,
 };

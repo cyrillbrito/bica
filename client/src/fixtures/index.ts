@@ -233,6 +233,8 @@ export function fixture(topic: Topic, params: unknown) {
       return { value: m === 'demo' ? story(data.sessions) : data.sessions };
     case 'projects':
       return { value: data.projects };
+    case 'bots':
+      return { value: data.bots };
     case 'terminals':
       return { value: data.terminals };
     case 'conversation': {

@@ -16,8 +16,8 @@ import {
   parentOf,
 } from '../sessions/store';
 
-// When a run ends, its parent gets a note, and so do the hubs that watch it
-// (docs/sessions.md). The last run state seen of every session tells when a
+// When a run ends, its parent gets a note, and so do the sessions that watch
+// it (docs/orchestration.md). The last run state seen of every session tells when a
 // run ends.
 const runState = new Map<ConversationId, boolean>();
 let watching: Promise<void> | undefined;
@@ -55,31 +55,31 @@ export function watchRuns() {
   }));
 }
 
-/** `hub` starts or stops hearing each run this session ends. */
-export async function watch(id: string, hub: string, on: boolean) {
+/** The session `watcher` starts or stops hearing each run this session ends. */
+export async function watch(id: string, watcher: string, on: boolean) {
   const conversation = await getConversation(id);
   await editSession(conversation.id, (meta) => {
-    const rest = (meta.watchedBy ?? []).filter((w) => w !== hub);
-    if (on) meta.watchedBy = [...rest, hub];
+    const rest = (meta.watchedBy ?? []).filter((w) => w !== watcher);
+    if (on) meta.watchedBy = [...rest, watcher];
     else if (rest.length) meta.watchedBy = rest;
     else delete meta.watchedBy;
   });
 }
 
-/** The user ends every watch on a session, and the hubs hear of it. */
+/** The user ends every watch on a session, and the watchers hear of it. */
 export async function unwatch(id: string) {
   const conversation = await getConversation(id);
-  const hubs = await editSession(conversation.id, (meta) => {
+  const watchers = await editSession(conversation.id, (meta) => {
     const was = [...(meta.watchedBy ?? [])];
     delete meta.watchedBy;
     return was;
   });
-  if (!hubs.length) return;
+  if (!watchers.length) return;
   const s = await readSession(id);
-  for (const hub of hubs)
+  for (const watcher of watchers)
     await tell(
-      hub,
-      `The user stopped your watch on ${named(s)}: you hear no more of its turns. Drop it from your board unless they want it kept.`,
+      watcher,
+      `The user stopped your watch on ${named(s)}: you hear no more of its turns.`,
     );
 }
 
@@ -111,9 +111,9 @@ export async function archiveIfAsked(id: ConversationId) {
 }
 
 /**
- * Notes for the end of a run: to its parent and the hubs that watch it, and
- * when it asks or fails, to every hub too, which coordinates them all
- * (docs/hub.md).
+ * Notes for the end of a run: to its parent and the sessions that watch it,
+ * nothing further up. A parent that can't settle a question or failure
+ * passes it up in its own reply, which its parent hears.
  */
 async function runEnded(id: ConversationId) {
   const s = await readSession(String(id)).catch(() => undefined);
@@ -121,10 +121,6 @@ async function runEnded(id: ConversationId) {
   if (!s || s.archivedAt) return;
   const listeners = new Set(s.watchedBy);
   if (s.parent) listeners.add(s.parent);
-  const asksOrFailed = s.status === 'error' || s.status === 'waiting';
-  if (asksOrFailed)
-    for (const other of await listSessions())
-      if (other.agent === 'hub' && !other.archivedAt) listeners.add(other.id);
   listeners.delete(String(id));
   if (!listeners.size) return;
   let what = `finished its turn. Its last reply:\n\n${s.reply || '(none)'}`;
@@ -134,6 +130,12 @@ async function runEnded(id: ConversationId) {
     const { questions } = await recentMessages(String(id), 1);
     what = `is waiting for the user's answer to:\n${questions.map((q) => `- ${q.question} (${q.options.map((o) => o.label).join(' / ')})`).join('\n') || s.reply}`;
   }
+  // Its parent may itself be a child session, so the question climbs one
+  // step at a time instead of every session above hearing it.
+  const passUp =
+    s.status === 'error' || s.status === 'waiting'
+      ? '\n\nSettle it only if what you were told covers it. Otherwise say it in your reply, so it reaches the session that leads you, or the user.'
+      : '';
   // A parent learns what the user told its child session along with the
   // reply, so writing to a child session costs the parent no run of its own.
   const words =
@@ -143,21 +145,18 @@ async function runEnded(id: ConversationId) {
         )?.text
       : undefined;
   for (const w of listeners) {
-    // The hub leaves sessions with no parent to the user (docs/hub.md), so it
-    // must know them.
-    const whose =
-      w === s.parent
-        ? ', your child session,'
-        : s.watchedBy.includes(w)
-          ? `, which you watch${s.parent ? '' : " and which is the user's"},`
-          : s.parent
-            ? ''
-            : ", which is the user's,";
+    // A session with no parent is the user's, to be left alone, so the
+    // watcher must know which.
+    if (w !== s.parent) {
+      const whose = s.parent ? '' : " and which is the user's";
+      await tell(w, `${named(s)}, which you watch${whose}, ${what}`);
+      continue;
+    }
     await tell(
       w,
-      w === s.parent && words
-        ? `${named(s)}${whose} got this from the user:\n\n${words}\n\nThen it ${what}`
-        : `${named(s)}${whose} ${what}`,
+      words
+        ? `${named(s)}, your child session, got this from the user:\n\n${words}\n\nThen it ${what}${passUp}`
+        : `${named(s)}, your child session, ${what}${passUp}`,
     );
   }
 }

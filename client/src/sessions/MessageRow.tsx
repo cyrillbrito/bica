@@ -33,7 +33,7 @@ import { promptArrived } from './queue-glide';
 
 export default function MessageRow(props: {
   message: Message;
-  // Unset: no fork button, as on the hub.
+  // Unset: no fork button, as in a bot's session.
   onFork?: (at: number) => void;
   onAnswer: (text: string) => Promise<unknown>;
   // A fork's original, for the divider.

@@ -23,6 +23,8 @@ export interface Group {
   worktree?: boolean;
   // The main folder of a pinned project: never parked.
   pinned?: boolean;
+  // A bot's workspace: listed under the bot, never as a project.
+  bot?: boolean;
   // Absent: a folder that's gone, so no new sessions there.
   target?: Target;
   // Listed above the sessions: they belong to the workspace, not to a session.
@@ -92,7 +94,7 @@ export function workspaceGroups(
         branch: w.branch ?? undefined,
         folder: w.main ? undefined : worktreeFolder(p.path, w.path),
         note:
-          p.id === CHATS_ID
+          p.id === CHATS_ID || p.bot
             ? undefined
             : !p.git
               ? 'no git'
@@ -104,6 +106,7 @@ export function workspaceGroups(
         path: w.path,
         worktree: !w.main,
         pinned: w.main && p.pinned,
+        bot: p.bot,
         target: {
           projectId: p.id,
           cwd: w.path,
@@ -132,6 +135,7 @@ export function workspaceGroups(
           project && s.cwd ? worktreeFolder(project.path, s.cwd) : undefined,
         note: project ? 'folder removed' : undefined,
         path: project ? (s.cwd ?? undefined) : undefined,
+        bot: project?.bot,
         terminals: [],
         files: [],
         sessions: [],

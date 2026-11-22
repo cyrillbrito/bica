@@ -210,49 +210,6 @@ export default function Settings() {
 
           <ModelFavorites />
 
-          <div id="hub">
-            <Card
-              title="Hub"
-              description="The session that coordinates the others."
-            >
-              <Setting
-                label="Hub folder"
-                hint="Where the hub keeps its memory files, such as a folder in your notes vault. It starts once this is set."
-              >
-                <Input
-                  class="h-8 w-64 max-w-full touch:h-11"
-                  placeholder="~/Vault/Hub"
-                  aria-label="Hub folder"
-                  value={settings().hubFolder ?? ''}
-                  onChange={(e) =>
-                    void updateSettings({
-                      hubFolder: e.currentTarget.value || null,
-                    }).catch((error: unknown) => toast.error(error))
-                  }
-                />
-              </Setting>
-              <Setting
-                label="Model"
-                hint="Unset, it runs Claude Sonnet 5.5 through Anthropic at low effort."
-              >
-                <ModelPicker
-                  provider
-                  empty="Unset"
-                  value={settings().hubModel ?? undefined}
-                  onChange={(hubModel) => void updateSettings({ hubModel })}
-                />
-                <Show when={settings().hubModel}>
-                  <Button
-                    size="sm"
-                    onClick={() => void updateSettings({ hubModel: null })}
-                  >
-                    Clear
-                  </Button>
-                </Show>
-              </Setting>
-            </Card>
-          </div>
-
           <Card title="Behavior">
             <Setting
               label="Night runs start at"

@@ -19,7 +19,7 @@ The chip's menu offers Compact, Prune, and the details. Every place that offers 
 ## Where the numbers come from
 
 - The total is measured the way Pi Durable measures it before compacting on its own: what the newest reply reported, plus pi-ai's estimate of what came after, minus what pruning freed since. So the chip and auto-compaction agree. The parts are rough counts, scaled to add up to it.
-- The server works it out once per change and sends it with the conversation (`shared/src/context-usage.ts`, and `context-breakdown.ts` for the details). The color, the cache countdown, and when the nag and housekeeping act are rules in the same file.
+- The server works it out once per change and sends it with the conversation (`shared/src/context-usage.ts`, and `context-breakdown.ts` for the details). The color, the cache countdown, and when the nag and [housekeeping](./bots.md#housekeeping) act are rules in the same file.
 - Spend comes from Pi Durable's usage tracking, at API prices even on a subscription.
 - Before the first reply or right after a compaction, nothing is measured yet, and the details say "estimated".
 

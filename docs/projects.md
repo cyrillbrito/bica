@@ -41,7 +41,7 @@ Each branch shows its pull request's number and state, and a click opens it on G
 
 ## The sidebar
 
-The sidebar starts with the [hub](./hub.md), then groups sessions by project and workspace, with each workspace's terminals and kept files above its sessions. How it shows on each screen is in [layout.md](./layout.md).
+The sidebar starts with your [bots](./bots.md), each with the sessions in its workspace under it, then groups sessions by project and workspace, with each workspace's terminals and kept files above its sessions. How it shows on each screen is in [layout.md](./layout.md).
 
 - A workspace's header opens its workspace page: the workspace card, files, and Git ([files.md](./files.md)).
 - Every header is one line. A project whose only workspace is its main folder on `main` shares that line; otherwise each branch gets its own line under the project's name, at the same indent, with its sessions on a guide line below it.

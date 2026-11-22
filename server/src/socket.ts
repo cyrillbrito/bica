@@ -15,7 +15,7 @@ import {
   type Topics,
   type WorkspaceRef,
 } from '@bica/shared/protocol';
-import { archive, markSeen, rename, setAgent, setVoice } from './sessions/meta';
+import { archive, markSeen, rename, setVoice } from './sessions/meta';
 import { removeWorktree } from './projects/worktrees';
 import {
   pruneContext,
@@ -30,7 +30,14 @@ import { createSession, fork } from './sessions/create';
 import { detach, unwatch } from './orchestration/notes';
 import { conversationDetail, watchConversation } from './sessions/conversation';
 import { watchSessions } from './sessions/store';
-import { openHub, updateHub } from './hub/hub';
+import {
+  createBot,
+  deleteBot,
+  openBot,
+  readBotFiles,
+  updateBot,
+} from './bots/bots';
+import { watchBots } from './bots/store';
 import { cancelTonight, runTonight, saveTonight } from './night-runs/night';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
@@ -116,12 +123,7 @@ const calls: Handlers = {
     return '';
   },
   'session.configure': async ({ id, ...choice }) => configure(id, choice),
-  // Here because the hub reads settings, so settings can't call it.
-  'settings.update': async (change) => {
-    await updateSettings(change);
-    if (change.hubModel !== undefined || change.hubFolder !== undefined)
-      await updateHub();
-  },
+  'settings.update': async (change) => updateSettings(change),
   'project.add': async ({ path }) => addProject(path),
   'project.reorder': async ({ ids }) => reorderProjects(ids),
   'project.pin': async ({ id, pinned }) => pinProject(id, pinned),
@@ -147,8 +149,11 @@ const calls: Handlers = {
   'session.archive': async ({ id, archived }) => archive(id, archived),
   'session.rename': async ({ id, title }) => rename(id, title),
   'session.compact': async ({ id, instructions }) => compact(id, instructions),
-  'hub.open': async () => openHub(),
-  'session.agent': async ({ id, agent }) => setAgent(id, agent),
+  'bot.create': async (edit) => createBot(edit),
+  'bot.update': async ({ id, ...edit }) => updateBot(id, edit),
+  'bot.delete': async ({ id }) => deleteBot(id),
+  'bot.open': async ({ id }) => openBot(id),
+  'bot.files': async ({ id }) => readBotFiles(id),
   'session.voice': async ({ id, voice }) => setVoice(id, voice),
   'session.cleanup': async ({ id }) => {
     await pruneContext(id);
@@ -224,6 +229,7 @@ const calls: Handlers = {
 // resize to a given size.
 const REPEATABLE = new Set<Call>([
   'fs.dirs',
+  'bot.files',
   'file.read',
   'file.link',
   'path.find',
@@ -258,6 +264,7 @@ const topics: {
 } = {
   sessions: (_params, sink) => watchSessions(sink.snapshot),
   projects: (_params, sink) => watchProjects(sink.snapshot),
+  bots: (_params, sink) => watchBots(sink.snapshot),
   models: (_params, sink) => watchModels(sink.snapshot),
   settings: (_params, sink) => watchSettings(sink.snapshot),
   accounts: (_params, sink) => watchAccounts(sink.snapshot),

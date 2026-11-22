@@ -93,10 +93,9 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [orchestration.md](docs/orchestration.md): sessions working with other sessions: parents and child sessions, Detach, watching, notes, and the session tools. Read before changing how sessions start, message, or hear of each other.
 - [system-prompt.md](docs/system-prompt.md): the system prompt's sections, project instructions, skills, and reply rules. Read before changing what the agent is told.
 - [context-usage.md](docs/context-usage.md): the context chip, prompt cache, spend, compaction, pruning.
-- [agents.md](docs/agents.md): the Coding, Assistant, Night, and Hub agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
+- [agents.md](docs/agents.md): the Coding, Night, and Bot agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
 - [night-runs.md](docs/night-runs.md): sessions held for tonight, run one at a time while the plan has room, ending with a report.
-- [assistant-mode.md](docs/assistant-mode.md): sessions that run for months, with memory in files.
-- [hub.md](docs/hub.md): the one session that coordinates the others.
+- [bots.md](docs/bots.md): the long-lived agents you make, each with a home, a workspace, and one session that gets work done through others; their Watching strip, memory files, and housekeeping. Read before changing bots or long-lived sessions.
 - [voice.md](docs/voice.md): voice calls, handoffs, hold music, and dictation.
 - [projects.md](docs/projects.md): projects, worktrees, chats, pull requests, the sidebar.
 - [layout.md](docs/layout.md): the sidebar, the centre, and the side panel on each screen size, and the side panel's tabs. Read before adding a side panel tab.
@@ -120,13 +119,14 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [fast-loading.md](docs/explorations/fast-loading.md): opening, switching, and reconnecting faster on the phone.
 - [artifacts.md](docs/explorations/artifacts.md): live data in artifacts, and clicks inside one that send a prompt.
 - [rich-replies.md](docs/explorations/rich-replies.md): cards and forms in the middle of a reply.
-- [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies the assistant's and hub's memory files.
+- [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies a bot's memory files.
+- [bots.md](docs/explorations/bots.md): what other bot products do that Bica's bots don't yet: schedules, notifications, connectors, and better memory.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
 - [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.
 - [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, so the network isn't the only lock.
 - [themes.md](docs/explorations/themes.md): editor color themes.
 - [ui-hierarchy.md](docs/explorations/ui-hierarchy.md): what the side panel next to a session belongs to.
-- [voice-and-hub.md](docs/explorations/voice-and-hub.md): what's left from OpenAI's GPT-Live and Codex voice for calls and the hub.
+- [voice-and-bots.md](docs/explorations/voice-and-bots.md): what's left from OpenAI's GPT-Live and Codex voice for calls and bots.
 - [work-lifecycle.md](docs/explorations/work-lifecycle.md): from a first question to a merged pull request.
 
 `docs/records/` holds big decisions the user asked to record: what was tried, what was found, and what was decided. Read the matching one before reopening its question. Write one only when the user asks for it; how the code is laid out today goes in `architecture.md`.

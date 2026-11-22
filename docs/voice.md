@@ -16,7 +16,7 @@ GPT-Live is only the voice. It listens, talks, can be interrupted, and decides w
 - A handoff carries your own words: the voice is asked not to rephrase you, and Bica adds what was said in the call since the last handoff. The transcript shows those lines once, in the call.
 - A handoff while the agent works joins the run at once, so "no, the other branch" lands before the wrong thing is done. Handoffs that joined the same run share one reply, spoken once.
 - Progress reaches the voice as quiet commentary, and the final reply as the result to speak. Long runs never time out.
-- A run the call didn't start is spoken too, such as the hub's run after a note that a session finished or asks something.
+- A run the call didn't start is spoken too, such as a [bot](./bots.md)'s run after a note that a session finished or asks something.
 - A result that is ready while you talk waits until you finish.
 - The voice knows the recent conversation, so "continue" makes sense, and the project's file names, so it passes names like "CommitBox" on spelled right.
 - "How's it going" gets the agent's latest turn and how long ago it was, and "stop" stops the run.

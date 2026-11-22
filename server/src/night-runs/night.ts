@@ -142,7 +142,7 @@ async function run(id: string) {
 async function send(id: string, prompt: string) {
   starting.add(id);
   try {
-    // As its parent, so a session the hub planned stays the hub's.
+    // As its parent, so a session a bot planned stays the bot's.
     const meta = await sessionMeta((await getConversation(id)).id);
     await submit(id, prompt, [], `night:${id}`, meta?.startedBy ?? 'user');
   } catch (error) {

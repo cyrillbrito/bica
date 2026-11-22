@@ -62,7 +62,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Detach**: Taking a child session or a terminal from its parent, so it's yours and the parent hears no more of it. A session started detached never had a parent. _Avoid_: take over, unlink, release
 
-**Watch**: The hub following a session it doesn't lead, hearing each run it ends, until it or you stop. _Avoid_: subscribe, follow, notify
+**Watch**: A session following one it doesn't lead, hearing each run it ends, until it or you stop, or either is archived. Bots do it most. _Avoid_: subscribe, follow, notify
 
 **Message**: A prompt one session sends another with `session_send`, signed with the sender, like Claude Code's `SendMessage`. _Avoid_: note (that is Bica's), mail
 
@@ -72,7 +72,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 [agents.md](./agents.md), [system-prompt.md](./system-prompt.md)
 
-**Agent**: What a session runs as: its system prompt, model and effort, extensions, and skills, as in Pi Durable. Coding, Assistant, Night, or Hub. _Avoid_: profile, persona, mode (except Assistant mode)
+**Agent**: What a session runs as: its system prompt, model and effort, extensions, and skills, as in Pi Durable. Coding, Night, or Bot. _Avoid_: profile, persona, mode
 
 **System prompt**: Everything the agent is told before the transcript, built from prompt sections. _Avoid_: instructions (that is the `AGENTS.md` files), prompt (that is what a session works on)
 
@@ -118,17 +118,29 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Prune**: Clearing old tool output from the context without a model call, as opencode's prune does. The transcript keeps it. _Avoid_: clean up, trim, clear (Claude Code's `/clear` starts over)
 
-## Long-lived sessions
+## Bots
 
-[assistant-mode.md](./assistant-mode.md)
+[bots.md](./bots.md)
 
-**Long-lived session**: A session that housekeeping keeps small: one running as Assistant or Hub. _Avoid_: persistent session
+**Bot**: A long-lived agent you make, with a name, a color, a home, and a workspace. You talk to it in its session, and it gets work done through other sessions. _Avoid_: hub, assistant, persona, coordinator
+
+**The bot's session**: The one session a bot runs in, which never resets until you start a new one. The UI says the bot's name. _Avoid_: bot chat (a chat is a session with no project)
+
+**Home**: A bot's own folder, with its files and memory files: in Bica's data folder unless you pick another. _Avoid_: vault, profile folder
+
+**Bot workspace**: The folder that holds your projects, picked for a bot, where the sessions it starts outside a project run. Bica lists it as a project under the bot. _Avoid_: bot folder, home (that is its own folder)
+
+**Soul**: A bot's `SOUL.md`: how it talks, its opinions and boundaries, next to its `AGENTS.md` instructions and its `USER.md` of what it knows about you. _Avoid_: persona, personality
+
+**Watching strip**: The list above a bot's session of the open sessions it hears from, its child sessions and the ones it watches. _Avoid_: board, dashboard, inbox
+
+**Open work**: The plain list at the top of a bot's `MEMORY.md`, one line per open session and whose move it is. _Avoid_: board, threads
+
+**Long-lived session**: A bot's session, which housekeeping keeps small. _Avoid_: persistent session
 
 **Housekeeping**: What Bica does to a long-lived session while it sits idle: pruning, a memory save, and compaction, as OpenClaw names it. _Avoid_: upkeep, tending, maintenance
 
-**Assistant mode**: A session that runs as the Assistant agent, a helper for one project that keeps going for months. _Avoid_: assistant session, companion
-
-**Memory files**: Markdown files in a session's workspace where a long-lived session keeps what lasts, as Claude Code and OpenClaw keep memory. _Avoid_: notes (that is Bica's), memories
+**Memory files**: Markdown files in a bot's home, or a session's workspace, where an agent keeps what lasts, as Claude Code and OpenClaw keep memory. _Avoid_: notes (that is Bica's), memories
 
 **Memory index**: The memory file loaded into the system prompt, `MEMORY.md` or `PROFILE.md`. _Avoid_: profile, memory doc
 
@@ -143,14 +155,6 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 **Hold**: Keeping a session's first prompt for tonight instead of sending it. Its sidebar row shows Tonight. _Avoid_: schedule, defer
 
 **Morning report**: The reply a night run ends with: how far it got, what changed, the checks, decisions, and the next step. _Avoid_: summary
-
-## Hub
-
-[hub.md](./hub.md)
-
-**Hub**: The one session that coordinates the others and does no work itself. _Avoid_: coordinator, orchestrator, manager
-
-**Board**: The hub's list of the sessions it tracks and whose move each is: on its page, and at the top of its memory index. _Avoid_: dashboard, inbox
 
 ## Voice
 
@@ -176,7 +180,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Side panel**: The column on the right, with the open workspace's Files and Git tabs. _Avoid_: right panel, inspector
 
-**Sidebar**: The column on the left, listing the hub, projects, workspaces, and their sessions, terminals, and kept files. _Avoid_: left panel, nav
+**Sidebar**: The column on the left, listing bots, projects, workspaces, and their sessions, terminals, and kept files. _Avoid_: left panel, nav
 
 **Not pushed**: A commit no remote branch has yet, marked with an arrow in the Git tab's Commits. _Avoid_: local commit, unpublished
 

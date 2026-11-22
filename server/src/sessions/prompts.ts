@@ -137,7 +137,7 @@ export async function recordSender(id: ConversationId, from: Sender) {
 
 /**
  * Takes the memory index, the connected apps, and the project list for an
- * agent with a `projects` section such as the hub's, when the session holds
+ * agent with a `projects` section such as a bot's, when the session holds
  * no copy: at its first prompt and after a compaction (store.ts). The prompt sections
  * show the copies (server/src/agents/registry.ts), since the agent
  * edits memory mid-session and every change would be sent again. Every
