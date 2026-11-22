@@ -5,6 +5,7 @@
 // (step details, files and diffs). `?data=live` shows the switch with
 // real data. The mode is per tab and survives navigation and reloads.
 import { fixtureArtifacts } from './artifacts';
+import { fixtureSchedules } from './schedules';
 import { createSignal, untrack } from 'solid-js';
 
 import type {
@@ -261,6 +262,8 @@ export function fixture(topic: Topic, params: unknown) {
       return { value: data.files?.[p.cwd!] ?? [] };
     case 'artifacts':
       return { value: cached(m, 'artifacts', () => fixtureArtifacts(m)) };
+    case 'schedules':
+      return { value: cached(m, 'schedules', () => fixtureSchedules(m)) };
     // Terminal output isn't test data: an empty screen.
     case 'terminal':
       return { value: null };

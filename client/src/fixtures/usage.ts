@@ -569,7 +569,6 @@ export function fixtureSettings(): Settings {
     fastModel: { provider: 'anthropic', modelId: 'claude-haiku-4-5' },
     stageOnView: false,
     longCache: true,
-    nightStart: '01:00',
     fromEnv: { model: false, fastModel: false },
   };
 }

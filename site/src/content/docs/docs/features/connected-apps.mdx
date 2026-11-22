@@ -23,7 +23,7 @@ Apps you connected in Composio's own apps, such as Composio Connect for Claude, 
 
 A new session is told which apps are connected, so it knows what it can reach without asking. An app you connect during a session shows up for it after its next [compaction](/docs/features/context/), and in new sessions right away.
 
-Every session uses them, [bots](/docs/features/bots/) and [night runs](/docs/features/night-runs/) included.
+Every session uses them, [bots](/docs/features/bots/) and [schedules](/docs/features/schedules/) included.
 
 ## Nothing changes without your yes
 
@@ -33,7 +33,7 @@ Reading runs on its own. Anything that sends, posts, creates, or edits waits for
 - Always approve stops asking for that action in that app.
 - Deny tells the agent no, and it doesn't try another way.
 
-A delete shows a red card and never offers Always approve. Typing a message instead leaves the card unanswered, and the action doesn't run. A night run has nobody to ask, so it leaves such calls undone and says in its report what it would have done.
+A delete shows a red card and never offers Always approve. Typing a message instead leaves the card unanswered, and the action doesn't run. A [scheduled](/docs/features/schedules/) run waits on its card too, since a prompt that fired on its own isn't your yes.
 
 The agent is told to prefer what can be undone: trash over a permanent delete, a draft over a send. It's also told to send only when you said what to send and to whom. "Handle my inbox" is not an ask for it to reply to anyone.
 

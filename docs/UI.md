@@ -57,7 +57,7 @@ Everything in `client/src/ui/`, by job. Reach for these before styling a raw `<b
 - A modal is a `Dialog`: a bottom sheet on the phone, a centred card from `md` up, with a titled header, a close button, and an optional footer for its actions. The command palette is the one exception, since it fills the phone screen.
 - A menu that opens from a button is a `Popover`: a card on a tray under (or above) its button, a sheet on the phone. Its rows go in an `OptionList`.
 - Menu and picker rows are 32px (`optionClass`), unlike the 28px rows of the sidebar and the transcript, since they are read one by one. Pickers driven from a search field (the project menu, ⌘K) fill the row the keyboard is on (`data-active`) instead of gliding.
-- A note above the composer (night run, parent in charge, stuck) is a `Strip`.
+- A note above the composer (parent in charge, watched by, stuck) is a `Strip`.
 - A session's status is one ring family (`StatusDot`): the same size and stroke, and each state differs in shape as well as color. Idle is an empty ring, running a spinning arc, waiting a ring with a centre dot and a breathing halo, done a filled ring, and failed a ring with an x. The spin is progress, so it always plays; the halo is `motion-safe` only.
 - Two kinds of switcher, each with one job. Tabs in a header switch what a column shows (the side panel's Files and Git). A `Segmented` control filters a list or picks a mode in place (the sidebar's All and Active, the theme).
 - Errors that block a form show as an `Alert` in place; failures with nowhere to show go to `toast.error`. `errorText` turns whatever was thrown into its message.

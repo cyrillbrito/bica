@@ -64,7 +64,7 @@ A bot's session starts with the memory index, the `MEMORY.md` in its home, in it
 
 ## What it can do
 
-A bot's session runs as the Bot [agent](./agents.md), with the same tools as a Coding session ([tools.md](./tools.md)): files and bash, terminals, web search and fetch, `list` and the session tools across every project ([orchestration.md](./orchestration.md#the-session-tools)), `ask`, code mode with [connected apps](./connectors.md), and skills. Its prompt says what only a bot should do with them:
+A bot's session runs as the Bot [agent](./agents.md), with the same tools as a Coding session ([tools.md](./tools.md)): files and bash, terminals, web search and fetch, `list` and the session tools across every project ([orchestration.md](./orchestration.md#the-session-tools)), `schedule` for reminders and routines ([schedules.md](./schedules.md)), `ask`, code mode with [connected apps](./connectors.md), and skills. Its prompt says what only a bot should do with them:
 
 - It writes freely in its home, and outside it makes only a small edit you asked for.
 - It reads terminals with `terminal_read`, to see why a child session's tests or dev server failed without messaging it, but starts no terminals or long commands: anything that keeps running belongs in a session.

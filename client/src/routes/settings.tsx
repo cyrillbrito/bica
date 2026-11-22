@@ -10,8 +10,6 @@ import { Button } from '../ui/Button';
 import ModelFavorites from '../models/ModelFavorites';
 import ModelPicker from '../models/ModelPicker';
 import TopBar from '../app/TopBar';
-import Input from '../ui/Input';
-import { toast } from '../ui/Toast';
 import { Segmented, segmentClass } from '../ui/Segmented';
 import {
   MODE_LABELS,
@@ -211,21 +209,6 @@ export default function Settings() {
           <ModelFavorites />
 
           <Card title="Behavior">
-            <Setting
-              label="Night runs start at"
-              hint="Sessions held for tonight start one at a time from then, for 5 hours, while the plan has 20% of its week left. Pick a time at least 5 hours before your day starts, so its window is fresh."
-            >
-              <Input
-                type="time"
-                class="h-7"
-                value={settings().nightStart}
-                onChange={(e) =>
-                  void updateSettings({
-                    nightStart: e.currentTarget.value,
-                  }).catch((error) => toast.error(error))
-                }
-              />
-            </Setting>
             <Toggle
               label="Stage on view"
               hint="Opening a diff under Changes stages the file. Staged is what you reviewed; whatever the agent writes after shows up under Changes again."

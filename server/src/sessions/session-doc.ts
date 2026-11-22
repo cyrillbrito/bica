@@ -62,9 +62,9 @@ export type SessionMeta = {
   // The connected apps line (server/src/connectors/apps.ts), kept like
   // `memory`; '' without a Composio key.
   apps?: string;
-  // The first prompt, held for tonight's run (docs/night-runs.md); '' or
-  // unset: none waiting.
-  tonight?: string;
+  // The schedule that started it (docs/schedules.md): a reply of "Nothing
+  // new" archives it without a note.
+  schedule?: string;
   // Archived while it ran (session_archive), by itself or another session,
   // which waits for its run to end; `worktree`: remove its worktree too.
   archiveAfterRun?: { worktree: boolean };

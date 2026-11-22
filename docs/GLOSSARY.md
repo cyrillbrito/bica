@@ -72,7 +72,7 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 [agents.md](./agents.md), [system-prompt.md](./system-prompt.md)
 
-**Agent**: What a session runs as: its system prompt, model and effort, extensions, and skills, as in Pi Durable. Coding, Night, or Bot. _Avoid_: profile, persona, mode
+**Agent**: What a session runs as: its system prompt, model and effort, extensions, and skills, as in Pi Durable. Coding or Bot. _Avoid_: profile, persona, mode
 
 **System prompt**: Everything the agent is told before the transcript, built from prompt sections. _Avoid_: instructions (that is the `AGENTS.md` files), prompt (that is what a session works on)
 
@@ -146,15 +146,15 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Memory save**: A run Bica asks for before housekeeping compacts, where the agent writes to its memory files. OpenClaw calls it a memory flush. _Avoid_: memory dump
 
-## Night runs
+## Schedules
 
-[night-runs.md](./night-runs.md)
+[schedules.md](./schedules.md)
 
-**Night run**: A session held for tonight, which runs alone after the night start and ends with a morning report. _Avoid_: scheduled run, overnight job, nightly
+**Schedule**: A saved prompt that fires later, once or on a repeat, back into the session that made it or as a new session each run. _Avoid_: cron job, automation, scheduled task, night run
 
-**Hold**: Keeping a session's first prompt for tonight instead of sending it. Its sidebar row shows Tonight. _Avoid_: schedule, defer
+**Reminder**: A schedule that fires back into the session that made it, so the agent says it. Not a separate kind. _Avoid_: alarm, alert
 
-**Morning report**: The reply a night run ends with: how far it got, what changed, the checks, decisions, and the next step. _Avoid_: summary
+**Routine**: A repeating schedule that starts a new session each run. Not a separate kind. _Avoid_: job, workflow
 
 ## Voice
 

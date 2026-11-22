@@ -8,7 +8,7 @@ Each artifact is one `<name>.html` file in the data folder's `artifacts/`, and i
 
 ## How the agent makes one
 
-There is no artifact tool. The agent writes the page with `write` and changes it with `edit`, so an update costs a diff, not the whole page. Agents that read skills (Coding, Night, and Bot) get one line in the system prompt naming the folder and saying to read the `artifacts` skill first ([system-prompt.md](./system-prompt.md)). To update "the sales report", the agent greps the titles in the folder and edits that file.
+There is no artifact tool. The agent writes the page with `write` and changes it with `edit`, so an update costs a diff, not the whole page. Agents that read skills (Coding and Bot) get one line in the system prompt naming the folder and saying to read the `artifacts` skill first ([system-prompt.md](./system-prompt.md)). To update "the sales report", the agent greps the titles in the folder and edits that file.
 
 The skill ships with Bica, in `server/src/artifacts/SKILL.md`. It teaches the contract below: the include line, the token names, Tailwind, no colors or fonts of its own, ECharts, page patterns (summary first, sections, tables over prose, SVG diagrams), and scripts last. There are no templates. Each start writes the skill to the data folder's `bundled-skills/`, since the `bica` binary holds it only in memory and the agent reads skills from disk. A skill named `artifacts` in the workspace or home folders replaces it.
 

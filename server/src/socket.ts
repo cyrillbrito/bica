@@ -38,7 +38,11 @@ import {
   updateBot,
 } from './bots/bots';
 import { watchBots } from './bots/store';
-import { cancelTonight, runTonight, saveTonight } from './night-runs/night';
+import {
+  createFromComposer,
+  deleteSchedule,
+  watchSchedules,
+} from './schedules/schedules';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
 import { wsLogger } from './ws-log';
@@ -116,12 +120,8 @@ type Handlers = {
 const calls: Handlers = {
   'session.create': async (args) =>
     createSession({ ...args, prompt: args.prompt.trim() }),
-  'session.tonight': async ({ id, action, prompt }) => {
-    if (action === 'cancel') return cancelTonight(id);
-    if (action === 'save') await saveTonight(id, prompt ?? '');
-    else await runTonight(id, prompt);
-    return '';
-  },
+  'schedule.create': async (args) => createFromComposer(args),
+  'schedule.delete': async ({ id }) => deleteSchedule(id),
   'session.configure': async ({ id, ...choice }) => configure(id, choice),
   'settings.update': async (change) => updateSettings(change),
   'project.add': async ({ path }) => addProject(path),
@@ -276,6 +276,7 @@ const topics: {
   terminals: (_params, sink) => watchTerminals(sink.snapshot),
   terminal: ({ id }, sink) => watchTerminal(id, sink),
   artifacts: (_params, sink) => watchArtifacts(sink.snapshot),
+  schedules: (_params, sink) => watchSchedules(sink.snapshot),
 };
 
 // Just the workspace: a call's other args stay out of caches keyed on it.

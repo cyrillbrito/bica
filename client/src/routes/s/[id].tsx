@@ -35,7 +35,6 @@ import { openBotDialog } from '../../bots/BotDialog';
 import WatchingStrip from '../../bots/WatchingStrip';
 import { toast } from '../../ui/Toast';
 import StuckStrip from '../../sessions/StuckStrip';
-import TonightStrip from '../../sessions/TonightStrip';
 import Queue from '../../sessions/Queue';
 import StatusDot from '../../sessions/StatusDot';
 import AgentBadge from '../../sessions/AgentBadge';
@@ -71,7 +70,6 @@ import {
   markSeen,
   sendPrompt,
   stopSession,
-  tonightAction,
   useConversation,
   useSessions,
 } from '../../sessions/sessions';
@@ -169,8 +167,6 @@ export default function Session(props: RouteProps<'/s/:id'>) {
     () => sessions().find((s) => s.id === summary()?.parent),
     { name: 'parent' },
   );
-  // The prompt held for tonight, which the composer edits.
-  const held = () => summary()?.tonight ?? null;
   // Hovering any part of a reply shows the fork button at its end, or the
   // next compaction or pruning line, which has its own.
   let shown: Element | undefined;
@@ -514,20 +510,11 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                   onSend={(prompt, images, steer) => {
                     // Sending means wanting to see the reply.
                     stick.follow();
-                    if (held() !== null)
-                      return tonightAction(props.params.id!, 'run', prompt);
                     return sendPrompt(props.params.id!, prompt, images, {
                       steer,
                     });
                   }}
-                  hold={held()}
-                  onHoldEdit={(id, text) => tonightAction(id, 'save', text)}
-                  placeholder={
-                    held() !== null
-                      ? 'What to do tonight…'
-                      : bot() && `Tell ${bot()!.name}…`
-                  }
-                  sendLabel={held() !== null ? 'Run now' : undefined}
+                  placeholder={bot() && `Tell ${bot()!.name}…`}
                   busy={busy()}
                   // The stop drops queued prompts; give them back to edit.
                   onStop={() =>
@@ -541,12 +528,6 @@ export default function Session(props: RouteProps<'/s/:id'>) {
                     <Ready>
                       {(v) => (
                         <>
-                          <Show when={held() !== null}>
-                            <TonightStrip
-                              id={props.params.id!}
-                              onCancel={() => composer?.releaseHold()}
-                            />
-                          </Show>
                           <Show when={summary()?.stuck}>
                             <StuckStrip />
                           </Show>

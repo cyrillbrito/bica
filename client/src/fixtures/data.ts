@@ -134,7 +134,6 @@ function session(
     agent: 'coding',
     bot: null,
     voice: null,
-    tonight: null,
     stuck: false,
     // Varied, so costs in a bot's Watching strip differ.
     cost: ((n * 37) % 290) / 100,
@@ -345,10 +344,7 @@ function demo(): Dataset {
         },
       ),
       session('bica', bica, 'Research offline drafts', 'idle', 30 * MIN, {
-        id: 'demo-tonight',
-        agent: 'night',
-        tonight:
-          'Research how other apps keep drafts offline on the phone and sync them later. Write a report to docs/explorations/offline-drafts.md with options, trade-offs, and sources.',
+        id: 'demo-offline',
       }),
       session('bica', bica, 'Release notes for 0.9', 'idle', 2 * HOUR, {
         id: 'demo-release',
@@ -599,11 +595,7 @@ function worst(): Dataset {
     sessions: [
       session('nw', nw, long200, 'running', 0, { id: 'worst-long' }),
       session('nw', nw, 'J', 'done', 59 * 1000),
-      session('nw', nw, long200, 'idle', 9 * MIN, {
-        id: 'worst-tonight',
-        agent: 'night',
-        tonight: `${long200} ${long200}`,
-      }),
+      session('nw', nw, long200, 'idle', 9 * MIN, { id: 'worst-idle' }),
       session('nw', nw, '', 'waiting', 3 * MIN, { id: 'worst-ask' }),
       session('nw', nw, long200, 'error', 4 * MIN, {
         id: 'worst-stuck',

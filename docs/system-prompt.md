@@ -7,7 +7,7 @@ The system prompt is built from named prompt sections that every [agent](./agent
 3. The connected apps and how to reach them ([connectors.md](./connectors.md)), then the declarations of the tools code mode scripts can call.
 4. Project instructions: your `~/.bica/AGENTS.md`, then the `AGENTS.md` or `CLAUDE.md` of each folder down to the workspace, then a bot's memory index and project list, the skills, a line on where [artifacts](./artifacts.md) live for agents with skills, and the workspace's path. A [bot](./bots.md) gets only your `~/.bica/AGENTS.md`, then its own `AGENTS.md`, `SOUL.md`, and `USER.md` from its home, read live.
 5. Rules shared by kind: a bot's delegation rules for child sessions, and a bot's rules for keeping memory in a session that lasts months.
-6. The agent's own role, such as a [night run](./night-runs.md)'s rules to finish alone.
+6. The agent's own role, such as a bot's.
 7. How to reply, below.
 
 ## Skills

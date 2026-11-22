@@ -93,8 +93,8 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [orchestration.md](docs/orchestration.md): sessions working with other sessions: parents and child sessions, Detach, watching, notes, and the session tools. Read before changing how sessions start, message, or hear of each other.
 - [system-prompt.md](docs/system-prompt.md): the system prompt's sections, project instructions, skills, and reply rules. Read before changing what the agent is told.
 - [context-usage.md](docs/context-usage.md): the context chip, prompt cache, spend, compaction, pruning.
-- [agents.md](docs/agents.md): the Coding, Night, and Bot agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
-- [night-runs.md](docs/night-runs.md): sessions held for tonight, run one at a time while the plan has room, ending with a report.
+- [agents.md](docs/agents.md): the Coding and Bot agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
+- [schedules.md](docs/schedules.md): reminders and routines, prompts that fire later, once or on a repeat, back into a session or as a new one; the Schedules page. Read before changing them.
 - [bots.md](docs/bots.md): the long-lived agents you make, each with a home, a workspace, and one session that gets work done through others; their Watching strip, memory files, and housekeeping. Read before changing bots or long-lived sessions.
 - [voice.md](docs/voice.md): voice calls, handoffs, hold music, and dictation.
 - [projects.md](docs/projects.md): projects, worktrees, chats, pull requests, the sidebar.

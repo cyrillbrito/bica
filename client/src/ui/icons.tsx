@@ -55,6 +55,8 @@ import MicOff from 'lucide/dist/esm/icons/mic-off.mjs';
 import Minus from 'lucide/dist/esm/icons/minus.mjs';
 import Monitor from 'lucide/dist/esm/icons/monitor.mjs';
 import Moon from 'lucide/dist/esm/icons/moon.mjs';
+import Clock from 'lucide/dist/esm/icons/clock.mjs';
+import Repeat from 'lucide/dist/esm/icons/repeat.mjs';
 import Inbox from 'lucide/dist/esm/icons/inbox.mjs';
 import PanelLeft from 'lucide/dist/esm/icons/panel-left.mjs';
 import Command from 'lucide/dist/esm/icons/command.mjs';
@@ -240,6 +242,8 @@ export const EnterIcon = icon(CornerDownLeft);
 export const InboxIcon = icon(Inbox);
 export const SunIcon = icon(Sun);
 export const MoonIcon = icon(Moon);
+export const ClockIcon = icon(Clock);
+export const RepeatIcon = icon(Repeat);
 export const SystemThemeIcon = icon(Monitor);
 
 // Review: filtering changes, dropping files.

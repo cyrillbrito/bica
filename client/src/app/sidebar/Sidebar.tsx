@@ -28,6 +28,7 @@ import {
   CloseIcon,
   CommandIcon,
   ArtifactIcon,
+  ClockIcon,
   InboxIcon,
   PlusIcon,
   RestoreIcon,
@@ -402,6 +403,20 @@ export default function Sidebar() {
               <ArtifactIcon />
             </span>
             <span class="flex-1 truncate font-semibold">Artifacts</span>
+          </a>
+          <a
+            class="flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
+            href={paths.schedules()}
+            aria-current={
+              location.pathname.startsWith('/schedules') ? 'page' : undefined
+            }
+            title="Reminders and routines that run later"
+            onClick={closeDrawer}
+          >
+            <span class="text-muted">
+              <ClockIcon />
+            </span>
+            <span class="flex-1 truncate font-semibold">Schedules</span>
           </a>
           <BotRows
             groups={botGroups().flatMap((b) => b.groups)}

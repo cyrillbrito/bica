@@ -55,9 +55,6 @@ export interface SessionSummary {
   bot: string | null;
   // How its voice calls sound; null: the defaults.
   voice: VoiceSettings | null;
-  // The first prompt, held for tonight's run (docs/night-runs.md); null:
-  // nothing waiting.
-  tonight: string | null;
   // Work Pi Durable won't run, as its code is gone (docs/sessions.md).
   stuck: boolean;
   // Dollars spent at list prices, even on a plan: its models and tools, not
@@ -103,7 +100,7 @@ export interface ModelChoice {
 
 /**
  * Bica's settings, the same on every device: the models new sessions and side
- * jobs use, night runs, and git habits.
+ * jobs use, and git habits.
  */
 export interface Settings extends ModelChoice {
   // `provider/modelId`s; empty: every available model.
@@ -115,8 +112,6 @@ export interface Settings extends ModelChoice {
   // Ask for the long prompt cache: 1 hour on Claude, 24 hours on some OpenAI
   // models. False: the 5-minute default.
   longCache: boolean;
-  // When night runs start, as local "HH:MM" (docs/night-runs.md).
-  nightStart: string;
   // Which defaults still come from the server's env (PI_MODEL, PI_FAST_MODEL)
   // because nothing was picked in Settings.
   fromEnv: { model: boolean; fastModel: boolean };
@@ -427,6 +422,36 @@ export interface ArtifactInfo {
   updated: number;
 }
 
+/**
+ * A saved prompt that fires later, once or on a repeat (docs/schedules.md).
+ * Times are the dev machine's local time.
+ */
+export interface Schedule {
+  id: string;
+  prompt: string;
+  time: { at: number } | { cron: string };
+  // The session that made it: the prompt goes back into it, or it leads each
+  // new session. null: made from the composer, so new sessions are yours.
+  session: string | null;
+  // Each run starts a new session with these options, as session_start
+  // would; null: the prompt goes back into `session`.
+  start: ScheduleStart | null;
+  lastRunAt: number | null;
+  createdAt: number;
+  // When it fires next; null: never again.
+  next: number | null;
+}
+
+export interface ScheduleStart {
+  // Where a session made from the composer starts.
+  projectId?: string;
+  // A project folder or worktree; absent: the parent's folder.
+  folder?: string;
+  worktree?: boolean;
+  effort?: 'low' | 'medium' | 'high';
+  choice?: ModelChoice;
+}
+
 export interface Artifacts {
   // The artifacts folder on the dev machine.
   folder: string;
@@ -529,19 +554,25 @@ export interface Calls {
       choice?: ModelChoice;
       // Starts in a new worktree named after the session, instead of `cwd`.
       worktree?: boolean;
-      // Holds the prompt for tonight's run instead of sending it.
-      tonight?: boolean;
     };
     // warning: the session started, but not quite as asked, such as a
     // worktree from an unfetched branch.
     result: { id: string; warning?: string };
   };
-  // A session held for tonight: save an edited prompt, run it now (edited
-  // when `prompt` is given), or cancel the run and get the prompt back.
-  'session.tonight': {
-    args: { id: string; action: 'save' | 'run' | 'cancel'; prompt?: string };
-    result: string;
+  // A schedule from the composer: each run starts a new session in
+  // `projectId`'s `cwd`, or a new worktree of it.
+  'schedule.create': {
+    args: {
+      prompt: string;
+      time: Schedule['time'];
+      projectId: string;
+      cwd: string;
+      worktree?: boolean;
+      choice?: ModelChoice;
+    };
+    result: Schedule;
   };
+  'schedule.delete': { args: { id: string }; result: null };
   'session.configure': { args: { id: string } & ModelChoice; result: null };
   'settings.update': { args: SettingsChange; result: null };
   'project.add': { args: { path: string }; result: string };
@@ -777,6 +808,8 @@ export interface Topics {
   files: { params: WorkspaceRef; value: string[] };
   terminals: { params: Record<string, never>; value: TerminalInfo[] };
   artifacts: { params: Record<string, never>; value: Artifacts };
+  // Soonest first.
+  schedules: { params: Record<string, never>; value: Schedule[] };
   // null: no such terminal (closed, or the server restarted).
   terminal: { params: { id: string }; value: TerminalOutput | null };
 }

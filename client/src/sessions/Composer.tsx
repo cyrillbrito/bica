@@ -16,7 +16,7 @@ import type { PromptImage } from '@bica/shared/protocol';
 import { imageMarker, imageMarkers } from '@bica/shared/images';
 import Alert from '../ui/Alert';
 import { createDropZone } from '../ui/DropZone';
-import { Button, IconButton } from '../ui/Button';
+import { IconButton } from '../ui/Button';
 import {
   ArrowUpIcon,
   CheckIcon,
@@ -88,8 +88,6 @@ export interface ComposerApi {
   // Puts a prompt taken back from the queue into the box, after what's typed.
   restore: (prompt: string, images: PromptImage[]) => void;
   problem: (message: string) => void;
-  // Keeps what's typed as a normal draft when the hold ends, e.g. on Cancel.
-  releaseHold: () => void;
 }
 
 export default function Composer(props: {
@@ -101,14 +99,6 @@ export default function Composer(props: {
     steer: boolean,
     alternate: boolean,
   ) => Promise<unknown>;
-  // Words on the send button, when sending does more than send.
-  sendLabel?: string;
-  // Saved text the box edits, e.g. a prompt held for tonight: the box starts
-  // from it, edits go to `onHoldEdit` as you type, Enter adds a line instead
-  // of sending, and images are off. When it ends unedited, the box empties.
-  hold?: string | null;
-  // `key` is the draft's, since a late edit can land after moving on.
-  onHoldEdit?: (key: string, text: string) => Promise<unknown>;
   // Where the draft is kept, e.g. the session id.
   draft: string;
   placeholder?: string;
@@ -117,7 +107,7 @@ export default function Composer(props: {
   // Starts a voice call. Its button takes the send spot while the box is
   // empty, since a call and a typed prompt rarely go together.
   onCall?: () => void;
-  // Another way to send, under the send button's chevron, e.g. Run tonight.
+  // Another way to send, under the send button's chevron, e.g. Schedule.
   alternate?: { label: string; hint: string; icon: JSX.Element };
   // Above the text, inside the box, e.g. the queued prompts.
   top?: JSX.Element;
@@ -171,63 +161,26 @@ export default function Composer(props: {
     save();
   };
 
-  // The hold the box shows now; its text unedited is no draft.
-  let held: string | null = null;
-  let keepOnRelease = false;
-  let edit: { key: string; text: string } | undefined;
-  let editTimer: ReturnType<typeof setTimeout> | undefined;
-  const flushEdit = () => {
-    clearTimeout(editTimer);
-    const pending = edit;
-    edit = undefined;
-    if (pending)
-      props
-        .onHoldEdit?.(pending.key, pending.text)
-        .catch((error) => setProblem(errorText(error)));
-  };
-  onCleanup(flushEdit);
-
   const save = (key = props.draft) => {
     setTyped(!!textarea.value.trim());
-    writeDraft(key, {
-      text: textarea.value === held ? '' : textarea.value,
-      pastes: [...pastes],
-    });
-    const text = unfold(textarea.value.trim());
-    if (held === null || !text || text === held) return;
-    edit = { key, text };
-    clearTimeout(editTimer);
-    editTimer = setTimeout(flushEdit, 600);
+    writeDraft(key, { text: textarea.value, pastes: [...pastes] });
   };
 
   createEffect(
-    () => ({ key: props.draft, hold: props.hold ?? null }),
+    () => props.draft,
     (now, before) => {
-      if (before?.key === now.key) {
-        if (now.hold !== null) {
-          if (!textarea.value.trim()) textarea.value = now.hold;
-        } else if (!keepOnRelease && textarea.value === before.hold)
-          textarea.value = '';
-        keepOnRelease = false;
-        held = now.hold;
-        save(now.key);
-        return;
-      }
       if (before) {
-        save(before.key);
-        flushEdit();
-        draftImages.set(before.key, untrack(images));
+        save(before);
+        draftImages.set(before, untrack(images));
       }
-      held = now.hold;
-      keepOnRelease = false;
-      const draft = readDraft(now.key);
-      textarea.value = draft.text || (now.hold ?? '');
+      const draft = readDraft(now);
+      textarea.value = draft.text;
       setTyped(!!textarea.value.trim());
       pastes.clear();
       for (const [n, text] of draft.pastes) pastes.set(n, text);
       browsing = null;
-      setImages(draftImages.get(now.key) ?? []);
-      draftImages.delete(now.key);
+      setImages(draftImages.get(now) ?? []);
+      draftImages.delete(now);
       setProblem('');
     },
   );
@@ -260,7 +213,6 @@ export default function Composer(props: {
       save();
     },
     problem: setProblem,
-    releaseHold: () => (keepOnRelease = true),
   };
 
   const stop = async () => {
@@ -350,7 +302,6 @@ export default function Composer(props: {
   // a photo on a phone takes a few seconds.
   const attach = (files: File[]) => {
     setProblem('');
-    if (held !== null) return setProblem('This prompt takes text only.');
     let ref = nextRef();
     const slots = files.map((file) => ({
       file,
@@ -393,9 +344,6 @@ export default function Composer(props: {
     const prompt = unfold(typed);
     const sent = images();
     if (!prompt && !sent.length) return;
-    // Sending a hold sends its latest text, so no edit is left to save.
-    clearTimeout(editTimer);
-    edit = undefined;
     // Cleared up front so typing can go on; put back if it fails.
     textarea.value = '';
     save();
@@ -623,12 +571,7 @@ export default function Composer(props: {
               return;
             }
             // On touch keyboards Enter is the only way to add a newline.
-            if (
-              e.key === 'Enter' &&
-              !e.shiftKey &&
-              held === null &&
-              !isTouch()
-            ) {
+            if (e.key === 'Enter' && !e.shiftKey && !isTouch()) {
               e.preventDefault();
               void send(!!props.busy);
             }
@@ -642,7 +585,6 @@ export default function Composer(props: {
             <IconButton
               size="md"
               title="Attach images"
-              hidden={props.hold != null}
               onClick={() => picker.click()}
             >
               <ImageIcon />
@@ -716,30 +658,6 @@ export default function Composer(props: {
           >
             <VoiceIcon />
           </IconButton>
-          <Show when={props.sendLabel}>
-            {(label) => (
-              <Button
-                // On a narrow composer only the arrow shows; the label stays
-                // for screen readers and the placeholder says what it does.
-                class={[
-                  'ml-1 pr-2.5 pl-3 @max-sm/composer:pl-2.5 [&_svg]:size-3.5 [&_svg]:stroke-[2.5]',
-                  empty() && 'opacity-30',
-                ]}
-                variant="primary"
-                size="md"
-                round
-                type="submit"
-                title={props.busy ? `${label()}, after this run` : label()}
-                loading={uploading() > 0}
-                aria-disabled={empty() ? 'true' : undefined}
-              >
-                <span class="@max-sm/composer:sr-only">{label()}</span>
-                <Show when={props.busy && !empty()} fallback={<ArrowUpIcon />}>
-                  <QueueIcon />
-                </Show>
-              </Button>
-            )}
-          </Show>
           {/* One control in the send spot, after ChatGPT's. Nothing typed:
             a voice call, or stop while working. Something typed: send, or
             a split button when there's another way to send it, with Queue,
@@ -749,7 +667,7 @@ export default function Composer(props: {
           {/* One shape that clips both buttons, so the chevron widens it
             from a circle into a pill instead of popping in beside it. */}
           <div
-            hidden={!!props.sendLabel || dictating()}
+            hidden={dictating()}
             // Faded while there's nothing to send, solid once there is. Only
             // this shape is round: a round button inside would leave a notch
             // while the chevron shrinks.

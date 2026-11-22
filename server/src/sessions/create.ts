@@ -25,7 +25,6 @@ import { createWorktree } from '../projects/worktrees';
 import { checkChoice } from '../models/registry';
 import { fastModelId } from '../models/fast-model';
 import { VOICE_TITLE, nameSession, promptTitle, retitle } from './names';
-import { setAgent } from './meta';
 import { submit } from './prompts';
 import {
   SessionDoc,
@@ -52,9 +51,8 @@ export interface NewSession {
   agent?: AgentId;
   // Started by a session that doesn't take charge of it: no parent.
   detached?: boolean;
-  // Holds the prompt for tonight's run (docs/night-runs.md) instead of
-  // sending it, as the Night agent.
-  tonight?: boolean;
+  // The schedule whose run it is (docs/schedules.md).
+  schedule?: string;
 }
 
 export async function createSession({
@@ -68,14 +66,8 @@ export async function createSession({
   worktree,
   agent: agentId = 'coding',
   detached,
-  tonight,
+  schedule,
 }: NewSession) {
-  if (tonight) {
-    if (!prompt) throw new Error('A night run needs a prompt');
-    if (images.length)
-      throw new Error('A night run takes text only, without images');
-    agentId = 'night';
-  }
   const agent = getAgent(agentId);
   // A chat gets a fresh folder; its name needn't wait for the fast model.
   if (worktree && projectId === CHATS_ID) {
@@ -127,13 +119,13 @@ export async function createSession({
         doc.profile = agentId;
         if (startedBy) doc.startedBy = startedBy;
         doc.parent = (!detached && startedBy) || null;
-        if (tonight) doc.tonight = prompt;
+        if (schedule) doc.schedule = schedule;
       },
     },
     context,
   );
   // Nothing to send: started for a voice call, whose first handoff names it.
-  if (!tonight && (prompt || images.length))
+  if (prompt || images.length)
     await submit(
       String(conversation.id),
       prompt,
@@ -147,8 +139,9 @@ export async function createSession({
 }
 
 /**
- * A session started by another session's agent: a normal, ownerless coding
- * session, or a night one from a night run, in the parent's folder, another workspace of any project, or a new
+ * A session started by another session's agent, or by a schedule it set: a
+ * normal, ownerless coding session in the parent's folder, another workspace
+ * of any project, or a new
  * worktree of that project; from a bot's session, in the bot's workspace by
  * default. It takes the parent's model, except from a bot, whose model is
  * picked for talking and routing, not for the work. `effort` overrides the
@@ -161,8 +154,8 @@ export async function spawnSession(
   folder?: string,
   worktree?: boolean,
   detached?: boolean,
-  tonight?: boolean,
   effort?: ThinkingLevel,
+  schedule?: string,
 ) {
   const harness = await getHarness();
   const [meta, parentAgent] = await Promise.all([
@@ -206,10 +199,7 @@ export async function spawnSession(
     startedBy: String(parent),
     worktree,
     detached,
-    tonight,
-    // Nobody answers a night run's children either, and the next run waits
-    // for them (night-runs/night.ts).
-    agent: agentIdOf(meta) === 'night' ? 'night' : undefined,
+    schedule,
   });
 }
 
@@ -252,7 +242,7 @@ export async function fork(id: string, at?: number) {
           'memory',
           'projects',
           'apps',
-          'tonight',
+          'schedule',
           'archiveAfterRun',
         ] as const)
           delete doc[field];
@@ -260,10 +250,6 @@ export async function fork(id: string, at?: number) {
     },
     context,
   );
-  // A running Night session counts as tonight's run (night-runs/night.ts),
-  // and the user's fork isn't one.
-  if (agentIdOf(await sessionMeta(conversation.id)) === 'night')
-    await setAgent(String(forked.id), 'coding');
   await sessions.refresh();
   return String(forked.id);
 }

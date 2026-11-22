@@ -26,6 +26,7 @@ import {
   recentMessages,
 } from '../sessions/read';
 import { editSession, getConversation, listSessions } from '../sessions/store';
+import { scheduleTool } from '../schedules/tool';
 
 function text(value: string) {
   return {
@@ -108,12 +109,6 @@ const sessionStart = defineTool({
             "true: hand it off instead of leading it: no parent, so it's the user's and you hear nothing of its turns. Default: your child session",
         }),
       ),
-      tonight: opt(
-        bool({
-          description:
-            "true: hold it for tonight's night run, when the user asks for work to run overnight. It starts at the night start time from Settings, one at a time, with no `ask`, and ends with a morning report. Write the prompt so it can finish alone: the goal, the scope, and the command that proves it done",
-        }),
-      ),
       effort: opt(
         union([lit('low'), lit('medium'), lit('high')], {
           description:
@@ -123,10 +118,7 @@ const sessionStart = defineTool({
     },
     { open: true },
   ),
-  execute: async (
-    { prompt, folder, worktree, detached, tonight, effort },
-    api,
-  ) => {
+  execute: async ({ prompt, folder, worktree, detached, effort }, api) => {
     if (!prompt.trim()) throw new Error('The prompt is empty');
     const { id, warning } = await spawnSession(
       api.conversationId,
@@ -135,15 +127,10 @@ const sessionStart = defineTool({
       folder,
       worktree,
       detached,
-      tonight,
       effort,
     );
     return {
-      ...text(
-        tonight
-          ? `Session ${id} is held for tonight's run.`
-          : `Started session ${id}.${warning ? ` ${warning}` : ''}`,
-      ),
+      ...text(`Started session ${id}.${warning ? ` ${warning}` : ''}`),
       details: { sessionId: id },
     };
   },
@@ -414,5 +401,6 @@ export const SessionTools = defineExtension({
     sessionArchive,
     sessionWatch,
     list,
+    scheduleTool,
   ],
 });

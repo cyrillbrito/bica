@@ -10,8 +10,8 @@ import { BICA_HOME } from '../storage';
 /**
  * The prompt's sections, in the order they render. First the Pi coding
  * agent's default prompt (preamble, tools, rules, project context, skills,
- * cwd), then what makes the agent different, so switching between Coding
- * and Night keeps most of the prompt cache. `replies` renders
+ * cwd), then what makes the agent different, so switching agents keeps
+ * most of the prompt cache. `replies` renders
  * last, after every tool's own section (registry.ts).
  */
 // Pi's order, with the tool sections (codemode) between the rules and the
@@ -83,7 +83,7 @@ export type Section =
 
 /**
  * What goes into a session that runs as this agent, and nothing else: what
- * Bica does around its sessions, such as housekeeping or night runs, keys on its
+ * Bica does around its sessions, such as housekeeping, keys on its
  * id instead (docs/agents.md). Label and description are shared/src/agents.ts.
  */
 export interface Agent {
@@ -188,6 +188,10 @@ const TOOL_GUIDE: { tools: string[]; line: string; rules?: string[] }[] = [
   {
     tools: ['session_watch'],
     line: 'Hear each turn a session ends, until you stop',
+  },
+  {
+    tools: ['schedule'],
+    line: 'Reminders and routines: a prompt that fires later, once or on a repeat',
   },
   { tools: ['ask'], line: 'Put multiple-choice questions to the user' },
 ];

@@ -1,6 +1,6 @@
 # Bots: what's next
 
-[Bots](../bots.md) exist: long-lived agents you make, each with a home, a workspace, and one session that never resets. They reach [connected apps](../connectors.md) like any session, but still only act when you open them. This doc collects how Grok Bot, Meta's Muse, OpenAI's dots, OpenClaw, Hermes Agent, and NanoClaw handle what Bica's bots lack: schedules, notifications, connectors, and better memory.
+[Bots](../bots.md) exist: long-lived agents you make, each with a home, a workspace, and one session that never resets. They reach [connected apps](../connectors.md) like any session, and act on their own only through [schedules](../schedules.md). This doc collects how Grok Bot, Meta's Muse, OpenAI's dots, OpenClaw, Hermes Agent, and NanoClaw handle what Bica's bots lack: schedules, notifications, connectors, and better memory.
 
 ## The products
 
@@ -88,7 +88,7 @@ dots splits a call three ways: a realtime model speaks, a voice child reasons an
 
 ## What it could look like in Bica
 
-1. Schedules: one idea for routines and reminders, a prompt saved on a bot that runs later, once at a set time or on a repeat, fired by `Bun.cron` like night runs. Each run is a fresh child session of the bot's session, in its workspace, that ends silent unless it has news, with an optional script gate, quiet hours by default, a daily cap on unasked messages, failure backoff, and a pause after days unopened. Bots have stable ids and the parent tree already routes results back, so nothing built blocks it.
+1. More for [schedules](../schedules.md), which exist: an optional script gate, quiet hours by default, a daily cap on unasked messages, failure backoff, and a pause after days unopened.
 2. Notifications on the phone: Bica installed as an app, with a service worker and Web Push for what a bot decides you should hear, opening straight to its session. The manifest, icons, and the HTTPS address from Tailscale Serve exist; iPhone allows push only for apps on the home screen.
 3. Connectors: an MCP client for Composio Connect, reached through code mode so dozens of actions don't fill the prompt, with masked secrets, the never-send-unasked rule, a draft card, and a throwaway reader for inbound mail. Connected apps and a small "about me" file shared by all bots. Runs that read untrusted input get locked-down tools in code.
 4. Better memory: a capped core with a fill gauge, daily notes searched on demand, the compaction save writing only to today's note, a nightly fold that cites its sources, never edits what you stated, and commits to git, and search over past sessions.
@@ -102,7 +102,6 @@ Leave out: chat channels such as Telegram or WhatsApp, since Bica is the app; bo
 
 - Does a sync tool's conflict handling hold up when a bot writes to its home while you edit on another device?
 - How much may a routine do unasked? A bot today acts on anything reversible inside what you asked.
-- Should routines and night runs share one schedule, or stay apart because night runs wait for plan room?
 - Should one bot be the front door that gets anything shared from the phone, as Grok Bot's primary bot does?
 
 ## Sources

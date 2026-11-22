@@ -6,7 +6,7 @@ Sessions run on Pi Durable, which saves every turn and tool call before anyone s
 
 ## Starting one
 
-The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. Run tonight, under the send button's chevron, holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
+The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. Schedule…, under the send button's chevron, starts it later or on a repeat instead ([schedules.md](./schedules.md)). The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
 
 ## The transcript
 

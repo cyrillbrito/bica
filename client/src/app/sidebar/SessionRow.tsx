@@ -7,8 +7,7 @@ import StatusDot, { StatusTag } from '../../sessions/StatusDot';
 import TitleInput from '../../sessions/TitleInput';
 import { createArrival } from '../../ui/arrive';
 import { contextMenu, MenuButton } from '../../ui/ContextMenu';
-import { MoonIcon, ParentIcon } from '../../ui/icons';
-import { Tag } from '../../ui/Tag';
+import { ParentIcon } from '../../ui/icons';
 import { age } from '../../ui/time';
 import { useSidebar } from './context';
 
@@ -89,21 +88,11 @@ export default function SessionRow(props: {
                   </span>
                 }
               >
-                <Show
-                  when={s().tonight}
-                  fallback={
-                    <StatusTag
-                      status={status()}
-                      since={s().runningSince}
-                      updatedAt={s().updatedAt}
-                    />
-                  }
-                >
-                  <Tag tone="accent" title="Held for tonight's run">
-                    <MoonIcon />
-                    Tonight
-                  </Tag>
-                </Show>
+                <StatusTag
+                  status={status()}
+                  since={s().runningSince}
+                  updatedAt={s().updatedAt}
+                />
               </Show>
             </a>
             <MenuButton

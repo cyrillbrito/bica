@@ -56,11 +56,6 @@ export async function submit(
 ) {
   const conversation = await getConversation(id);
   const meta = await sessionMeta(conversation.id);
-  // Its one prompt waits for tonight (docs/night-runs.md); a second would run now.
-  if (meta?.tonight)
-    throw new Error(
-      'This session is held for tonight: edit its prompt, or run it now',
-    );
   // Writing to it means it isn't done with, and an archived one hears no notes.
   if (from === 'user' && meta?.archivedAt)
     await editSession(conversation.id, (m) => {

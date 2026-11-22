@@ -11,7 +11,7 @@ During the call, the composer becomes the call panel: a level meter, what is bei
      ◀─speech──                     ◀── result ───             ◀─ reply ──
 ```
 
-GPT-Live is only the voice. It listens, talks, can be interrupted, and decides when something needs the agent. The session does the work with its own model and tools. Handoffs arrive as ordinary prompts, so everything stays in the transcript, and they act as typed ones: they bring an archived session back, a session held for tonight refuses them, and they end the agent's wait in `terminal_read`.
+GPT-Live is only the voice. It listens, talks, can be interrupted, and decides when something needs the agent. The session does the work with its own model and tools. Handoffs arrive as ordinary prompts, so everything stays in the transcript, and they act as typed ones: they bring an archived session back, and they end the agent's wait in `terminal_read`.
 
 - A handoff carries your own words: the voice is asked not to rephrase you, and Bica adds what was said in the call since the last handoff, leaving out your last line when the request already repeats it. The transcript shows those lines once, in the call.
 - Every handoff tells the agent that its reply will be spoken, so it leads with the answer in a sentence or two of plain speech, with no headings or bold labels. Since the voice answers some things by itself, the agent also sees the voice's lines, and corrects one that got something wrong.
@@ -43,7 +43,7 @@ What the voice is told at the start of a call comes from four places, in this or
 
 Each agent decides its own part:
 
-- Coding and Night: the voice is that session's agent. Its names are "Bica", the branch, and the project's file and folder names, such as "CommitBox".
+- Coding: the voice is that session's agent. Its names are "Bica", the branch, and the project's file and folder names, such as "CommitBox".
 - Bot: the voice is the [bot](./bots.md), with its name and the tone in its `SOUL.md`. It talks about all your work, so its names are "Bica", the bot's name, your projects, and your open sessions' titles, newest first.
 
 The call writes the names out so the voice hears and spells them right, and cuts the list at about 3,000 characters.

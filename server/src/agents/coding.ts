@@ -10,8 +10,7 @@ import {
   type VoiceInput,
 } from './common';
 
-// Coding: one task in one project, with every tool. The default agent, and
-// the base the night agent builds on.
+// Coding: one task in one project, with every tool. The default agent.
 
 const AFTER_WORK = `- After work, name the check in a few words ("types pass") and say only what the user must know: decisions you made, surprises, what's left. They read the diff in Bica, so don't list the changes.`;
 

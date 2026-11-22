@@ -5,7 +5,7 @@ session         /s/demo-shortcuts?data=demo       phone    light
 workspace       /p/bica?w=%2FUsers%2Faleksandra%2FRepos%2Fbica-shortcuts&data=demo  desktop  light
 workspace-diff  /p/bica?w=%2FUsers%2Faleksandra%2FRepos%2Fbica-shortcuts&d=src%2Fcomponents%2FSidebar.tsx&s=changes&data=demo  desktop  light
 child-session   /s/demo-terminals?data=demo       phone    light
-tonight         /s/demo-tonight?data=demo         phone    light
+schedules       /schedules?data=demo              phone    light
 bot             /b/bot-ada?data=demo              desktop  light
 session         /s/demo-shortcuts?data=demo       desktop  light
 sidebar         /s/demo-shortcuts?data=demo       phone    light  document.querySelector('[title^="Toggle sessions"]').click()

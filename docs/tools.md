@@ -6,6 +6,7 @@ The agent works through tools. Every call carries a short summary of what it is 
 - Web search and fetch go through Exa, once its key is set ([models.md](./models.md#providers)). Both take a list: search runs its queries in parallel, and fetch reads all its URLs in one Exa request. A fetch returns at most 50,000 characters of page text, split evenly between its URLs, and a page that fails shows its error without failing the others. Fetching a YouTube link returns the video's transcript, though Exa sometimes translates it to English and has no option for the original language.
 - Terminal tools share the workspace's terminals with you ([terminals.md](./terminals.md)).
 - The session tools start, read, message, stop, and watch other sessions ([orchestration.md](./orchestration.md#the-session-tools)).
+- `schedule` saves a prompt that fires later, once or on a repeat, back into the session or as a new session each run, and lists and deletes schedules ([schedules.md](./schedules.md)).
 - Composio's tools reach your connected apps, mostly from code mode, and calls that change something wait for your approval ([connectors.md](./connectors.md)).
 
 ## Code mode

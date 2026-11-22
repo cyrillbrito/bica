@@ -31,7 +31,6 @@ export function startSession(
   images: PromptImage[],
   choice?: ModelChoice,
   worktree?: boolean,
-  tonight?: boolean,
 ) {
   return request('session.create', {
     projectId,
@@ -41,17 +40,7 @@ export function startSession(
     requestId: requestId(),
     choice,
     worktree,
-    tonight,
   });
-}
-
-/** A session held for tonight: save its prompt, run it now, or cancel. */
-export function tonightAction(
-  id: string,
-  action: 'save' | 'run' | 'cancel',
-  prompt?: string,
-) {
-  return request('session.tonight', { id, action, prompt });
 }
 
 function archiveSession(id: string, archived = true) {

@@ -44,12 +44,13 @@ Any session can watch a session it doesn't lead, such as one you started or one 
 ## The session tools
 
 - `list` shows every project, workspace, session, and terminal. Agents are told to leave the rest alone unless you name it.
-- `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree, optionally held for the [night run](./night-runs.md). With `detached`, it has no parent.
+- `session_start` starts a child session with a prompt that stands on its own, in any workspace or a new worktree. With `detached`, it has no parent.
 - `session_read` returns a session's status, who leads it, the questions and approval cards it waits on, and its last messages.
 - `session_send` sends a message, signed with the sender's name, always as a steer: it joins the receiver's current run at its next step, or starts a run.
 - `session_stop` stops a session's run.
 - `session_archive` archives a finished session, and can remove its worktree when nothing would be lost. A session can archive itself only when you told it to. A running session, itself included, goes once its turn ends, after its last reply: a child session that reports done with `session_send` is still in that turn. A turn that ends with an error or a question keeps it open.
 - `session_watch` starts or stops a watch.
+- `schedule` makes a schedule whose runs come back to the session or start as its child sessions ([schedules.md](./schedules.md)).
 
 The tools name sessions by title, then id, and agents are told to name them to you by title alone.
 

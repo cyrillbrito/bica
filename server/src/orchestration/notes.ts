@@ -1,6 +1,7 @@
 import type { ConversationId } from '@earendil-works/pi-durable';
 
 import { archiveWithWorktree } from '../projects/worktrees';
+import { archiveIfQuiet } from '../schedules/schedules';
 import { tell } from '../sessions/notes';
 import {
   lastSender,
@@ -15,7 +16,8 @@ import { editSession, getConversation, parentOf } from '../sessions/store';
  * it (docs/orchestration.md). Subscribed to sessions/runs.ts at startup.
  */
 export function reportRunEnd(id: ConversationId) {
-  void runEnded(id)
+  void archiveIfQuiet(id)
+    .then(() => runEnded(id))
     .then(() => archiveIfAsked(id))
     .catch((error) => console.error('[note]', error));
 }

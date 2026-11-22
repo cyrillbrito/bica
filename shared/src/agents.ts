@@ -1,17 +1,12 @@
 // The agents a session can run as (docs/agents.md): what goes into it. This
 // is the half the browser needs; the rest of each one, its model, tools, and
 // instructions, is on the server, listed in server/src/agents/registry.ts.
-// Bica picks the agent itself: Night for tonight's runs, Bot for a bot's
-// session, and Coding for every other.
+// Bica picks the agent itself: Bot for a bot's session, and Coding for
+// every other.
 export const AGENTS = {
   coding: {
     label: 'Coding',
     description: 'Works on code with every tool',
-  },
-  night: {
-    label: 'Night',
-    description:
-      'Runs alone at night, without questions, and ends with a report',
   },
   bot: {
     label: 'Bot',

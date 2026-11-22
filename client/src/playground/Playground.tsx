@@ -39,7 +39,6 @@ import {
   CompactIcon,
   CopyIcon,
   FolderIcon,
-  MoonIcon,
   PencilIcon,
   PlusIcon,
   PushIcon,
@@ -364,11 +363,6 @@ function Labels() {
       </Row>
       <div class="rounded-tray bg-panel p-1">
         <Strip
-          tone="accent"
-          icon={<MoonIcon />}
-          label="Runs tonight at 01:00"
-        />
-        <Strip
           tone="danger"
           icon={<AlertIcon />}
           label="Stuck: its code is gone from Bica"
@@ -412,7 +406,7 @@ function Overlays() {
               label: 'Agent',
               options: [
                 { id: 'coding', label: 'Coding' },
-                { id: 'night', label: 'Night' },
+                { id: 'bot', label: 'Bot' },
               ],
             },
           ]}

@@ -4,12 +4,12 @@ import { installBundledSkills } from './agents/skills';
 import { serveBlob } from './git/blob';
 import { serveDownload } from './files/download';
 import { installAgents } from './agents/extensions';
-import { startNight } from './night-runs/night';
 import { reportRunEnd } from './orchestration/notes';
 import { onRunEnd, watchRuns } from './sessions/runs';
 import { startWorktreeCleanup } from './projects/cleanup';
 import { serveAttachment } from './sessions/attachments';
 import { startHousekeeping } from './sessions/housekeeping';
+import { startSchedules } from './schedules/schedules';
 import { upgrade, websocket } from './socket';
 
 // There is no login (docs/deploy.md), and a page on any website can point its
@@ -68,7 +68,7 @@ export function serve(
   );
   startHousekeeping();
   startWorktreeCleanup();
-  startNight();
+  startSchedules();
   // Opens the harness, which resumes runs a restart left unfinished, and
   // follows them at once: a parent hears when one ends, open tab or not.
   onRunEnd(reportRunEnd);

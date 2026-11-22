@@ -4,9 +4,8 @@ import { registry } from '../harness';
 import { coding } from './coding';
 import type { Agent } from './common';
 import { bot } from '../bots/agent';
-import { night } from '../night-runs/agent';
 
-const AGENTS: Record<AgentId, Agent> = { coding, night, bot };
+const AGENTS: Record<AgentId, Agent> = { coding, bot };
 
 export function getAgent(id: AgentId) {
   return AGENTS[id];

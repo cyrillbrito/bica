@@ -36,7 +36,7 @@ Composio hints what each tool does: reads, creates, updates, or deletes. Bica's 
 - A delete waits the same way, on a red card, without Always approve.
 - Writing to the session instead of answering leaves the card unanswered, and the call doesn't run.
 - A call from a code mode script that needs approval fails, telling the agent to make it as a tool call, since a script can't wait.
-- A [night run](./night-runs.md) has nobody to ask, so gated calls fail and the agent says what it would have done.
+- A [scheduled](./schedules.md) run waits on its card like any session: the prompt that fired it is not your yes.
 
 Hints are Composio's best guess. Always approve is the way out of a wrongly gated read. A write wrongly hinted as a read would run without asking.
 

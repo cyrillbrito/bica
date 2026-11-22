@@ -14,7 +14,7 @@ Ideas from Anthropic's [The components of agent memory](https://www.anthropic.co
 
 ## What Bica could do
 
-- A dreaming pass for each bot. It reads the transcripts since the last pass and the memory folder, then fixes notes the transcripts contradict, merges duplicates, deletes what went stale, and keeps `MEMORY.md` a short index. It could run as part of [housekeeping](../bots.md#housekeeping) or as a [night run](../night-runs.md), so it costs no attention during the day.
+- A dreaming pass for each bot. It reads the transcripts since the last pass and the memory folder, then fixes notes the transcripts contradict, merges duplicates, deletes what went stale, and keeps `MEMORY.md` a short index. It could run as part of [housekeeping](../bots.md#housekeeping) or as a [schedule](../schedules.md) that runs at night, so it costs no attention during the day.
 - Changes stay reviewable. The memory files are plain markdown, often in a Git repo or notes vault, so a pass ends with a diff the user can read, and its report says what it changed and why.
 - A bot dreams across sessions. It can read every session's transcript, so it could spot corrections the user keeps repeating and propose a line for `AGENTS.md` or a memory file, instead of each session learning it again.
 - Search over past transcripts as a tool. The post suggests transcript search as the base of memory, with notes on top. Pi Durable already stores every transcript in SQLite.
