@@ -1,3 +1,6 @@
+import { serveArtifact } from './artifacts/artifacts';
+import { serveFont, serveKit } from './artifacts/kit';
+import { installBundledSkills } from './agents/skills';
 import { serveBlob } from './git/blob';
 import { serveDownload } from './files/download';
 import { installAgents } from './agents/extensions';
@@ -47,12 +50,21 @@ export function serve(
         GET: (req) => (knownHost(req) ? serveBlob(req) : forbidden()),
       },
       '/attachment/:name': { GET: serveAttachment },
+      // Pages read the data folder, so they get the check; the kit is public.
+      '/artifact-page/:name': {
+        GET: (req) => (knownHost(req) ? serveArtifact(req) : forbidden()),
+      },
+      '/artifact-kit/kit.js': { GET: serveKit },
+      '/artifact-kit/fonts/:file': { GET: serveFont },
     },
     fetch: fallback,
     websocket,
   });
   // Before the harness opens: it finds the agents' extensions by name.
   installAgents();
+  void installBundledSkills().catch((error) =>
+    console.error('[skills]', error),
+  );
   startHousekeeping();
   startWorktreeCleanup();
   startNight();

@@ -4,6 +4,7 @@
 // and commands are held back while it's on, except reads it can answer
 // (step details, files and diffs). `?data=live` shows the switch with
 // real data. The mode is per tab and survives navigation and reloads.
+import { fixtureArtifacts } from './artifacts';
 import { createSignal, untrack } from 'solid-js';
 
 import type {
@@ -256,6 +257,8 @@ export function fixture(topic: Topic, params: unknown) {
     }
     case 'files':
       return { value: data.files?.[p.cwd!] ?? [] };
+    case 'artifacts':
+      return { value: cached(m, 'artifacts', () => fixtureArtifacts(m)) };
     // Terminal output isn't test data: an empty screen.
     case 'terminal':
       return { value: null };

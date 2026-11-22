@@ -5,14 +5,14 @@ The system prompt is built from named prompt sections that every [agent](./agent
 1. What Bica is and what this session does.
 2. The tools the session has, one line each, with their rules, such as git staying read-only unless asked. A session without a tool gets neither its line nor its rules.
 3. The connected apps and how to reach them ([connectors.md](./connectors.md)), then the declarations of the tools code mode scripts can call.
-4. Project instructions: your `~/.bica/AGENTS.md`, then the `AGENTS.md` or `CLAUDE.md` of each folder down to the workspace, then the memory index, the hub's project list, the skills, and the workspace's path.
+4. Project instructions: your `~/.bica/AGENTS.md`, then the `AGENTS.md` or `CLAUDE.md` of each folder down to the workspace, then the memory index, the hub's project list, the skills, a line on where [artifacts](./artifacts.md) live for agents with skills, and the workspace's path.
 5. Rules shared by kind: handoffs to child sessions, and keeping memory for long-lived sessions such as [assistant mode](./assistant-mode.md) and the [hub](./hub.md).
 6. The agent's own role, such as a [night run](./night-runs.md)'s rules to finish alone.
 7. How to reply, below.
 
 ## Skills
 
-Skills are Agent Skills folders, each with a `SKILL.md`. Only their names and descriptions go into the system prompt, and the agent reads a skill when it fits. Bica looks in the workspace's `.agents/skills`, `.claude/skills`, and `.bica/skills`, then the same folders in your home. On a name clash the workspace wins.
+Skills are Agent Skills folders, each with a `SKILL.md`. Only their names and descriptions go into the system prompt, and the agent reads a skill when it fits. Bica looks in the workspace's `.agents/skills`, `.claude/skills`, and `.bica/skills`, then the same folders in your home, then the skills Bica ships, such as `artifacts` ([artifacts.md](./artifacts.md)). On a name clash the workspace wins, and Bica's own lose to any other.
 
 This repo's own skills are installed with the [skills](https://skills.sh) CLI: `bunx skills add <owner/repo> -s <skill> -a pi`, and `bunx skills update -p` refreshes them.
 

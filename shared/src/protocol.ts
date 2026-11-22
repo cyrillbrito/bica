@@ -364,9 +364,35 @@ export type FileText =
  * A path from a chat message: in a workspace, relative to it; else absolute,
  * with a link that serves it when it is a file.
  */
+// `artifact`: the path is an artifact, by name, which opens in its viewer.
 export type FoundPath =
   | { workspace: WorkspaceRef; path: string; folder: boolean; url?: undefined }
-  | { workspace: null; path: string; folder: boolean; url?: string };
+  | {
+      workspace: null;
+      path: string;
+      folder: boolean;
+      url?: string;
+      artifact?: string;
+    };
+
+/** One artifact (docs/artifacts.md): an HTML page in the artifacts folder. */
+export interface ArtifactInfo {
+  // The file name without `.html`, which its URLs use.
+  name: string;
+  // The page's <title>, or the name.
+  title: string;
+  // ms.
+  updated: number;
+}
+
+export interface Artifacts {
+  // The artifacts folder on the dev machine.
+  folder: string;
+  // The themes the kit has, the default first.
+  themes: { id: string; label: string }[];
+  // Newest first.
+  list: ArtifactInfo[];
+}
 
 /** One limit of a plan: the 5-hour session, the week, or a spend cap. */
 export interface PlanWindow {
@@ -704,6 +730,7 @@ export interface Topics {
   // Every file path in the workspace, minus what git ignores.
   files: { params: WorkspaceRef; value: string[] };
   terminals: { params: Record<string, never>; value: TerminalInfo[] };
+  artifacts: { params: Record<string, never>; value: Artifacts };
   // null: no such terminal (closed, or the server restarted).
   terminal: { params: { id: string }; value: TerminalOutput | null };
 }

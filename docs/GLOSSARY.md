@@ -182,6 +182,18 @@ The words Bica uses for its concepts, one name per concept. Docs, code names, co
 
 **Kept file**: A file listed in the sidebar with Keep open, until you unpin it. _Avoid_: pinned file
 
+## Artifacts
+
+[artifacts.md](./artifacts.md)
+
+**Artifact**: A self-contained HTML page an agent builds as a report, one file in Bica's data folder, belonging to no project or session, as in Claude Code. _Avoid_: report (the kind of page, not the thing), canvas, page (alone), document
+
+**Kit**: The one script an artifact includes to get its theme, Tailwind, and ECharts from Bica. _Avoid_: runtime, SDK, framework
+
+**Artifact theme**: One of the kit's looks, such as Paper, with a light and a dark side and the same token names as the others. Not Bica's own light or dark, which Settings calls the theme. _Avoid_: skin, style, template
+
+**Export**: Downloading an artifact as one file with the kit inlined, which works offline. _Avoid_: bake, publish, share
+
 ## Terminals
 
 [terminals.md](./terminals.md)

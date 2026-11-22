@@ -28,6 +28,7 @@ import {
 } from './common';
 import { allAgents, extensionNames, getAgent } from './registry';
 import { skillsSection } from './skills';
+import { artifactsSection } from '../artifacts/artifacts';
 
 /** The text of section `key` for a session of `agent`, or nothing. */
 async function renderSection(
@@ -37,6 +38,8 @@ async function renderSection(
 ) {
   if (key === 'skills')
     return agent.skills ? skillsSection(input.cwd) : undefined;
+  // Building one takes the artifacts skill, so only agents with skills.
+  if (key === 'artifacts') return agent.skills ? artifactsSection() : undefined;
   // From isLongLived, so the prompt and housekeeping can't disagree.
   if (key === 'long_lived')
     return isLongLived(agent.id) ? LONG_LIVED : undefined;

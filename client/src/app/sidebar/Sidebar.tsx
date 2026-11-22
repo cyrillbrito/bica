@@ -27,6 +27,7 @@ import {
   CloseIcon,
   CommandIcon,
   HubIcon,
+  ArtifactIcon,
   InboxIcon,
   PlusIcon,
   RestoreIcon,
@@ -376,9 +377,23 @@ export default function Sidebar() {
               Nothing in play
             </div>
           </Show>
-          {/* Always here, so the hub is one tap away even before it exists. */}
           <a
             class="mt-2 flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
+            href={paths.artifacts()}
+            aria-current={
+              location.pathname.startsWith('/artifacts') ? 'page' : undefined
+            }
+            title="Report pages agents built"
+            onClick={closeDrawer}
+          >
+            <span class="text-muted">
+              <ArtifactIcon />
+            </span>
+            <span class="flex-1 truncate font-semibold">Artifacts</span>
+          </a>
+          {/* Always here, so the hub is one tap away even before it exists. */}
+          <a
+            class="flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
             href={paths.hub()}
             aria-current={
               location.pathname === paths.hub() ? 'page' : undefined

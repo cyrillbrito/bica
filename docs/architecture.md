@@ -47,6 +47,7 @@ Inside the client and the server, code is grouped by feature, and a feature has 
 - `files/` and `git/`: file and diff views, reading files, the file list, and kept files; status, staging, and commits ([files.md](./files.md), [git.md](./git.md)). Git's diffs read file contents through `server/src/files/files.ts`, so what counts as text, media, or too large is decided once.
 - `markdown/` (client): rendered Markdown for replies, notes, and file previews, with code highlighting, links to paths, and a streaming reply typing in ([sessions.md](./sessions.md#the-transcript)).
 - `connectors/`: connected apps through Composio, its tools, and approvals ([connectors.md](./connectors.md)).
+- `artifacts/`: the HTML report pages agents build, with the kit, its themes, and the artifacts skill on the server, and the list and viewer in the client ([artifacts.md](./artifacts.md)). The kit's own code runs in the artifact's page, so it is plain JavaScript the server serves as text.
 - `requests/` (client): the frame of the cards a session waits on you with, questions and approvals; the server answers them from `sessions/requests.ts` ([requests.md](./requests.md)).
 - `terminals/`, `voice/`, `hub/`, `night-runs/`, `context-usage/`: one feature each, with its doc. Hub and Night define their agents in their own folders.
 
@@ -83,6 +84,8 @@ Bica's data sits in the repo's `.data/`. The browser keeps small preferences per
 | Plan limits for the meters | `plan-usage.json` |
 | Composio's user and session ids | `composio.json` |
 | Images sent with prompts, by content hash: copies of what `harness.sqlite` holds | `attachments/` |
+| Artifacts, one HTML file each ([artifacts.md](./artifacts.md)) | `artifacts/` |
+| Skills that ship with Bica, written at each start | `bundled-skills/` |
 | Worktrees, branches, files | git and the disk |
 
 `server/src/storage.ts` is the one way to these files: it knows where `.data` is, keeps keys private, saves through a temporary file so a crash never leaves half a file, and refuses to overwrite a file it can't read. In `harness.sqlite`, each session has Pi Durable's documents (`pi.agent`, `pi.live`, `pi.inbox`, and more) and Bica's own, `bica.session`, with its title, project, archive, and what the features around it keep. Code reads and changes it through `sessionMeta` and `editSession` in `server/src/sessions/store.ts`.

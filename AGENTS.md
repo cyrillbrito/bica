@@ -66,6 +66,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - Opening pull requests, and comparing a worktree against its branch base.
 - Installing as an app on the phone.
 - A file watcher instead of polling.
+- Live data in artifacts, and clicks inside one that send a prompt.
 - A file mode in the command palette: `/` searches the workspace's files, and ⌘P opens straight into it.
 - A new look after BoardUI's design. Two branches on GitHub hold the trials: `boardui-solid-port-prototype` ports its free components to Solid 2 (`prototypes/boardui-solid/README.md` there), and `monorepo-react-client` mocks every screen in React with them.
 
@@ -100,6 +101,7 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [projects.md](docs/projects.md): projects, worktrees, chats, pull requests, the sidebar.
 - [layout.md](docs/layout.md): the sidebar, the centre, and the side panel on each screen size, and the side panel's tabs. Read before adding a side panel tab.
 - [files.md](docs/files.md): the workspace page, file and diff views, file lists.
+- [artifacts.md](docs/artifacts.md): the HTML report pages agents build, the kit with its themes and charts, the viewer, and export. Read before changing artifacts, the kit, or the artifacts skill.
 - [git.md](docs/git.md): the Git tab and commit messages.
 - [command-palette.md](docs/command-palette.md): ⌘K and every keyboard shortcut. Read before adding a shortcut.
 - [terminals.md](docs/terminals.md): shared shells and the agent's terminal tools.
@@ -116,6 +118,8 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 `docs/explorations/` holds research and plans for what isn't built. Read the matching one before building in its area, and delete or trim it once the feature's doc takes over. Write one only when the user asks for it.
 
 - [fast-loading.md](docs/explorations/fast-loading.md): opening, switching, and reconnecting faster on the phone.
+- [artifacts.md](docs/explorations/artifacts.md): live data in artifacts, and clicks inside one that send a prompt.
+- [rich-replies.md](docs/explorations/rich-replies.md): cards and forms in the middle of a reply.
 - [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies the assistant's and hub's memory files.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
 - [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.

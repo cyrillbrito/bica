@@ -55,6 +55,9 @@ export default defineConfig({
       '/download/': `http://127.0.0.1:${port + 1}`,
       '/blob/': `http://127.0.0.1:${port + 1}`,
       '/attachment/': `http://127.0.0.1:${port + 1}`,
+      // Artifacts and their kit (server/src/artifacts).
+      '/artifact-page/': `http://127.0.0.1:${port + 1}`,
+      '/artifact-kit/': `http://127.0.0.1:${port + 1}`,
     },
   },
   build: {

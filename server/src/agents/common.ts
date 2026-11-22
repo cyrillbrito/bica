@@ -24,6 +24,7 @@ export const TAIL_SECTIONS = [
   'memory',
   'projects',
   'skills',
+  'artifacts',
   'cwd',
   'handoffs',
   'long_lived',
@@ -85,9 +86,10 @@ export interface Agent {
   // Lists the skills found for its folder (skills.ts).
   skills: boolean;
   // Its instructions, by prompt section. A key it leaves out isn't rendered.
-  // Not `skills` or `long_lived`: the `skills` flag and isLongLived give those.
+  // Not `skills`, `artifacts`, or `long_lived`: the `skills` flag and
+  // isLongLived give those.
   sections: Partial<
-    Record<Exclude<SectionKey, 'skills' | 'long_lived'>, Section>
+    Record<Exclude<SectionKey, 'skills' | 'artifacts' | 'long_lived'>, Section>
   >;
 }
 

@@ -41,6 +41,18 @@ declare module "virtual:file-routes" {
       $$route?: undefined;
     },
     {
+      path: "/artifacts/:name";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/artifacts/[name]"), Extract<"default", keyof typeof import("./src/routes/artifacts/[name]")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/artifacts/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/artifacts/index"), Extract<"default", keyof typeof import("./src/routes/artifacts/index")>>>;
+      $$route?: undefined;
+    },
+    {
       path: "/hub";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/hub"), Extract<"default", keyof typeof import("./src/routes/hub")>>>;
@@ -162,6 +174,22 @@ declare module "virtual:file-routes" {
       id: "/settings";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/settings"), Extract<"default", keyof typeof import("./src/routes/settings")>>>;
+      $$route?: undefined;
+      children?: undefined;
+    },
+    {
+      path: "/artifacts/";
+      id: "/artifacts/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/artifacts/index"), Extract<"default", keyof typeof import("./src/routes/artifacts/index")>>>;
+      $$route?: undefined;
+      children?: undefined;
+    },
+    {
+      path: "/artifacts/:name";
+      id: "/artifacts/:name";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/artifacts/[name]"), Extract<"default", keyof typeof import("./src/routes/artifacts/[name]")>>>;
       $$route?: undefined;
       children?: undefined;
     }

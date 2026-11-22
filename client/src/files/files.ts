@@ -4,6 +4,7 @@ import { pageOf, paths } from '../router';
 import { fixtureKept, testing } from '../fixtures';
 import type { WorkspaceRef } from '@bica/shared/protocol';
 import { request, useTopic } from '../socket/socket';
+import { artifactHref } from '../artifacts/artifacts';
 
 /** What the main area shows: a file, or one side of a git change. */
 export type View = 'file' | 'staged' | 'changes';
@@ -42,7 +43,8 @@ export async function showPath(
   if (!found) return;
   const { workspace } = found;
   const page = pageOf(location);
-  if (workspace) {
+  if (!workspace && found.artifact) navigate(artifactHref(found.artifact));
+  else if (workspace) {
     const open: Open = { path: found.path, view: 'file' };
     if (found.folder) navigate(workspaceHref(workspace));
     else if (workspace.cwd === cwd) navigate(openHref(workspace, open));

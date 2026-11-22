@@ -16,6 +16,9 @@
     "@earendil-works/pi-codemode": "^1.5.2",
     "@earendil-works/pi-durable": "^1.5.2",
     "@earendil-works/pi-schema": "^1.5.2",
+    "@tailwindcss/browser": "^4.3.5",
+    "echarts": "^6.1.0",
+    "tailwindcss": "^4.3.5",
     "valibot": "^1.5.0"
   },
   "devDependencies": {

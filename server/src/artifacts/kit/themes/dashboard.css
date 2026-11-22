@@ -1,0 +1,68 @@
+/* Dashboard: bold and dense. A cool canvas, vivid chart colors, an indigo
+   accent, heavy headings, and a deep dark for screens left on. */
+@layer kit {
+  :root[data-theme='dashboard'] {
+    color-scheme: light;
+    --bg: #f1f3f7;
+    --surface: #ffffff;
+    --well: #0f172a0b;
+    --fg: #0f172a;
+    --muted: #5b6475;
+    --line: #0f172a1c;
+    --accent: #4f46e5;
+    --accent-fg: #ffffff;
+    --success: #059669;
+    --warn: #d97706;
+    --danger: #e11d48;
+    --info: #0284c7;
+    --chart-1: #4f46e5;
+    --chart-2: #06b6d4;
+    --chart-3: #f59e0b;
+    --chart-4: #10b981;
+    --chart-5: #ec4899;
+    --chart-6: #8b5cf6;
+    --text-font:
+      ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+      Arial, sans-serif;
+    --heading-font: var(--text-font);
+    --mono-font: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+    --heading-weight: 750;
+    --radius: 14px;
+  }
+  :root[data-theme='dashboard'][data-mode='dark'] {
+    color-scheme: dark;
+    --bg: #0b0e14;
+    --surface: #151a23;
+    --well: #ffffff0b;
+    --fg: #e6e9ef;
+    --muted: #8b93a7;
+    --line: #ffffff17;
+    --accent: #818cf8;
+    --accent-fg: #0b0e14;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --info: #38bdf8;
+    --chart-1: #818cf8;
+    --chart-2: #22d3ee;
+    --chart-3: #fbbf24;
+    --chart-4: #34d399;
+    --chart-5: #f472b6;
+    --chart-6: #a78bfa;
+  }
+  :root[data-theme='dashboard'] {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  :root[data-theme='dashboard'] body {
+    max-width: 80rem;
+  }
+  :root[data-theme='dashboard'] h1 {
+    letter-spacing: -0.03em;
+  }
+  :root[data-theme='dashboard'] th {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75em;
+  }
+}

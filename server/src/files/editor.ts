@@ -4,6 +4,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 import type { FoundPath, WorkspaceRef } from '@bica/shared/protocol';
 import { listProjects } from '../projects/projects';
+import { artifactName } from '../artifacts/artifacts';
 import { fileLink } from './download';
 import { inside, open } from '../projects/workspace';
 
@@ -45,6 +46,16 @@ export async function openPath(path: string, cwd?: string, reveal = false) {
 export async function findPath(path: string, cwd?: string): Promise<FoundPath> {
   const { file, info } = await locate(path, cwd);
   const folder = info.isDirectory();
+  // Before workspaces: in development the data folder sits in the repo.
+  const artifact = folder ? undefined : artifactName(file);
+  if (artifact)
+    return {
+      workspace: null,
+      path: file,
+      folder,
+      url: fileLink(file),
+      artifact,
+    };
   let found: FoundPath | undefined;
   for (const project of await listProjects())
     for (const w of project.workspaces)

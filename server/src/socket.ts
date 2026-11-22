@@ -89,6 +89,7 @@ import {
   watchStatus,
 } from './git/workspace';
 import { readText, watchFiles } from './files/files';
+import { watchArtifacts } from './artifacts/artifacts';
 
 type Sink = {
   snapshot: (value: unknown, kept?: number) => void;
@@ -267,6 +268,7 @@ const topics: {
   files: (params, sink) => watchFiles(ref(params), sink.snapshot),
   terminals: (_params, sink) => watchTerminals(sink.snapshot),
   terminal: ({ id }, sink) => watchTerminal(id, sink),
+  artifacts: (_params, sink) => watchArtifacts(sink.snapshot),
 };
 
 // Just the workspace: a call's other args stay out of caches keyed on it.
