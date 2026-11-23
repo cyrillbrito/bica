@@ -6,6 +6,7 @@ import {
 } from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { cx } from '@/utils/cx';
+import { panel } from './panel';
 import { SidePanel } from './SidePanel';
 import { useUi } from './ui';
 
@@ -37,7 +38,12 @@ export function Page({
   const ui = useUi();
   return (
     <>
-      <section className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-3xl bg-background-secondary-default">
+      <section
+        className={cx(
+          panel,
+          'relative flex h-full min-w-0 flex-1 flex-col overflow-hidden',
+        )}
+      >
         <header className="flex h-12 shrink-0 items-center gap-2 px-3 sm:px-4">
           <IconButton
             icon={RiMenuLine}
@@ -97,7 +103,7 @@ export function Page({
                 onClick={() => ui.setPanel(false)}
                 className="absolute inset-0 cursor-pointer bg-black/40"
               />
-              <div className="relative flex h-full w-[min(380px,calc(100vw-32px))] p-2 sm:p-3">
+              <div className="relative flex h-full w-[min(380px,calc(100vw-32px))] p-1.5">
                 <SidePanel
                   workspace={workspace}
                   drawer

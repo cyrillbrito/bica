@@ -71,7 +71,7 @@ function RowAction({
 
 export function BranchRow({ workspace }: { workspace: Workspace }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl bg-background-primary-default p-2 ps-3 shadow-xs">
+    <div className="flex items-center gap-2 rounded-2xl border border-separator-border p-2 ps-3">
       <RiGitBranchLine
         aria-hidden
         className="size-5 shrink-0 text-foreground-icon-secondary"
@@ -100,7 +100,7 @@ export function PullRequestCard({ workspace }: { workspace: Workspace }) {
   const pr = workspace.pr;
   if (!pr) return null;
   return (
-    <div className="flex flex-col gap-2 rounded-2xl bg-background-primary-default p-3 shadow-xs">
+    <div className="flex flex-col gap-2 rounded-2xl border border-separator-border p-3">
       <div className="flex items-center gap-2">
         <RiGitPullRequestLine
           aria-hidden

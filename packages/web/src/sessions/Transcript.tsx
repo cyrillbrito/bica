@@ -40,7 +40,7 @@ function seconds(ms: number) {
 /** BoardUI's user turn: a white card at the end of the line. */
 function Prompt({ text }: { text: string }) {
   return (
-    <p className="ms-auto w-fit max-w-[85%] rounded-2xl bg-background-primary-default px-3 py-[11px] text-body-regular break-words whitespace-pre-wrap text-text-primary shadow-card sm:max-w-[75%]">
+    <p className="ms-auto w-fit max-w-[85%] rounded-2xl bg-well px-3 py-[11px] text-body-regular break-words whitespace-pre-wrap text-text-primary shadow-card sm:max-w-[75%]">
       {text}
     </p>
   );
@@ -61,7 +61,7 @@ function ActionButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex size-7 cursor-pointer items-center justify-center rounded-md text-foreground-icon-tertiary transition-colors hover:bg-background-primary-default hover:text-foreground-icon-secondary focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:outline-none"
+      className="flex size-7 cursor-pointer items-center justify-center rounded-md text-foreground-icon-tertiary transition-colors hover:bg-well hover:text-foreground-icon-secondary focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:outline-none"
     >
       <I aria-hidden className="size-4" />
     </button>
@@ -103,7 +103,7 @@ function ToolRow({ tool, running }: { tool: Tool; running: boolean }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="group/tool flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-start hover:bg-background-primary-default"
+        className="group/tool flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-start hover:bg-well"
       >
         {running ? (
           <RiLoader4Line
@@ -152,7 +152,7 @@ function ToolRow({ tool, running }: { tool: Tool; running: boolean }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <pre className="ms-7 mt-1 mb-2 max-h-60 overflow-auto rounded-xl border border-border-button-default bg-background-primary-default p-2.5 font-mono text-[12.5px] leading-5 text-text-secondary">
+            <pre className="ms-7 mt-1 mb-2 max-h-60 overflow-auto rounded-xl border border-border-button-default bg-well p-2.5 font-mono text-[12.5px] leading-5 text-text-secondary">
               {tool.output.split('\n').map((line, i) => (
                 <div
                   key={i}
@@ -213,7 +213,7 @@ function Activity({
               <button
                 type="button"
                 onClick={() => setThoughtOpen(!thoughtOpen)}
-                className="flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-start hover:bg-background-primary-default"
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-start hover:bg-well"
               >
                 <RiBrainLine
                   aria-hidden
@@ -251,7 +251,7 @@ function AskCard({ ask }: { ask: Ask }) {
   const [choice, setChoice] = useState<string>('');
   const [sent, setSent] = useState(false);
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-card">
+    <div className="flex flex-col gap-3 rounded-3xl border border-border-button-default bg-panel p-4 shadow-card">
       <div className="flex items-start gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-status-yellow-background text-status-yellow-text">
           <RiQuestionLine aria-hidden className="size-4" />

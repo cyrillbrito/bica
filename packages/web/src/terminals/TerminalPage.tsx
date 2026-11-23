@@ -46,7 +46,7 @@ export function TerminalPage() {
       }
       bodyClassName="flex flex-col p-2 sm:p-3"
     >
-      <pre className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border-button-default bg-background-primary-default p-4 font-mono text-[13px] leading-5 text-text-primary shadow-xs">
+      <pre className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border-button-default bg-well p-4 font-mono text-[13px] leading-5 text-text-primary shadow-xs">
         {terminal.running
           ? TERMINAL_OUTPUT
           : `$ ${terminal.command}\n\n12 pass\n0 fail\n\n[exited with code 0]\n`}
@@ -57,7 +57,7 @@ export function TerminalPage() {
           <button
             key={k}
             type="button"
-            className="shrink-0 rounded-lg border border-border-button-default bg-background-primary-default px-3 py-1.5 font-mono text-body-2-medium text-text-primary shadow-xs"
+            className="shrink-0 rounded-lg border border-border-button-default bg-well px-3 py-1.5 font-mono text-body-2-medium text-text-primary shadow-xs"
           >
             {k}
           </button>

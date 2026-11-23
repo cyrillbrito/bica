@@ -37,7 +37,7 @@ function Frame() {
   }, [ui, navigate]);
 
   return (
-    <div className="relative flex h-dvh w-full gap-3 overflow-hidden bg-background-full p-2 sm:p-3">
+    <div className="relative flex h-dvh w-full gap-1.5 overflow-hidden bg-page p-1.5">
       <Sidebar collapsed={ui.sidebarCollapsed} className="hidden lg:flex" />
 
       {/* Below lg the sidebar rides in as a drawer, as in BoardUI's shell. */}
@@ -49,13 +49,13 @@ function Frame() {
             onClick={() => ui.setNav(false)}
             className="absolute inset-0 cursor-pointer bg-black/40"
           />
-          <div className="relative flex h-full max-w-[calc(100vw-48px)] p-2 sm:p-3">
+          <div className="relative flex h-full max-w-[calc(100vw-48px)] p-1.5">
             <Sidebar mobile className="flex" />
           </div>
         </div>
       )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 gap-3">
+      <div className="flex min-h-0 min-w-0 flex-1 gap-1.5">
         <Outlet />
       </div>
 

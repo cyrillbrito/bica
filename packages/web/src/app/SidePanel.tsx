@@ -19,6 +19,7 @@ import { CHANGES, TERMINALS } from '@/fixtures';
 import { FilesTab } from '@/files/FilesTab';
 import { GitTab } from '@/git/GitTab';
 import { cx } from '@/utils/cx';
+import { panel, rail } from './panel';
 import { useUi } from './ui';
 
 const iconButton =
@@ -77,18 +78,15 @@ export function SidePanel({
 
   if (collapsed && !drawer)
     return (
-      <aside
-        aria-label="Side panel"
-        className={cx(
-          'h-full w-[60px] shrink-0 flex-col items-center gap-2 py-1',
-          className,
-        )}
-      >
+      <aside aria-label="Side panel" className={cx(rail, className)}>
         <RailButton
           label="Expand side panel"
           onClick={() => ui.setPanelCollapsed(false)}
         >
-          <RiSideBarFill aria-hidden className="size-5 rtl:-scale-x-100" />
+          <RiSideBarFill
+            aria-hidden
+            className="size-5 -scale-x-100 rtl:scale-x-100"
+          />
         </RailButton>
         <div className="my-1 h-px w-6 bg-separator-border" />
         <RailButton label="Git" onClick={() => pick('git')}>
@@ -107,20 +105,25 @@ export function SidePanel({
     <aside
       aria-label="Side panel"
       className={cx(
+        panel,
         'h-full shrink-0 flex-col overflow-hidden',
-        drawer
-          ? 'rounded-3xl bg-background-secondary-default shadow-sidebar'
-          : 'w-[360px]',
+        !drawer && 'w-[340px]',
         className,
       )}
     >
-      <div
-        className={cx(
-          'flex h-12 shrink-0 items-center justify-between gap-2',
-          drawer ? 'px-3' : 'pe-1',
+      <div className="flex shrink-0 items-center gap-1 px-3 pt-3">
+        {!drawer && (
+          <button
+            type="button"
+            aria-label="Collapse side panel"
+            title="Collapse side panel ⌥⌘B"
+            onClick={() => ui.setPanelCollapsed(true)}
+            className={iconButton}
+          >
+            <RiSideBarFill aria-hidden className="size-5 rtl:-scale-x-100" />
+          </button>
         )}
-      >
-        <PillTabList>
+        <PillTabList className="min-w-0 flex-1">
           <PillTab
             icon={RiGitBranchLine}
             isSelected={tab === 'git'}
@@ -165,21 +168,11 @@ export function SidePanel({
               <RiExpandDiagonalLine aria-hidden className="size-5" />
             </Link>
           )}
-          {drawer ? (
+          {drawer && (
             <CloseButton
               aria-label="Close side panel"
               onClick={() => ui.setPanel(false)}
             />
-          ) : (
-            <button
-              type="button"
-              aria-label="Collapse side panel"
-              title="Collapse side panel ⌥⌘B"
-              onClick={() => ui.setPanelCollapsed(true)}
-              className={iconButton}
-            >
-              <RiSideBarFill aria-hidden className="size-5 rtl:-scale-x-100" />
-            </button>
           )}
         </div>
       </div>

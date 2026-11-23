@@ -14,8 +14,28 @@ body,
   height: 100%;
 }
 
+/* Three floating panels on a grey page. BoardUI's own shell puts grey cards
+   on white; light mode turns that around so the panels read as paper, and
+   dark mode keeps BoardUI's darker page under lighter cards. */
+@theme inline {
+  --color-page: var(--page);
+  --color-panel: var(--panel);
+  --color-well: var(--well);
+}
+/* A well is a filled block inside a panel: a prompt, a code block, a hover. */
+:root {
+  --page: var(--color-background-secondary-default);
+  --panel: var(--color-background-full);
+  --well: var(--color-background-secondary-default);
+}
+.dark {
+  --page: var(--color-background-full);
+  --panel: var(--color-background-secondary-default);
+  --well: var(--color-background-primary-default);
+}
+
 body {
-  background: var(--color-background-full);
+  background: var(--color-page);
 }
 
 /* Pierre's trees and diffs live in shadow roots and read these variables,
@@ -25,7 +45,7 @@ diffs-container {
   color-scheme: inherit;
 }
 .file-tree {
-  --trees-bg-override: var(--color-background-secondary-default);
+  --trees-bg-override: var(--color-panel);
   --trees-fg-override: var(--color-text-primary);
   --trees-fg-muted-override: var(--color-text-tertiary);
   --trees-selected-bg-override: var(--color-background-secondary-hover);
@@ -43,6 +63,6 @@ diffs-container {
   --diffs-font-family: var(--font-mono);
   --diffs-font-size: 13px;
   --diffs-line-height: 20px;
-  --diffs-light-bg: var(--color-background-primary-default);
-  --diffs-dark-bg: var(--color-background-primary-default);
+  --diffs-light-bg: var(--color-panel);
+  --diffs-dark-bg: var(--color-panel);
 }

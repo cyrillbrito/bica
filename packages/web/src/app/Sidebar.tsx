@@ -28,6 +28,7 @@ import {
 } from '@/fixtures';
 import { StatusIcon } from '@/sessions/StatusIcon';
 import { cx } from '@/utils/cx';
+import { panel, rail } from './panel';
 import { useUi } from './ui';
 
 type Icon = RemixiconComponentType;
@@ -371,13 +372,7 @@ function Rail({ path, className }: { path: string; className?: string }) {
   const ui = useUi();
   const sessions = SESSIONS.filter((s) => s.workspace !== 'hub');
   return (
-    <aside
-      aria-label="Sidebar"
-      className={cx(
-        'h-full w-[60px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-3xl border border-border-button-white bg-background-secondary-default px-[11px] py-3 shadow-sidebar',
-        className,
-      )}
-    >
+    <aside aria-label="Sidebar" className={cx(rail, className)}>
       <RailItem
         label="Expand sidebar"
         onClick={() => ui.setSidebarCollapsed(false)}
@@ -444,7 +439,8 @@ export function Sidebar({
     <aside
       aria-label="Sidebar"
       className={cx(
-        'flex h-full w-[280px] shrink-0 flex-col gap-3 overflow-hidden rounded-3xl border border-border-button-white bg-background-secondary-default p-3 shadow-sidebar',
+        panel,
+        'flex h-full w-[280px] shrink-0 flex-col gap-3 overflow-hidden p-3',
         className,
       )}
     >

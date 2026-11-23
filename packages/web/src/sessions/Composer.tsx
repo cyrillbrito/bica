@@ -68,7 +68,7 @@ function QueueTray({
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 6 }}
-          className="mx-3 flex flex-col gap-0.5 rounded-t-2xl border border-b-0 border-border-button-default bg-background-primary-default/70 p-1.5 backdrop-blur"
+          className="mx-3 flex flex-col gap-0.5 rounded-t-2xl border border-b-0 border-border-button-default bg-panel/70 p-1.5 backdrop-blur"
         >
           {queue.map((q) => (
             <li key={q.id}>
@@ -157,7 +157,9 @@ export function Composer({
           }}
           className={cx(
             'flex w-full flex-col gap-1 rounded-3xl p-2',
-            busy ? 'bg-transparent' : 'bg-background-primary-default shadow-xs',
+            busy
+              ? 'bg-transparent'
+              : 'border border-border-button-default bg-panel shadow-xs',
           )}
         >
           <label className="sr-only" htmlFor="composer">

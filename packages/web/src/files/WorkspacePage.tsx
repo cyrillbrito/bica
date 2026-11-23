@@ -73,7 +73,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-2 rounded-3xl bg-background-primary-default p-3 shadow-xs sm:p-4">
+    <section className="flex flex-col gap-2 rounded-3xl border border-separator-border p-3 sm:p-4">
       {title && (
         <h2 className="px-1 text-headline-medium text-text-primary">{title}</h2>
       )}
@@ -218,7 +218,7 @@ function FileView({
         />
         <IconButton icon={RiDownloadLine} size="small" aria-label="Download" />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto bg-background-primary-default">
+      <div className="min-h-0 flex-1 overflow-auto bg-panel">
         {diff ? (
           <MultiFileDiff
             className="code-view"
