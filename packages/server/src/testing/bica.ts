@@ -126,7 +126,7 @@ export async function startBica({ root }: { root?: string } = {}) {
       };
     },
     /** Opens a tab: a socket as the browser's, from Bica's own page. */
-    async connect(options: { origin?: string } = {}) {
+    async connect(options: { origin?: string; host?: string } = {}) {
       const tab = await connect(port, options);
       sockets.push(tab.socket);
       return tab;
@@ -151,10 +151,13 @@ export async function startBica({ root }: { root?: string } = {}) {
 /** Opens a tab on a Bica at `port`, such as one in another process. */
 export async function connect(
   port: number,
-  { origin = `http://127.0.0.1:${port}` }: { origin?: string } = {},
+  {
+    host = `127.0.0.1:${port}`,
+    origin = `http://${host}`,
+  }: { origin?: string; host?: string } = {},
 ) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
-    headers: { Origin: origin },
+    headers: { Origin: origin, Host: host },
   } as never);
   await new Promise((open, fail) => {
     ws.onopen = open;

@@ -1,25 +1,25 @@
-import type { Context } from '@earendil-works/chord';
+import type { Context } from '@earendil-works/chord/context';
 import {
   defineExtension,
   section,
   type Extension,
   type PromptInput,
 } from '@earendil-works/pi-durable';
-import { isLongLived } from '@bica/shared/agents';
 import { AskTool } from '../tools/ask';
 import { Codemode } from '../tools/codemode';
-import { CodingTools, HubFileTools } from '../tools/coding';
+import { CodingTools } from '../tools/coding';
 import { ToolSummary } from '../tools/summary';
 import { createWebTools } from '../tools/web';
 import { exaKey } from '../models/exa';
+import { Connectors } from '../connectors/tools';
 import { install } from '../harness';
 import { SessionDoc, agentIdOf } from '../sessions/session-doc';
-import { HubSessionTools, SessionTools } from '../orchestration/tools';
-import { HubTerminalTools, TerminalTools } from '../terminals/tools';
+import { SessionTools } from '../orchestration/tools';
+import { TerminalTools } from '../terminals/tools';
+import { getBot } from '../bots/store';
 import { coding } from './coding';
 import {
   HEAD_SECTIONS,
-  LONG_LIVED,
   TAIL_SECTIONS,
   type Agent,
   type SectionInput,
@@ -27,6 +27,7 @@ import {
 } from './common';
 import { allAgents, extensionNames, getAgent } from './registry';
 import { skillsSection } from './skills';
+import { artifactsSection } from '../artifacts/artifacts';
 
 /** The text of section `key` for a session of `agent`, or nothing. */
 async function renderSection(
@@ -36,9 +37,8 @@ async function renderSection(
 ) {
   if (key === 'skills')
     return agent.skills ? skillsSection(input.cwd) : undefined;
-  // From isLongLived, so the prompt and housekeeping can't disagree.
-  if (key === 'long_lived')
-    return isLongLived(agent.id) ? LONG_LIVED : undefined;
+  // Building one takes the artifacts skill, so only agents with skills.
+  if (key === 'artifacts') return agent.skills ? artifactsSection() : undefined;
   const render = agent.sections[key];
   return typeof render === 'function' ? render(input) : render;
 }
@@ -58,6 +58,7 @@ function on(key: SectionKey, options?: { tag: boolean }) {
         cwd: input.agent.cwd ?? '',
         memory: meta?.memory || undefined,
         projects: meta?.projects || undefined,
+        bot: getBot(meta?.bot),
       });
       return text ?? undefined;
     },
@@ -81,8 +82,8 @@ const BicaPrompt = defineExtension({
  * The rest, after the tools: the folder's files, the agent's role, and the
  * reply rules. Durable sends only the sections that changed, so AGENTS.md and
  * skill edits apply from the next request without breaking the prompt cache.
- * Memory and the hub's project list are copies kept in SessionDoc
- * (server/src/sessions/prompts.ts). The name predates the folder sections and
+ * A bot's memory and project list are copies kept in SessionDoc
+ * (Agent.copies). The name predates the folder sections and
  * stays, since sessions store their extension list.
  */
 const BicaContext = defineExtension({
@@ -99,10 +100,9 @@ const BY_NAME: Record<string, Extension> = {
   web: createWebTools(exaKey),
   'session-tools': SessionTools,
   ask: AskTool,
+  // Composio's tools read the key per call, like the web tools.
+  connectors: Connectors,
   codemode: Codemode,
-  'hub-file-tools': HubFileTools,
-  'hub-session-tools': HubSessionTools,
-  'hub-terminal-tools': HubTerminalTools,
   'bica-replies': BicaContext,
   'bica-tool-summary': ToolSummary,
 };

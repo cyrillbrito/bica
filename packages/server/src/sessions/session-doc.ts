@@ -37,6 +37,9 @@ export type SessionMeta = {
   // keeps the name so stored sessions read as they are. Unset: from before
   // the field, coding.
   profile?: string;
+  // Set only on a bot's own session, at creation: the bot's id
+  // (docs/bots.md).
+  bot?: string;
   // From before `parent`: started with `notify: false`, so it had none.
   quiet?: boolean;
   // Who sent the newest prompt: "user", "bica" for a note, or the id of a
@@ -48,16 +51,20 @@ export type SessionMeta = {
   // was called taking over, and stored so.
   handoffs?: InCharge[];
   voice?: VoiceSettings;
-  // The hubs that watch it (session_watch), which hear each run it ends.
+  // The bots' sessions that watch it (session_watch), which hear each run
+  // it ends.
   watchedBy?: string[];
-  // The memory index as the agent sees it (loadMemory), '' for none. Unset:
+  // A bot's memory index as it sees it (bots/copies.ts), '' for none. Unset:
   // taken again on the next prompt, as after a compaction.
   memory?: string;
-  // The project list for the hub, kept like `memory`.
+  // A bot's project list, kept like `memory`.
   projects?: string;
-  // The first prompt, held for tonight's run (docs/night-runs.md); '' or
-  // unset: none waiting.
-  tonight?: string;
+  // The connected apps line (server/src/connectors/apps.ts), kept like
+  // `memory`; '' without a Composio key.
+  apps?: string;
+  // The schedule that started it (docs/schedules.md): a reply of "Nothing
+  // new" archives it without a note.
+  schedule?: string;
   // Archived while it ran (session_archive), by itself or another session,
   // which waits for its run to end; `worktree`: remove its worktree too.
   archiveAfterRun?: { worktree: boolean };

@@ -2,6 +2,7 @@ import { Dynamic } from '@solidjs/web';
 import { For } from 'solid-js';
 // One module per icon: the `lucide` barrel ships every icon in dev.
 import Archive from 'lucide/dist/esm/icons/archive.mjs';
+import BotShape from 'lucide/dist/esm/icons/bot.mjs';
 import AudioLines from 'lucide/dist/esm/icons/audio-lines.mjs';
 import ArrowDown from 'lucide/dist/esm/icons/arrow-down.mjs';
 import ArrowUp from 'lucide/dist/esm/icons/arrow-up.mjs';
@@ -12,7 +13,7 @@ import ChevronsUpDown from 'lucide/dist/esm/icons/chevrons-up-down.mjs';
 import CornerDownLeft from 'lucide/dist/esm/icons/corner-down-left.mjs';
 import CornerLeftUp from 'lucide/dist/esm/icons/corner-left-up.mjs';
 import ChevronsUp from 'lucide/dist/esm/icons/chevrons-up.mjs';
-import CircleAlert from 'lucide/dist/esm/icons/circle-alert.mjs';
+import CircleAlert from 'lucide/dist/esm/icons/circle-exclamation-point.mjs';
 import Copy from 'lucide/dist/esm/icons/copy.mjs';
 import Diff from 'lucide/dist/esm/icons/diff.mjs';
 import Download from 'lucide/dist/esm/icons/download.mjs';
@@ -24,6 +25,7 @@ import FilePen from 'lucide/dist/esm/icons/file-pen.mjs';
 import FilePlus from 'lucide/dist/esm/icons/file-plus.mjs';
 import FileText from 'lucide/dist/esm/icons/file-text.mjs';
 import ChevronsDownUp from 'lucide/dist/esm/icons/chevrons-down-up.mjs';
+import FileChartColumn from 'lucide/dist/esm/icons/file-chart-column.mjs';
 import Folder from 'lucide/dist/esm/icons/folder.mjs';
 import GitBranch from 'lucide/dist/esm/icons/git-branch.mjs';
 import GitFork from 'lucide/dist/esm/icons/git-fork.mjs';
@@ -53,6 +55,8 @@ import MicOff from 'lucide/dist/esm/icons/mic-off.mjs';
 import Minus from 'lucide/dist/esm/icons/minus.mjs';
 import Monitor from 'lucide/dist/esm/icons/monitor.mjs';
 import Moon from 'lucide/dist/esm/icons/moon.mjs';
+import Clock from 'lucide/dist/esm/icons/clock.mjs';
+import Repeat from 'lucide/dist/esm/icons/repeat.mjs';
 import Inbox from 'lucide/dist/esm/icons/inbox.mjs';
 import PanelLeft from 'lucide/dist/esm/icons/panel-left.mjs';
 import Command from 'lucide/dist/esm/icons/command.mjs';
@@ -66,10 +70,11 @@ import RotateCcw from 'lucide/dist/esm/icons/rotate-ccw.mjs';
 import RefreshCw from 'lucide/dist/esm/icons/refresh-cw.mjs';
 import Hourglass from 'lucide/dist/esm/icons/hourglass.mjs';
 import Search from 'lucide/dist/esm/icons/search.mjs';
+import ShieldQuestion from 'lucide/dist/esm/icons/shield-question-mark.mjs';
+import TriangleAlert from 'lucide/dist/esm/icons/triangle-exclamation-point.mjs';
 import SlidersHorizontal from 'lucide/dist/esm/icons/sliders-horizontal.mjs';
 import Snowflake from 'lucide/dist/esm/icons/snowflake.mjs';
 import Sparkles from 'lucide/dist/esm/icons/sparkles.mjs';
-import InfinityShape from 'lucide/dist/esm/icons/infinity.mjs';
 import Square from 'lucide/dist/esm/icons/square.mjs';
 import SunMoon from 'lucide/dist/esm/icons/sun-moon.mjs';
 import Sun from 'lucide/dist/esm/icons/sun.mjs';
@@ -80,7 +85,6 @@ import Eye from 'lucide/dist/esm/icons/eye.mjs';
 import Unlink from 'lucide/dist/esm/icons/unlink.mjs';
 import Trash from 'lucide/dist/esm/icons/trash.mjs';
 import Undo2 from 'lucide/dist/esm/icons/undo-2.mjs';
-import Waypoints from 'lucide/dist/esm/icons/waypoints.mjs';
 import Wrench from 'lucide/dist/esm/icons/wrench.mjs';
 import X from 'lucide/dist/esm/icons/x.mjs';
 
@@ -156,6 +160,9 @@ export const PullRequestClosedIcon = icon(GitPullRequestClosed);
 export const MergedIcon = icon(GitMerge);
 export const InfoIcon = icon(Info);
 export const AlertIcon = icon(CircleAlert);
+/** A call to a connected app waiting for a yes, and one that deletes. */
+export const ApprovalIcon = icon(ShieldQuestion);
+export const WarningIcon = icon(TriangleAlert);
 export const CompactIcon = icon(ChevronsDownUp);
 export const PruneIcon = icon(Eraser);
 /** Voice calls. */
@@ -167,8 +174,8 @@ export const ReadIcon = icon(MailOpen);
 export const MicOffIcon = icon(MicOff);
 /** Written by a model. */
 export const SparkleIcon = icon(Sparkles);
-export const AssistantIcon = icon(InfinityShape);
-export const HubIcon = icon(Waypoints);
+export const BotIcon = icon(BotShape);
+export const ArtifactIcon = icon(FileChartColumn);
 
 // Transcript steps.
 export const TerminalIcon = icon(SquareTerminal);
@@ -235,6 +242,8 @@ export const EnterIcon = icon(CornerDownLeft);
 export const InboxIcon = icon(Inbox);
 export const SunIcon = icon(Sun);
 export const MoonIcon = icon(Moon);
+export const ClockIcon = icon(Clock);
+export const RepeatIcon = icon(Repeat);
 export const SystemThemeIcon = icon(Monitor);
 
 // Review: filtering changes, dropping files.

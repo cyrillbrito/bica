@@ -4,6 +4,8 @@
 // and commands are held back while it's on, except reads it can answer
 // (step details, files and diffs). `?data=live` shows the switch with
 // real data. The mode is per tab and survives navigation and reloads.
+import { fixtureArtifacts } from './artifacts';
+import { fixtureSchedules } from './schedules';
 import { createSignal, untrack } from 'solid-js';
 
 import type {
@@ -15,6 +17,7 @@ import type {
 } from '@bica/shared/protocol';
 import { chat, type Chat, type Turn } from './conversation';
 import { MODES, datasets, type Dataset, type Mode } from './data';
+import { fixtureConnectors, fixtureToolkits } from './connectors';
 import { fixtureDiff, gitFixtures } from './git';
 import {
   fixtureAccounts,
@@ -221,12 +224,18 @@ export function fixture(topic: Topic, params: unknown) {
       return { value: cached(m, 'accounts', () => fixtureAccounts(worst)) };
     if (topic === 'plan.usage')
       return { value: cached(m, 'plan', () => fixturePlanUsage(worst)) };
+    if (topic === 'connectors')
+      return {
+        value: cached(m, 'connectors', () => fixtureConnectors(worst)),
+      };
   }
   switch (topic) {
     case 'sessions':
       return { value: m === 'demo' ? story(data.sessions) : data.sessions };
     case 'projects':
       return { value: data.projects };
+    case 'bots':
+      return { value: data.bots };
     case 'terminals':
       return { value: data.terminals };
     case 'conversation': {
@@ -251,6 +260,10 @@ export function fixture(topic: Topic, params: unknown) {
     }
     case 'files':
       return { value: data.files?.[p.cwd!] ?? [] };
+    case 'artifacts':
+      return { value: cached(m, 'artifacts', () => fixtureArtifacts(m)) };
+    case 'schedules':
+      return { value: cached(m, 'schedules', () => fixtureSchedules(m)) };
     // Terminal output isn't test data: an empty screen.
     case 'terminal':
       return { value: null };
@@ -318,6 +331,10 @@ export function testAnswer<C extends Call>(
         ? talk?.prune
         : undefined;
   if (play) return play().then(() => null as never);
+  if (call === 'connector.toolkits' && (m === 'demo' || m === 'worst'))
+    return Promise.resolve(
+      fixtureToolkits((args as { search: string }).search) as never,
+    );
   const answer =
     call === 'session.detail'
       ? talk

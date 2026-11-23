@@ -1,0 +1,31 @@
+---
+title: 'Schedules'
+description: 'Reminders and routines: a prompt that runs later, once or on a repeat.'
+sidebar:
+  order: 4
+---
+
+A schedule is a prompt that runs later, once or on a repeat. Use it for a reminder ("remind me Friday to pay rent"), a check later ("in an hour, see whether CI passed"), or a routine ("every weekday at 8, check my inbox and calendar").
+
+## Ask for one
+
+Tell any session, a [bot](/docs/features/bots/), or a voice call what you want and when. The agent saves the schedule and says when it runs. If you give a day but no time, it picks one and tells you.
+
+On the start screen, open the chevron next to the send button and pick Schedule…. Choose Once with a date and time, or Repeat: weekdays, every day, every week, or a cron expression. Each run starts a new session in the project shown below the composer.
+
+## Where it runs
+
+A schedule either comes back to the session that set it, or starts a new session each time.
+
+- Coming back suits reminders. The prompt arrives in that conversation with all its context, and the agent says it, out loud if you're on a call with it.
+- A new session suits routines. It works on its own and ends with a short report, which the session that set it hears, the way it hears any session it [started](/docs/features/orchestration/). If a run finds nothing worth telling you, it replies "Nothing new" and goes straight to the archive, so a quiet morning stays quiet.
+
+A run still asks before it sends an email or changes anything in your [connected apps](/docs/features/connected-apps/).
+
+## See and delete them
+
+Schedules, near the top of the sidebar, lists every schedule with when it runs next and where it goes. Delete removes one. To change one, delete it and ask again. A one-off leaves the list after it runs.
+
+## When your computer sleeps
+
+Times are your computer's. Bica fires schedules on its own, with no browser open, but a sleeping computer runs nothing. A schedule that came due while Bica was off runs once it's back, and says when it was due. For a reminder that has to reach you no matter what, ask the agent to add it to Google Calendar as well.

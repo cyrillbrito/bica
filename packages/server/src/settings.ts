@@ -1,6 +1,3 @@
-import { homedir } from 'node:os';
-import { isAbsolute } from 'node:path';
-
 import type {
   ModelChoice,
   ModelRef,
@@ -46,9 +43,6 @@ export function settings(): Settings {
     // minutes are rare, but each one rewrites the whole context.
     longCache: saved.longCache ?? true,
     stageOnView: saved.stageOnView ?? false,
-    hubFolder: saved.hubFolder ?? null,
-    hubModel: saved.hubModel ?? null,
-    nightStart: saved.nightStart ?? '01:00',
     fromEnv: {
       model: !saved.model,
       fastModel: saved.fastModel === undefined && !!env.PI_FAST_MODEL,
@@ -79,22 +73,6 @@ export async function updateSettings(change: SettingsChange) {
     if (change.longCache !== undefined) next.longCache = !!change.longCache;
     if (change.stageOnView !== undefined)
       next.stageOnView = !!change.stageOnView;
-    if (change.hubFolder !== undefined) {
-      const path = (change.hubFolder ?? '')
-        .trim()
-        .replace(/^~(?=\/|$)/, homedir())
-        .replace(/(.)\/+$/, '$1');
-      if (path && !isAbsolute(path))
-        throw new Error('The hub folder needs an absolute path');
-      next.hubFolder = path || null;
-    }
-    if (change.hubModel !== undefined)
-      next.hubModel = change.hubModel && (await checkChoice(change.hubModel));
-    if (change.nightStart !== undefined) {
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(change.nightStart))
-        throw new Error('Pick a time like 01:00');
-      next.nightStart = change.nightStart;
-    }
   });
   await feed.refresh();
 }

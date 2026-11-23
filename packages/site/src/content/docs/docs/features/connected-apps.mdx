@@ -1,0 +1,45 @@
+---
+title: 'Connected apps'
+description: 'Let the agent read and act on Gmail, Slack, GitHub, and your other apps, with your yes before it changes anything.'
+sidebar:
+  order: 4
+---
+
+Connected apps let the agent work with your own apps: read your mail, look up a GitHub issue, check your last Strava run, or post to Slack when you ask. [Composio](https://composio.dev) handles the sign-ins and keeps the tokens, so Bica never stores them.
+
+## Set it up
+
+1. Make a free developer project on [Composio's platform](https://platform.composio.dev) and copy its API key from the project's Settings → API Keys. It starts with `ak_`.
+2. In Bica, open Settings → Connected apps, paste the key, and press Save. Bica checks it with Composio before saving it.
+3. Press Connect app, search for the app, and sign in on the page that opens. The row shows Connected once you're done.
+
+Remove key takes the key away and turns connected apps off, without disconnecting anything in Composio. Disconnect on an app's row removes the app and revokes Bica's access. When the agent needs an app you haven't connected, it sends you a sign-in link in the chat instead.
+
+To use two accounts of one app, such as a personal and a work Gmail, press Connect app again and sign in with the other one. Each row shows the address or name it signed in as. The agent sees every account, picks the one you name, asks when it isn't clear, and the approval card shows which account an action runs on.
+
+Apps you connected in Composio's own apps, such as Composio Connect for Claude, don't show up here. Composio keeps each project's connections apart.
+
+## What the agent knows
+
+A new session is told which apps are connected, so it knows what it can reach without asking. An app you connect during a session shows up for it after its next [compaction](/docs/features/context/), and in new sessions right away.
+
+Every session uses them, [bots](/docs/features/bots/) and [schedules](/docs/features/schedules/) included.
+
+## Nothing changes without your yes
+
+Reading runs on its own. Anything that sends, posts, creates, or edits waits for you: the agent stops, a card shows in the chat with the app, the action, and what it would send, and the session shows Waiting for you. Nothing runs while it waits, and nothing times out, so you can answer hours later from another device, even after Bica restarts. Once answered, the card folds into one row with what you chose.
+
+- Approve runs it once, and the agent carries on with the result.
+- Always approve stops asking for that action in that app.
+- Deny tells the agent no, and it doesn't try another way.
+
+A delete shows a red card and never offers Always approve. Typing a message instead leaves the card unanswered, and the action doesn't run. A [scheduled](/docs/features/schedules/) run waits on its card too, since a prompt that fired on its own isn't your yes.
+
+The agent is told to prefer what can be undone: trash over a permanent delete, a draft over a send. It's also told to send only when you said what to send and to whom. "Handle my inbox" is not an ask for it to reply to anyone.
+
+Composio decides which actions count as changes, and it can get one wrong. If an action that only reads keeps asking, Always approve settles it.
+
+## Next
+
+- [Settings](/docs/setup/settings/): the other cards.
+- [The agent's tools](/docs/features/tools/): what else the agent can do.

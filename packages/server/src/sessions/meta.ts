@@ -1,6 +1,6 @@
 import type { ConversationId } from '@earendil-works/pi-durable';
 
-import type { PickableAgent } from '@bica/shared/agents';
+import type { AgentId } from '@bica/shared/agents';
 import type {
   PullRequest,
   VoiceSettings,
@@ -23,7 +23,7 @@ import {
  * Switches the agent a session runs as: its tools now, its instructions with
  * the next prompt. Both are part of the prompt cache, so it is rebuilt once.
  */
-export async function setAgent(id: string, agent: PickableAgent) {
+export async function setAgent(id: string, agent: AgentId) {
   const conversation = await getConversation(id);
   await editSession(conversation.id, (meta) => void (meta.profile = agent));
   await conversation.configure(
@@ -87,6 +87,7 @@ export async function retireSessions(
       delete meta.watchedBy;
     });
   await releaseChildren(here.map((s) => s.id));
+  await releaseWatches(here.map((s) => s.id));
 }
 
 /**
@@ -94,7 +95,7 @@ export async function retireSessions(
  * Detach: an archived parent hears nothing, so no one would lead them. It
  * isn't told, since a note would wake it.
  */
-async function releaseChildren(parents: string[]) {
+export async function releaseChildren(parents: string[]) {
   for (const s of await listSessions())
     if (s.parent && parents.includes(s.parent) && !s.archivedAt)
       await editSession(Number(s.id) as ConversationId, (meta) => {
@@ -103,6 +104,22 @@ async function releaseChildren(parents: string[]) {
           ...(meta.handoffs ?? []),
           { at: Date.now(), to: 'you' },
         ];
+      });
+}
+
+/**
+ * Archived `watchers` hear nothing, so they leave every watchedBy, and a
+ * "Watched by" strip never names one.
+ */
+async function releaseWatches(watchers: string[]) {
+  for (const s of await listSessions())
+    if (s.watchedBy.some((w) => watchers.includes(w)))
+      await editSession(Number(s.id) as ConversationId, (meta) => {
+        const rest = (meta.watchedBy ?? []).filter(
+          (w) => !watchers.includes(w),
+        );
+        if (rest.length) meta.watchedBy = rest;
+        else delete meta.watchedBy;
       });
 }
 
@@ -131,6 +148,7 @@ export async function archive(
       .map((t) => removeTerminal(t.id)),
   );
   await releaseChildren([id]);
+  await releaseWatches([id]);
   return emptiedWorktree(id);
 }
 

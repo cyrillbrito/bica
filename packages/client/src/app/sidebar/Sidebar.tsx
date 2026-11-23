@@ -13,8 +13,9 @@ import {
   whereOf,
 } from '../../projects/projects';
 import { paths } from '../../router';
-import { useHub, useSessions } from '../../sessions/sessions';
-import StatusDot from '../../sessions/StatusDot';
+import BotRows, { groupsByBot } from '../../bots/BotRows';
+import { useBots } from '../../bots/bots';
+import { useSessions } from '../../sessions/sessions';
 import { useTerminals } from '../../terminals/terminals';
 import { useBadge, useChimes } from '../../sessions/alerts';
 import { IconButton } from '../../ui/Button';
@@ -26,7 +27,8 @@ import {
   ChevronsUpDownIcon,
   CloseIcon,
   CommandIcon,
-  HubIcon,
+  ArtifactIcon,
+  ClockIcon,
   InboxIcon,
   PlusIcon,
   RestoreIcon,
@@ -74,14 +76,12 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [renaming, setRenaming] = createSignal<string>();
-  // Listed on its own at the top, not under a project.
-  const hub = useHub();
+  const bots = useBots();
 
+  // A bot's own session is its row on top, not a session row.
   const groups = createMemo(
     () => {
-      const list = sessions().filter(
-        (s) => !s.archivedAt && s.id !== hub()?.id,
-      );
+      const list = sessions().filter((s) => !s.archivedAt && !s.bot);
       return workspaceGroups(projects(), terminals(), kept(), list);
     },
     { name: 'sidebarGroups' },
@@ -89,14 +89,17 @@ export default function Sidebar() {
 
   // Workspaces with nothing open (often a PR waiting on review) shrink to one
   // line in Parked, so the list above is only what's in progress.
+  // Bot workspaces list under their bots, so they never park.
   const isParked = (g: Group) =>
     !g.pinned && !g.sessions.length && !g.terminals.length && !g.files.length;
-  const active = createMemo(() => groups().filter((g) => !isParked(g)), {
-    name: 'activeGroups',
-  });
-  const parked = createMemo(() => groups().filter(isParked), {
-    name: 'parkedGroups',
-  });
+  const active = createMemo(
+    () => groups().filter((g) => !g.bot && !isParked(g)),
+    { name: 'activeGroups' },
+  );
+  const parked = createMemo(
+    () => groups().filter((g) => !g.bot && isParked(g)),
+    { name: 'parkedGroups' },
+  );
   // The open session is being read; the server catches up a moment later.
   const isOpen = (s: SessionSummary) => location.pathname === paths.s(s.id)();
   const statusOf = (s: SessionSummary) =>
@@ -119,7 +122,7 @@ export default function Sidebar() {
     name: 'sidebarPeek',
   });
   const live = createMemo(
-    () => sessions().filter((s) => !s.archivedAt && s.id !== hub()?.id),
+    () => sessions().filter((s) => !s.archivedAt && !s.bot),
     {
       name: 'liveSessions',
     },
@@ -127,22 +130,24 @@ export default function Sidebar() {
   const count = (f: Filter) => live().filter((s) => inFilter(f, s)).length;
   // A filter keeps only matching sessions, plus the open one, so the row
   // you are reading doesn't vanish under you once it's marked read.
-  const sections = createMemo(
-    () => {
-      const f = filter();
-      if (f === 'all') return bySection(active());
-      return bySection(
-        active()
-          .map((g) => ({
-            ...g,
-            terminals: [],
-            files: [],
-            sessions: g.sessions.filter((s) => isOpen(s) || inFilter(f, s)),
-          }))
-          .filter((g) => g.sessions.length),
-      );
-    },
-    { name: 'sidebarSections' },
+  const filtered = (list: Group[]) => {
+    const f = filter();
+    if (f === 'all') return list;
+    return list
+      .map((g) => ({
+        ...g,
+        terminals: [],
+        files: [],
+        sessions: g.sessions.filter((s) => isOpen(s) || inFilter(f, s)),
+      }))
+      .filter((g) => g.sessions.length);
+  };
+  const sections = createMemo(() => bySection(filtered(active())), {
+    name: 'sidebarSections',
+  });
+  const botGroups = createMemo(
+    () => groupsByBot(bots(), filtered(groups().filter((g) => g.bot))),
+    { name: 'botGroups' },
   );
   // A dropped project's new order of projects, until the server has it.
   const [savingOrder, setSavingOrder] = createSignal<string[] | undefined>(
@@ -224,7 +229,9 @@ export default function Sidebar() {
     rowOrder: (archivedRows) =>
       archivedRows
         ? archived()
-        : sections().flatMap((s) => s.groups.flatMap((g) => g.sessions)),
+        : [...botGroups(), ...sections()].flatMap((s) =>
+            s.groups.flatMap((g) => g.sessions),
+          ),
   });
   const menus = createSidebarMenus({ rename: setRenaming });
 
@@ -257,7 +264,8 @@ export default function Sidebar() {
       [
         filter(),
         archivedOpen(),
-        ...ordered().flatMap((s) =>
+        ...botGroups().map((b) => b.bot.id),
+        ...[...botGroups(), ...ordered()].flatMap((s) =>
           s.groups.flatMap((g) => [
             g.key,
             ...g.terminals.map((t) => t.id),
@@ -368,7 +376,13 @@ export default function Sidebar() {
               Add a project to start
             </button>
           </Show>
-          <Show when={filter() !== 'all' && !sections().length}>
+          <Show
+            when={
+              filter() !== 'all' &&
+              !sections().length &&
+              botGroups().every((b) => !b.groups.length)
+            }
+          >
             <div class="appear flex flex-col items-center gap-2 px-4 pt-10 text-center text-muted">
               <span class="grid size-9 place-items-center rounded-full bg-hover">
                 <InboxIcon />
@@ -376,24 +390,38 @@ export default function Sidebar() {
               Nothing in play
             </div>
           </Show>
-          {/* Always here, so the hub is one tap away even before it exists. */}
           <a
             class="mt-2 flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
-            href={paths.hub()}
+            href={paths.artifacts()}
             aria-current={
-              location.pathname === paths.hub() ? 'page' : undefined
+              location.pathname.startsWith('/artifacts') ? 'page' : undefined
             }
-            title="The hub: one session that coordinates the others"
+            title="Report pages agents built"
             onClick={closeDrawer}
           >
             <span class="text-muted">
-              <HubIcon />
+              <ArtifactIcon />
             </span>
-            <span class="flex-1 truncate font-semibold">Hub</span>
-            <Show when={hub()}>
-              {(h) => <StatusDot status={statusOf(h())} />}
-            </Show>
+            <span class="flex-1 truncate font-semibold">Artifacts</span>
           </a>
+          <a
+            class="flex items-center gap-2 rounded-md px-2 py-[3px] transition-colors hover:bg-hover aria-[current=page]:bg-active touch:py-3"
+            href={paths.schedules()}
+            aria-current={
+              location.pathname.startsWith('/schedules') ? 'page' : undefined
+            }
+            title="Reminders and routines that run later"
+            onClick={closeDrawer}
+          >
+            <span class="text-muted">
+              <ClockIcon />
+            </span>
+            <span class="flex-1 truncate font-semibold">Schedules</span>
+          </a>
+          <BotRows
+            groups={botGroups().flatMap((b) => b.groups)}
+            filtered={filter() !== 'all'}
+          />
           <For each={ordered()} keyed={(s) => s.key}>
             {(s) => (
               <section

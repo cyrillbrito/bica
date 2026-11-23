@@ -18,7 +18,7 @@ Calls and dictation sign in to your ChatGPT plan the way OpenAI's Codex app does
 
 With nothing typed, the send button becomes a sound-wave button: press it to start a call. On the start screen, that starts a new session with the call on it. While the agent works, the call button sits next to stop.
 
-During a call the composer becomes the call panel, with a level meter, live captions, the model picker, mute, and a red End call button.
+During a call the composer becomes the call panel, with a level meter, a live caption of what you say, the model picker, mute, and a red End call button. The voice's replies appear in the conversation as it speaks them.
 
 ## The voice talks, the session works
 
@@ -40,6 +40,9 @@ Each handoff arrives as an ordinary prompt, so the whole call stays in the trans
 ![A session started from a call: the call's lines from You and Voice, the request passed on, then the agent's work](../../../../assets/screens/voice-desktop-light.png)
 
 - The voice passes on your own words without rephrasing them.
+- The agent knows its reply will be spoken, so it answers in a sentence or two first.
+- The voice speaks as the agent. On a [bot](/docs/features/bots/)'s session it uses the bot's name and the tone in its `SOUL.md`.
+- It knows the names you are likely to say, so it hears them right: Bica, the project's files, or, on a bot's session, your projects and session titles.
 - Speaking while the agent works joins the run at once, so "no, the other branch" lands before the wrong thing is done.
 - "How's it going" gets the latest progress, and "stop" stops the run. Long runs never time out.
 - The photo button adds photos, or opens the camera on a phone. They go with your next request: take a picture, then ask "what's wrong with this?".

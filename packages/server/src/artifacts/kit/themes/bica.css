@@ -1,0 +1,52 @@
+/* Bica: the app's own look. Warm greys on hue 80, a copper accent, and a
+   dimmed dark, the same values as client/src/App.css. */
+@layer kit {
+  :root[data-theme='bica'] {
+    color-scheme: light;
+    --bg: #fcfaf6;
+    --surface: #ffffff;
+    --well: #201c180a;
+    --fg: #201c18;
+    --muted: #6e6860;
+    --line: #201c181f;
+    --accent: #ba5702;
+    --accent-fg: #ffffff;
+    --success: #25984d;
+    --warn: #b7820f;
+    --danger: #d03833;
+    --info: #0969da;
+    --chart-1: #ba5702;
+    --chart-2: #2b7f8e;
+    --chart-3: #7a5bc4;
+    --chart-4: #3d8f4f;
+    --chart-5: #c79a1e;
+    --chart-6: #c2473f;
+    --text-font:
+      'Atkinson Hyperlegible Next', ui-sans-serif, system-ui, sans-serif;
+    --heading-font: var(--text-font);
+    --mono-font: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+    --heading-weight: 650;
+    --radius: 10px;
+  }
+  :root[data-theme='bica'][data-mode='dark'] {
+    color-scheme: dark;
+    --bg: #1c1c20;
+    --surface: #2a2a2f;
+    --well: #ffffff0a;
+    --fg: #e4e4e8;
+    --muted: #96969f;
+    --line: #ffffff1a;
+    --accent: #fb923c;
+    --accent-fg: #1c1c20;
+    --success: #4ade80;
+    --warn: #facc15;
+    --danger: #f87171;
+    --info: #58a6ff;
+    --chart-1: #fb923c;
+    --chart-2: #5eb8c8;
+    --chart-3: #a78bfa;
+    --chart-4: #6fcf7f;
+    --chart-5: #f2c94c;
+    --chart-6: #f47c74;
+  }
+}

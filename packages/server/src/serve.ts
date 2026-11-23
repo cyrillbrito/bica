@@ -1,12 +1,32 @@
+import { serveArtifact } from './artifacts/artifacts';
+import { serveFont, serveKit } from './artifacts/kit';
+import { installBundledSkills } from './agents/skills';
 import { serveBlob } from './git/blob';
 import { serveDownload } from './files/download';
 import { installAgents } from './agents/extensions';
-import { startNight } from './night-runs/night';
-import { watchRuns } from './orchestration/notes';
+import { reportRunEnd } from './orchestration/notes';
+import { onRunEnd, watchRuns } from './sessions/runs';
 import { startWorktreeCleanup } from './projects/cleanup';
 import { serveAttachment } from './sessions/attachments';
 import { startHousekeeping } from './sessions/housekeeping';
+import { startSchedules } from './schedules/schedules';
 import { upgrade, websocket } from './socket';
+
+// There is no login (docs/deploy.md), and a page on any website can point its
+// own name at 127.0.0.1 (DNS rebinding): the browser then treats Bica as that
+// site, so the socket's Origin check passes. The `Host` header still says the
+// site's name. Only the routes a page could use get the check: a download's
+// token and an attachment's hash can't be guessed.
+const KNOWN_HOST =
+  /^(localhost|[\d.]+|\[[\da-f:.]+\]|[\w.-]+\.ts\.net)(:\d+)?$/i;
+
+function knownHost(req: Request) {
+  return KNOWN_HOST.test(req.headers.get('host') ?? '');
+}
+
+function forbidden() {
+  return new Response('Forbidden', { status: 403 });
+}
 
 /**
  * Bica's HTTP server: the socket, and the files it hands out links to.
@@ -24,21 +44,34 @@ export function serve(
     hostname: '127.0.0.1',
     port,
     routes: {
-      '/ws': upgrade,
+      '/ws': (req, server) =>
+        knownHost(req) ? upgrade(req, server) : forbidden(),
       '/download/:token/*': { GET: serveDownload },
-      '/blob/:hash': { GET: serveBlob },
+      '/blob/:hash': {
+        GET: (req) => (knownHost(req) ? serveBlob(req) : forbidden()),
+      },
       '/attachment/:name': { GET: serveAttachment },
+      // Pages read the data folder, so they get the check; the kit is public.
+      '/artifact-page/:name': {
+        GET: (req) => (knownHost(req) ? serveArtifact(req) : forbidden()),
+      },
+      '/artifact-kit/kit.js': { GET: serveKit },
+      '/artifact-kit/fonts/:file': { GET: serveFont },
     },
     fetch: fallback,
     websocket,
   });
   // Before the harness opens: it finds the agents' extensions by name.
   installAgents();
+  void installBundledSkills().catch((error) =>
+    console.error('[skills]', error),
+  );
   startHousekeeping();
   startWorktreeCleanup();
-  startNight();
+  startSchedules();
   // Opens the harness, which resumes runs a restart left unfinished, and
   // follows them at once: a parent hears when one ends, open tab or not.
+  onRunEnd(reportRunEnd);
   void watchRuns().catch((error) => console.error('[sessions]', error));
   return server;
 }

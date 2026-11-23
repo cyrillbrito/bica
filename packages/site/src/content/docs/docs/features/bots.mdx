@@ -1,0 +1,59 @@
+---
+title: 'Bots'
+description: 'Long-lived agents you make, which you talk to about all your work and which run it through sessions.'
+sidebar:
+  order: 2
+---
+
+A bot is an agent you keep for months. You give it a name, a color, and a folder of projects, then talk to it about all your work, often by voice from the phone. It answers quick questions itself and hands bigger work to sessions it starts and follows. Make one for your code, and another for your notes if you like.
+
+Use a bot when you run many sessions across projects and want one place to ask "what needs me?". For one task, a normal session with [child sessions](/docs/features/orchestration/) is enough.
+
+## Make one
+
+1. Pick New bot in the sidebar's menu or the [command palette](/docs/basics/command-palette/).
+2. Give it a name and a color.
+3. Set Workspace to the folder that holds your projects, such as `~/Repos`. Sessions it starts outside a project run there.
+4. Leave Home empty for the default, or pick a folder for its files, such as one in your notes vault.
+
+The bot shows at the top of the sidebar, with the sessions it started in its workspace under it.
+
+## Its session
+
+Click the bot in the sidebar to open its session. It's a normal [session](/docs/basics/sessions/) with the bot's name in the top bar, so the composer, the [voice call](/docs/features/voice/) button, the context chip, and the model picker all work as usual. A bot has no model setting of its own: pick one in its session, and a new session keeps it.
+
+The Watching strip above the chat lists the sessions the bot hears from: the ones it started and the ones it watches. What needs you comes first, and each row shows its status and what it cost. Click a row to open that session.
+
+The ⋯ menu has Edit bot, Start a new session, and Delete bot in place of Rename, Fork, and Archive.
+
+```d2 title="You talk to a bot; it runs the work through sessions and keeps its memory in files"
+direction: down
+you: You {class: you}
+bot: Bot {class: focus}
+sessions: Sessions {style.multiple: true}
+home: Files in its home {class: files}
+you <-> bot: chat or voice call
+bot -> sessions: start, brief, steer
+sessions -> bot: report when a run ends
+bot <-> home
+```
+
+## How it works with you
+
+A bot acts on its own when a step can be undone: it starts, messages, and watches sessions, and stops one that went off track, then tells you what it did. It asks first before anything you can't take back, such as merging, pushing, or removing a worktree. Sessions you started stay yours, and it only reports on them.
+
+It hears when its own sessions finish. To follow one it didn't start, it [watches](/docs/features/orchestration/#watching-a-session) it.
+
+A bot has the same tools as any session, [connected apps](/docs/features/connected-apps/) included. It reads terminals but leaves long-running commands to the sessions it starts.
+
+## Its files
+
+Edit bot shows three files from its home, which you and the bot both edit:
+
+- Instructions (`AGENTS.md`): what it's for and how to work.
+- Soul (`SOUL.md`): how it talks, and its opinions and limits.
+- About you (`USER.md`): what it knows about you.
+
+It keeps its memory next to them, starting from `MEMORY.md`. Bica tidies the chat while it's idle, so it can run for months: it trims old tool output, and asks the bot to save what matters before older turns get summarized. This needs Anthropic's models. Start a new session gives it a fresh chat with the same memory.
+
+Delete bot archives its chat and the sessions in its workspace. Sessions it started in your projects stay open and become yours, and its files stay on disk.

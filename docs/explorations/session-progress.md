@@ -28,7 +28,7 @@ Smaller and placed where you already look:
 
 - A recap line when you come back. Claude Code's `/recap` writes one line, under 40 words, after you've been away a few minutes: the goal, the current task, the next action. In Bica it could sit at the top of the transcript.
 - A "now" line in the sidebar row, from the latest tool call summary, which costs no model call.
-- A goal you set, with how to check it's done, shown above the composer, as Codex's `/goal` does. It overlaps with [night runs](../night-runs.md).
+- A goal you set, with how to check it's done, shown above the composer, as Codex's `/goal` does. It overlaps with [schedules](../schedules.md).
 
 Try the sidebar line first: it's free, and it answers the question for every session at once.
 

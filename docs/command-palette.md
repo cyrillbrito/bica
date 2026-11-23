@@ -15,7 +15,7 @@ Typing searches sessions (archived ones last), workspaces ([projects.md](./proje
 
 ## Second pages
 
-New session in… is also the way to start in any existing workspace, and New assistant session opens the home page set for [assistant mode](./assistant-mode.md).
+New session in… is also the way to start in any existing workspace.
 
 An action ending in "…" opens a second page instead of running, like New session in…, Go to workspace…, Theme…, and Rename. The page's name shows as a chip before the search box. Backspace in an empty box, Esc, or a click on the chip goes back.
 
@@ -29,7 +29,7 @@ Every row shows its shortcut, so the palette teaches them. Only actions you take
 - ⌃` opens a terminal in this page's workspace.
 - ⌘B and ⌥⌘B show or hide the sessions and files columns.
 
-The Hub action opens the [hub](./hub.md). It has no shortcut, since it sits at the top of the sidebar.
+Each [bot](./bots.md) has an entry in Bots that opens its session, found by its name or "bot". New bot makes one, a bot's session adds Edit bot under This bot, and New session in… offers each bot's workspace. They have no shortcut, since bots sit at the top of the sidebar.
 
 The palette lives in `packages/client/src/app/palette/`: `CommandPalette.tsx` draws it, `pages.tsx` lists what it offers, shortcuts included, and `commands.ts` holds the search.
 

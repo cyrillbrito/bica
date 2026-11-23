@@ -16,17 +16,18 @@ The agent does its work through tools. Each tool call shows in the transcript wi
 - Read, write, and edit files in the session's folder, and look at images.
 - Run shell commands.
 - Search the web and read pages, once you add an [Exa key](/docs/setup/providers/#exa-turns-on-web-search).
+- Read and act on Gmail, Slack, GitHub, and your other [connected apps](/docs/features/connected-apps/).
 - Start and use the [terminals](/docs/basics/terminals/) you share with it, for dev servers and long jobs.
-- Start, read, and message other sessions. See [parents and child sessions](/docs/features/orchestration/).
+- Start, read, message, and watch other sessions. See [parents and child sessions](/docs/features/orchestration/).
 - Ask you multiple-choice questions.
 
 To save time, the agent can also write a short script that calls several tools at once and keeps only what matters from their output. Each call in the script still shows in the transcript.
 
-Some sessions get fewer tools. The [hub](/docs/features/hub/) has no shell, and a [night run](/docs/features/night-runs/) can't ask you anything.
+Any session can also set a [schedule](/docs/features/schedules/): a reminder or routine that runs later.
 
 ## Tools run without asking
 
-Bica has no approval prompts and no sandbox. Commands and edits run as your user, so they can reach anything you can. The agent's [instructions](/docs/features/instructions/) tell it to keep git read-only unless you ask, and to explain and confirm before anything destructive. That is a rule it follows, and nothing enforces it. To stay safe:
+Apart from [connected apps](/docs/features/connected-apps/#nothing-changes-without-your-yes), Bica has no approval prompts and no sandbox. Commands and edits run as your user, so they can reach anything you can. The agent's [instructions](/docs/features/instructions/) tell it to keep git read-only unless you ask, and to explain and confirm before anything destructive. That is a rule it follows, and nothing enforces it. To stay safe:
 
 - Give each feature its own [worktree](/docs/basics/projects/), so agents never edit the same folder.
 - Stop a run at once with the stop button, or Esc twice in the [composer](/docs/basics/composer/#stop-the-run).

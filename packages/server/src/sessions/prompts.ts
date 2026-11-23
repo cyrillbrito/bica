@@ -4,6 +4,7 @@ import {
   InboxDoc,
   type InboxItem,
 } from '@earendil-works/pi-durable';
+import type { JsonValue } from '@earendil-works/chord/json';
 
 import { contextUsage, pruneBlocked } from '@bica/shared/context-usage';
 import { promptBlocks, promptOf } from '@bica/shared/images';
@@ -11,11 +12,12 @@ import { PruneEntry, pruneEdits, prunedTokens } from '@bica/shared/prune';
 import type { ModelChoice, PromptImage } from '@bica/shared/protocol';
 import { context, getHarness } from '../harness';
 import { getAgent } from '../agents/registry';
-import { loadMemory, projectList } from '../agents/common';
+import { connectedAppsLine } from '../connectors/apps';
 import { defaultChoice, getCatalog } from '../models/models';
 import { checkChoice, models, reachable } from '../models/registry';
 import { SentEntry, type Sent } from '@bica/shared/transcript';
 import { lastSender, named, readSession } from './read';
+import { readActive } from './active-view';
 import { saveImage } from './attachments';
 import { agentIdOf, editSession, getConversation, sessionMeta } from './store';
 
@@ -49,14 +51,11 @@ export async function submit(
   requestId: string,
   from: Sender,
   whenBusy: 'followUp' | 'steer' = 'followUp',
+  // Shown instead of the prompt, such as an answer on a card.
+  entry?: { kind: string; data: JsonValue },
 ) {
   const conversation = await getConversation(id);
   const meta = await sessionMeta(conversation.id);
-  // Its one prompt waits for tonight (docs/night-runs.md); a second would run now.
-  if (meta?.tonight)
-    throw new Error(
-      'This session is held for tonight: edit its prompt, or run it now',
-    );
   // Writing to it means it isn't done with, and an archived one hears no notes.
   if (from === 'user' && meta?.archivedAt)
     await editSession(conversation.id, (m) => {
@@ -73,7 +72,9 @@ export async function submit(
       content: input(sent?.prompt ?? prompt, images),
       requestId,
       whenBusy,
-      ...(sent && { entry: { kind: SentEntry.kind, data: sent.data } }),
+      ...(sent
+        ? { entry: { kind: SentEntry.kind, data: sent.data } }
+        : entry && { entry }),
     },
     context,
   );
@@ -129,11 +130,10 @@ export async function recordSender(id: ConversationId, from: Sender) {
 }
 
 /**
- * Takes the memory index, and the project list for an agent with a
- * `projects` section such as the hub's, when the session holds
- * no copy: at its first prompt and after a compaction (store.ts). The prompt sections
- * show the copies (server/src/agents/registry.ts), since the agent
- * edits memory mid-session and every change would be sent again. Every
+ * Takes the connected apps, and the agent's own copies such as a bot's
+ * memory index and project list (Agent.copies), when the session holds none:
+ * at its first prompt and after a compaction (store.ts). The prompt sections
+ * show the copies, so edits in between don't break the prompt cache. Every
  * prompt path calls it, voice included.
  */
 export async function keepCopies(id: ConversationId) {
@@ -147,12 +147,20 @@ export async function keepCopies(id: ConversationId) {
     await (
       await getConversation(String(id))
     ).configure({ instructions: null }, context);
-  if (meta?.memory !== undefined && meta.projects !== undefined) return;
+  if (
+    meta?.memory !== undefined &&
+    meta.projects !== undefined &&
+    meta.apps !== undefined
+  )
+    return;
+  const [copies, apps] = await Promise.all([
+    getAgent(agentIdOf(meta)).copies?.(agent.cwd),
+    meta?.apps ?? connectedAppsLine(),
+  ]);
   const taken = {
-    memory: meta?.memory ?? (await loadMemory(agent.cwd)),
-    projects:
-      meta?.projects ??
-      (getAgent(agentIdOf(meta)).sections.projects ? await projectList() : ''),
+    memory: meta?.memory ?? copies?.memory ?? '',
+    projects: meta?.projects ?? copies?.projects ?? '',
+    apps,
   };
   await editSession(id, (meta) => void Object.assign(meta, taken));
 }
@@ -276,9 +284,10 @@ export async function compact(id: string, instructions?: string) {
  */
 export async function pruneContext(id: string) {
   const conversation = await getConversation(id);
-  const watch = await conversation.watch(context);
-  const usage = contextUsage(watch.value, await getCatalog());
-  void watch.stop();
+  const usage = contextUsage(
+    await readActive(conversation),
+    await getCatalog(),
+  );
   const blocked = pruneBlocked(usage);
   if (blocked) throw new Error(blocked);
   const view = await conversation.context(context);

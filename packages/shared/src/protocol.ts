@@ -1,7 +1,8 @@
 // The wire format of the one WebSocket (docs/realtime-communication.md).
 // Shared by server/src/socket.ts and client/src/socket/socket.ts; types only.
 import type { Op } from '@earendil-works/chord/delta';
-import type { AgentId, PickableAgent } from './agents';
+import type { AgentId } from './agents';
+import type { BotColor } from './bots';
 import type { ProjectedView } from './projection';
 
 // A run in progress (or backing off after a provider error), or none: failed,
@@ -42,7 +43,7 @@ export interface SessionSummary {
   parent: string | null;
   // Each time it left its parent, or went back to it.
   handoffs: InCharge[];
-  // The hubs that watch it and hear each run it ends.
+  // The bots' sessions that watch it and hear each run it ends.
   watchedBy: string[];
   // Its worktree was removed: the branch and PR it had then; null: not. Named
   // when removing was called clean up, and stored so.
@@ -50,21 +51,16 @@ export interface SessionSummary {
   // The agent it runs as: its tools, instructions, and model
   // (docs/agents.md).
   agent: AgentId;
+  // The bot whose own session this is (docs/bots.md); null: not a bot's.
+  bot: string | null;
   // How its voice calls sound; null: the defaults.
   voice: VoiceSettings | null;
-  // The first prompt, held for tonight's run (docs/night-runs.md); null:
-  // nothing waiting.
-  tonight: string | null;
-  // Work Pi Durable won't run (docs/sessions.md); null: none.
-  stuck: Stuck | null;
+  // Work Pi Durable won't run, as its code is gone (docs/sessions.md).
+  stuck: boolean;
   // Dollars spent at list prices, even on a plan: its models and tools, not
   // the sessions it started.
   cost: number;
 }
-
-// Crashed: cut off by crashes too often in a row, so paused until a retry.
-// Missing: its code is gone from this Bica, so only stopping ends it.
-export type Stuck = 'crashed' | 'missing';
 
 /**
  * Who is in charge of a child session from `at` on: you detached it, or (before
@@ -104,7 +100,7 @@ export interface ModelChoice {
 
 /**
  * Bica's settings, the same on every device: the models new sessions and side
- * jobs use, the hub, night runs, and git habits.
+ * jobs use, and git habits.
  */
 export interface Settings extends ModelChoice {
   // `provider/modelId`s; empty: every available model.
@@ -116,12 +112,6 @@ export interface Settings extends ModelChoice {
   // Ask for the long prompt cache: 1 hour on Claude, 24 hours on some OpenAI
   // models. False: the 5-minute default.
   longCache: boolean;
-  // The hub's folder (docs/hub.md); null: not picked yet.
-  hubFolder: string | null;
-  // The hub's model and effort; null: Bica's pick for it.
-  hubModel: ModelChoice | null;
-  // When night runs start, as local "HH:MM" (docs/night-runs.md).
-  nightStart: string;
   // Which defaults still come from the server's env (PI_MODEL, PI_FAST_MODEL)
   // because nothing was picked in Settings.
   fromEnv: { model: boolean; fastModel: boolean };
@@ -207,6 +197,36 @@ export interface Accounts {
   signIn: SignIn | null;
 }
 
+/** An app connected through Composio (docs/connectors.md). */
+export interface ConnectedApp {
+  // Composio's connected account id.
+  id: string;
+  // Composio's toolkit slug: gmail.
+  toolkit: string;
+  name: string;
+  logo: string | null;
+  // What it signed in as, such as a Gmail address; null until Composio knows.
+  account: string | null;
+  // Composio's status word: ACTIVE, INITIATED, EXPIRED, FAILED, INACTIVE.
+  status: string;
+  createdAt: number;
+}
+
+export interface Connectors {
+  // The saved Composio key's last 4 characters; null: no key.
+  keyHint: string | null;
+  apps: ConnectedApp[];
+  // Composio couldn't be reached or refused the key; null: fine.
+  error: string | null;
+}
+
+/** An app in Composio's catalog that Connect can add. */
+export interface AppChoice {
+  slug: string;
+  name: string;
+  logo: string | null;
+}
+
 /** A folder sessions run in; git is optional. */
 export interface Project {
   id: string;
@@ -218,12 +238,53 @@ export interface Project {
   tickets?: string;
   // Its main folder stays in the sidebar's list, never in Parked.
   pinned?: boolean;
+  // A bot's workspace, which Bica lists as a project under the bot's id and
+  // name, so its sessions get terminals and panels like any other.
+  bot?: true;
   // The main folder, or every worktree of its repo; never empty.
   workspaces: Workspace[];
 }
 
 /** What the Edit project dialog changes. */
 export type ProjectEdit = Pick<Project, 'name'>;
+
+/** A long-lived agent the user made, with its own session (docs/bots.md). */
+export interface Bot {
+  id: string;
+  name: string;
+  color: BotColor;
+  // The folder of its files and memory as stored; null: the default, in
+  // Bica's data folder.
+  home: string | null;
+  // Where the home is, either way.
+  homePath: string;
+  // The folder that holds the user's repos, where the sessions it starts
+  // outside a project run.
+  workspace: string;
+}
+
+/** The files in a bot's home that its prompt loads. */
+export interface BotFiles {
+  // AGENTS.md: its instructions.
+  instructions: string;
+  // SOUL.md: how it talks, its opinions and boundaries.
+  soul: string;
+  // USER.md: what it knows about the user.
+  user: string;
+}
+
+/** What the bot dialog sets; `bot.update` takes any part of it. */
+export interface BotEdit {
+  name: string;
+  color: BotColor;
+  // An absolute folder that exists; `~` expands.
+  workspace: string;
+  // null: the default home. `~` expands.
+  home?: string | null;
+  // Written into the home. `before` is the text the dialog read: a file the
+  // bot changed since is refused, so the dialog never erases its edits.
+  files?: Partial<Record<keyof BotFiles, { before: string; text: string }>>;
+}
 
 /** A project's main folder or one of its git worktrees. */
 export interface Workspace {
@@ -340,9 +401,65 @@ export type FileText =
  * A path from a chat message: in a workspace, relative to it; else absolute,
  * with a link that serves it when it is a file.
  */
+// `artifact`: the path is an artifact, by name, which opens in its viewer.
 export type FoundPath =
   | { workspace: WorkspaceRef; path: string; folder: boolean; url?: undefined }
-  | { workspace: null; path: string; folder: boolean; url?: string };
+  | {
+      workspace: null;
+      path: string;
+      folder: boolean;
+      url?: string;
+      artifact?: string;
+    };
+
+/** One artifact (docs/artifacts.md): an HTML page in the artifacts folder. */
+export interface ArtifactInfo {
+  // The file name without `.html`, which its URLs use.
+  name: string;
+  // The page's <title>, or the name.
+  title: string;
+  // ms.
+  updated: number;
+}
+
+/**
+ * A saved prompt that fires later, once or on a repeat (docs/schedules.md).
+ * Times are the dev machine's local time.
+ */
+export interface Schedule {
+  id: string;
+  prompt: string;
+  time: { at: number } | { cron: string };
+  // The session that made it: the prompt goes back into it, or it leads each
+  // new session. null: made from the composer, so new sessions are yours.
+  session: string | null;
+  // Each run starts a new session with these options, as session_start
+  // would; null: the prompt goes back into `session`.
+  start: ScheduleStart | null;
+  lastRunAt: number | null;
+  createdAt: number;
+  // When it fires next; null: never again.
+  next: number | null;
+}
+
+export interface ScheduleStart {
+  // Where a session made from the composer starts.
+  projectId?: string;
+  // A project folder or worktree; absent: the parent's folder.
+  folder?: string;
+  worktree?: boolean;
+  effort?: 'low' | 'medium' | 'high';
+  choice?: ModelChoice;
+}
+
+export interface Artifacts {
+  // The artifacts folder on the dev machine.
+  folder: string;
+  // The themes the kit has, the default first.
+  themes: { id: string; label: string }[];
+  // Newest first.
+  list: ArtifactInfo[];
+}
 
 /** One limit of a plan: the 5-hour session, the week, or a spend cap. */
 export interface PlanWindow {
@@ -435,23 +552,27 @@ export interface Calls {
       requestId: string;
       // Absent: the agent's default.
       choice?: ModelChoice;
-      // Absent: coding.
-      agent?: PickableAgent;
       // Starts in a new worktree named after the session, instead of `cwd`.
       worktree?: boolean;
-      // Holds the prompt for tonight's run instead of sending it.
-      tonight?: boolean;
     };
     // warning: the session started, but not quite as asked, such as a
     // worktree from an unfetched branch.
     result: { id: string; warning?: string };
   };
-  // A session held for tonight: save an edited prompt, run it now (edited
-  // when `prompt` is given), or cancel the run and get the prompt back.
-  'session.tonight': {
-    args: { id: string; action: 'save' | 'run' | 'cancel'; prompt?: string };
-    result: string;
+  // A schedule from the composer: each run starts a new session in
+  // `projectId`'s `cwd`, or a new worktree of it.
+  'schedule.create': {
+    args: {
+      prompt: string;
+      time: Schedule['time'];
+      projectId: string;
+      cwd: string;
+      worktree?: boolean;
+      choice?: ModelChoice;
+    };
+    result: Schedule;
   };
+  'schedule.delete': { args: { id: string }; result: null };
   'session.configure': { args: { id: string } & ModelChoice; result: null };
   'settings.update': { args: SettingsChange; result: null };
   'project.add': { args: { path: string }; result: string };
@@ -483,7 +604,7 @@ export interface Calls {
   };
   // Takes a session from its parent: it's yours from now on.
   'session.detach': { args: { id: string }; result: null };
-  // Ends every hub's watch on a session.
+  // Ends every bot's watch on a session.
   'session.unwatch': { args: { id: string }; result: null };
   // Takes a queued prompt back; null: it was already sent.
   'session.withdraw': {
@@ -494,8 +615,6 @@ export interface Calls {
   'session.push': { args: { id: string; submission: number }; result: boolean };
   // Stops the run; returns the queued prompts the stop dropped.
   'session.stop': { args: { id: string }; result: QueuedPrompt[] };
-  // Runs work paused after crashes again.
-  'session.retry': { args: { id: string }; result: null };
   'session.archive': {
     args: { id: string; archived: boolean };
     // The worktree it left with no open session; null: none.
@@ -510,13 +629,17 @@ export interface Calls {
   // Prunes old tool output from the model context (shared/src/prune.ts).
   // Named when pruning was called clean up.
   'session.cleanup': { args: { id: string }; result: null };
-  // Changing it later breaks the prompt cache once.
-  'session.agent': {
-    args: { id: string; agent: PickableAgent };
-    result: null;
-  };
-  // The hub's session id, started first if there is none.
-  'hub.open': { args: Record<string, never>; result: string };
+  // A new bot's id.
+  'bot.create': { args: BotEdit; result: string };
+  'bot.update': { args: { id: string } & Partial<BotEdit>; result: null };
+  // Archives its session and the sessions in its workspace, and closes their
+  // terminals. The sessions it started in projects become the user's. Its
+  // home stays on disk.
+  'bot.delete': { args: { id: string }; result: null };
+  // The bot's session id, started first if there is none.
+  'bot.open': { args: { id: string }; result: string };
+  // Its files' current text, '' for a missing one.
+  'bot.files': { args: { id: string }; result: BotFiles };
   // Applies from the next call.
   'session.voice': { args: { id: string; voice: VoiceSettings }; result: null };
   // A new session with the history up to entry `at` (absent: all); its id.
@@ -535,7 +658,8 @@ export interface Calls {
     result: { sdp: string; callId: string };
   };
   'voice.stop': { args: { callId: string }; result: null };
-  // Photos added during a call; they go with its next handoff.
+  // Photos added during a call; they go with its next handoff, or alone after
+  // a few quiet seconds. Answers once they have gone to the agent.
   'voice.photos': {
     args: { callId: string; images: PromptImage[] };
     result: null;
@@ -563,6 +687,19 @@ export interface Calls {
   'account.useFirst': { args: { id: string }; result: null };
   // Forgets a saved sign-in or key, with its email and limits.
   'account.signOut': { args: { id: string }; result: null };
+  // Saves the Composio key once Composio accepts it; null removes it.
+  'connector.key': { args: { key: string | null }; result: null };
+  // Composio's catalog, searched by name.
+  'connector.toolkits': { args: { search: string }; result: AppChoice[] };
+  // Starts connecting an app: the sign-in page to open.
+  'connector.connect': { args: { toolkit: string }; result: string };
+  // Removes a connected app and revokes its access.
+  'connector.disconnect': { args: { id: string }; result: null };
+  // Answers a request on its card with one of its choices (docs/requests.md).
+  'request.answer': {
+    args: { session: string; call: string; value: string };
+    result: null;
+  };
   // Absent paths: everything.
   // repo, on every git call: a submodule's path; absent, the workspace's own
   // repo. Paths are from the workspace; without paths, everything in repo.
@@ -656,9 +793,12 @@ export interface Calls {
 export interface Topics {
   sessions: { params: Record<string, never>; value: SessionSummary[] };
   projects: { params: Record<string, never>; value: Project[] };
+  // In the order of bots.json, which is the sidebar's.
+  bots: { params: Record<string, never>; value: Bot[] };
   models: { params: Record<string, never>; value: ModelCatalog };
   settings: { params: Record<string, never>; value: Settings };
   accounts: { params: Record<string, never>; value: Accounts };
+  connectors: { params: Record<string, never>; value: Connectors };
   // null: no such conversation.
   conversation: { params: { id: string }; value: ProjectedView | null };
   // null: not a git repository.
@@ -667,6 +807,9 @@ export interface Topics {
   // Every file path in the workspace, minus what git ignores.
   files: { params: WorkspaceRef; value: string[] };
   terminals: { params: Record<string, never>; value: TerminalInfo[] };
+  artifacts: { params: Record<string, never>; value: Artifacts };
+  // Soonest first.
+  schedules: { params: Record<string, never>; value: Schedule[] };
   // null: no such terminal (closed, or the server restarted).
   terminal: { params: { id: string }; value: TerminalOutput | null };
 }

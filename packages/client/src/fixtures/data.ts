@@ -1,6 +1,8 @@
 // Test data for the whole app in development (`?data=worst`): realistic
 // worst cases next to the kind demo data. See ./index.ts.
+import type { BotColor } from '@bica/shared/bots';
 import type {
+  Bot,
   GitChange,
   GitCommit,
   GitStatus,
@@ -31,9 +33,11 @@ import {
   streamTerminals,
   voiceHandoff,
 } from './demo-chats';
+import { approvalTurn } from './connectors';
 import { conversations, type Conversations } from './conversations';
 
 export interface Dataset {
+  bots: Bot[];
   projects: Project[];
   sessions: SessionSummary[];
   terminals: TerminalInfo[];
@@ -128,10 +132,10 @@ function session(
     watchedBy: [],
     cleanedUp: null,
     agent: 'coding',
+    bot: null,
     voice: null,
-    tonight: null,
-    stuck: null,
-    // Varied, so branch totals on the hub board differ.
+    stuck: false,
+    // Varied, so costs in a bot's Watching strip differ.
     cost: ((n * 37) % 290) / 100,
     ...extra,
   };
@@ -159,6 +163,46 @@ function terminal(
     parent,
     createdAt: now - HOUR,
   };
+}
+
+function bot(
+  id: string,
+  name: string,
+  color: BotColor,
+  workspace: string,
+  extra: Partial<Bot> = {},
+): Bot {
+  return {
+    id,
+    name,
+    color,
+    home: null,
+    homePath: `${HOME}/.bica/bots/${id}`,
+    workspace,
+    ...extra,
+  };
+}
+
+// The project Bica lists for each bot's workspace, under the bot's id.
+function botProject(b: Bot, git = false): Project {
+  return project(b.id, b.name, [ws(b.workspace, git ? 'main' : null, true)], {
+    git,
+    bot: true,
+  });
+}
+
+// A bot's own session: outside any project, in its home.
+function botSession(
+  b: Bot,
+  status: SessionStatus,
+  age: number,
+  extra: Partial<SessionSummary> = {},
+) {
+  return session(null, b.homePath, b.name, status, age, {
+    agent: 'bot',
+    bot: b.id,
+    ...extra,
+  });
 }
 
 function chats(workspaces: Workspace[] = []): Project {
@@ -252,7 +296,13 @@ function demo(): Dataset {
   const keys = `${bica}-shortcuts`;
   const voice = `${bica}-voice`;
   const blog = `${HOME}/Repos/blog`;
+  const ada = bot('bot-ada', 'Ada', 'teal', `${HOME}/Repos`, {
+    home: '~/Vault/Ada',
+    homePath: `${HOME}/Vault/Ada`,
+  });
+  const juniper = bot('bot-juniper', 'Juniper', 'plum', `${HOME}/Notes`);
   return {
+    bots: [ada, juniper],
     projects: [
       project('bica', 'bica', [
         ws(bica, 'main', true),
@@ -267,20 +317,19 @@ function demo(): Dataset {
       ]),
       project('blog', 'blog', [ws(blog, 'main', true)]),
       chats([ws(`${HOME}/.bica/chats/2026-10-10-sourdough`, null)]),
+      botProject(ada),
+      botProject(juniper),
     ],
     sessions: [
-      session(null, `${HOME}/Vault/Hub`, 'Hub', 'idle', 2 * MIN, {
-        id: 'demo-hub',
-        agent: 'hub',
-      }),
+      botSession(ada, 'idle', 2 * MIN, { id: 'demo-ada' }),
       session('bica', keys, 'Keyboard shortcuts for sessions', 'idle', MIN, {
         id: 'demo-shortcuts',
-        watchedBy: ['demo-hub'],
+        watchedBy: ['demo-ada'],
       }),
       session('bica', bica, 'Stream tool output in terminals', 'running', 0, {
         id: 'demo-terminals',
-        startedBy: 'demo-hub',
-        parent: 'demo-hub',
+        startedBy: 'demo-ada',
+        parent: 'demo-ada',
       }),
       session(
         'bica',
@@ -290,15 +339,12 @@ function demo(): Dataset {
         4 * MIN,
         {
           id: 'demo-reconnect',
-          startedBy: 'demo-hub',
-          parent: 'demo-hub',
+          startedBy: 'demo-ada',
+          parent: 'demo-ada',
         },
       ),
       session('bica', bica, 'Research offline drafts', 'idle', 30 * MIN, {
-        id: 'demo-tonight',
-        agent: 'night',
-        tonight:
-          'Research how other apps keep drafts offline on the phone and sync them later. Write a report to docs/explorations/offline-drafts.md with options, trade-offs, and sources.',
+        id: 'demo-offline',
       }),
       session('bica', bica, 'Release notes for 0.9', 'idle', 2 * HOUR, {
         id: 'demo-release',
@@ -313,8 +359,8 @@ function demo(): Dataset {
         0,
         {
           id: 'demo-handoff',
-          startedBy: 'demo-hub',
-          parent: 'demo-hub',
+          startedBy: 'demo-ada',
+          parent: 'demo-ada',
         },
       ),
       session('bica', voice, 'Pick a calmer voice', 'done', 25 * MIN, {
@@ -328,17 +374,17 @@ function demo(): Dataset {
         'blog',
         blog,
         'Draft: building Bica with Bica',
-        'done',
+        'waiting',
         10 * MIN,
         {
           id: 'demo-blog',
-          startedBy: 'demo-hub',
+          startedBy: 'demo-ada',
         },
       ),
       session('bica', bica, 'Fix the flaky reconnect test', 'error', 40 * MIN, {
         id: 'demo-flaky',
-        startedBy: 'demo-hub',
-        parent: 'demo-hub',
+        startedBy: 'demo-ada',
+        parent: 'demo-ada',
       }),
       session(
         'bica',
@@ -363,9 +409,23 @@ function demo(): Dataset {
       session('bica', bica, 'Old idea', 'idle', 2 * DAY, {
         archivedAt: now - DAY,
       }),
+      session(
+        ada.id,
+        ada.workspace,
+        'Compare queue libraries',
+        'done',
+        8 * MIN,
+        {
+          id: 'demo-queue-libs',
+          startedBy: 'demo-ada',
+          parent: 'demo-ada',
+        },
+      ),
+      botSession(juniper, 'idle', 3 * DAY, { id: 'demo-juniper' }),
     ],
     terminals: [
       terminal('bica', bica, 'bun run dev', null),
+      terminal(ada.id, ada.workspace, 'ls', 0, 'ls -la', 'demo-queue-libs'),
       terminal('bica', keys, 'bun run check', 0),
     ],
     kept: [],
@@ -376,7 +436,10 @@ function demo(): Dataset {
       'demo-release': { turns: releaseNotes, start: now - 2 * HOUR - MIN },
       'demo-handoff': { ...voiceHandoff, start: now - 3 * MIN },
       'demo-voice': { turns: calmerVoice, start: now - 26 * MIN },
-      'demo-blog': { turns: blogDraft, start: now - 11 * MIN },
+      'demo-blog': {
+        turns: [...blogDraft, approvalTurn(false)],
+        start: now - 11 * MIN,
+      },
       'demo-sourdough': { turns: sourdough, start: now - DAY - 3 * MIN },
     },
     git: {
@@ -448,7 +511,30 @@ function worst(): Dataset {
   const cjk = `${HOME}/Repos/王秀英的毕业设计`;
   const long200 =
     'Investigate why the session list in the left sidebar overflows when a worktree branch name, a pull request badge and a ticket tag all share one line on a 320px phone, then fix it without moving rows';
+  const longPath = `${HOME}/Repos/${'deeply-nested-folder/'.repeat(8)}northwind-monorepo-workspace`;
+  const bots = [
+    bot(
+      'bot-long',
+      'Konstantin Oberhauser-Wettstein, Release Coordinator for the Northwind Onboarding Platform',
+      'blue',
+      longPath,
+      { home: longPath, homePath: longPath },
+    ),
+    bot('bot-cjk', '王秀英', 'rose', cjk),
+    bot('bot-emoji', '🦊 Fox', 'amber', `${HOME}/Repos`),
+    bot('bot-ar', 'نور الهدى', 'green', `${HOME}/Repos`),
+    bot('bot-j', 'J', 'olive', `${HOME}/Repos`),
+    ...Array.from({ length: 9 }, (_, i) =>
+      bot(
+        `bot-${i}`,
+        `Helper ${i + 1}`,
+        (['teal', 'plum', 'slate', 'blue'] as const)[i % 4],
+        `${HOME}/Repos`,
+      ),
+    ),
+  ];
   return {
+    bots,
     projects: [
       project(
         'nw',
@@ -504,19 +590,16 @@ function worst(): Dataset {
       ]),
       project('dup', 'api', [ws(`${HOME}/Repos/api`, 'main', true)]),
       chats([ws(`${HOME}/.bica/chats/2026-10-11-recipe-ideas`, null)]),
+      ...bots.map((b) => botProject(b, b.workspace === cjk)),
     ],
     sessions: [
       session('nw', nw, long200, 'running', 0, { id: 'worst-long' }),
       session('nw', nw, 'J', 'done', 59 * 1000),
-      session('nw', nw, long200, 'idle', 9 * MIN, {
-        id: 'worst-tonight',
-        agent: 'night',
-        tonight: `${long200} ${long200}`,
-      }),
+      session('nw', nw, long200, 'idle', 9 * MIN, { id: 'worst-idle' }),
       session('nw', nw, '', 'waiting', 3 * MIN, { id: 'worst-ask' }),
       session('nw', nw, long200, 'error', 4 * MIN, {
         id: 'worst-stuck',
-        stuck: 'crashed',
+        stuck: true,
       }),
       session(
         'nw',
@@ -619,6 +702,25 @@ function worst(): Dataset {
         },
       }),
       session(null, null, '', 'idle', DAY, { archivedAt: now - MIN }),
+      botSession(bots[0]!, 'waiting', 2 * MIN, {
+        id: 'worst-bot',
+        cost: 1284.5,
+      }),
+      session('bot-long', longPath, long200, 'running', MIN, {
+        startedBy: 'worst-bot',
+        parent: 'worst-bot',
+      }),
+      session('nw', nw, 'Watched by three bots', 'idle', 20 * MIN, {
+        watchedBy: ['worst-bot', 'worst-bot-cjk', 'worst-bot-emoji'],
+      }),
+      botSession(bots[1]!, 'error', HOUR, { id: 'worst-bot-cjk' }),
+      botSession(bots[2]!, 'running', 0, { id: 'worst-bot-emoji' }),
+      // One session each, so opening a bot never starts one on the server.
+      ...bots.slice(3).map((b, i) => botSession(b, 'idle', i * HOUR)),
+      // A deleted bot's archived session in its old workspace.
+      session('bot-gone', `${HOME}/Repos`, 'Sort the inbox', 'idle', 9 * DAY, {
+        archivedAt: now - 8 * DAY,
+      }),
     ],
     terminals: [
       terminal(
@@ -790,6 +892,7 @@ function worst(): Dataset {
 function one(): Dataset {
   const p = `${HOME}/Repos/bica`;
   return {
+    bots: [],
     projects: [
       project('bica', 'bica', [
         ws(p, 'main', true),
@@ -828,6 +931,7 @@ function huge(): Dataset {
   );
   const first = `fixture-${n + 1}`;
   return {
+    bots: [],
     projects: [project('bica', 'bica', [ws(p, 'main', true), ...worktrees])],
     sessions: [
       ...Array.from({ length: 1000 }, (_, i) =>
@@ -886,6 +990,7 @@ export const datasets: Record<Mode, () => Dataset> = {
   worst: () =>
     talking(worst(), { running: 0, finished: 3, asking: 2, worst: true }),
   empty: () => ({
+    bots: [],
     projects: [chats()],
     sessions: [],
     terminals: [],

@@ -4,6 +4,7 @@ import { pageOf, paths } from '../router';
 import { fixtureKept, testing } from '../fixtures';
 import type { WorkspaceRef } from '@bica/shared/protocol';
 import { request, useTopic } from '../socket/socket';
+import { artifactHref } from '../artifacts/artifacts';
 
 /** What the main area shows: a file, or one side of a git change. */
 export type View = 'file' | 'staged' | 'changes';
@@ -28,7 +29,8 @@ export function openPath(path: string, cwd?: string, reveal?: boolean) {
 /**
  * Shows a path from a chat message in Bica, so it works away from the dev
  * machine too: a file in its workspace, over the chat when it is the
- * session's own. Files outside every workspace open in a new tab.
+ * session's own. Files outside every workspace open over the chat on a
+ * session page, and in a new tab elsewhere.
  */
 export async function showPath(
   path: string,
@@ -40,11 +42,15 @@ export async function showPath(
   );
   if (!found) return;
   const { workspace } = found;
-  if (workspace) {
+  const page = pageOf(location);
+  if (!workspace && found.artifact) navigate(artifactHref(found.artifact));
+  else if (workspace) {
     const open: Open = { path: found.path, view: 'file' };
     if (found.folder) navigate(workspaceHref(workspace));
     else if (workspace.cwd === cwd) navigate(openHref(workspace, open));
     else navigate(workspaceHref(workspace, open));
+  } else if (found.url && page.kind === 's') {
+    navigate(outsideFileHref(page.id, found.path));
   } else if (found.url) {
     // Safari blocks a tab opened this long after the click; a tap on the
     // toast is a fresh one.
@@ -99,6 +105,15 @@ export function sameOpen(a?: Open, b?: Open) {
 function setOpen(q: URLSearchParams, open: Open) {
   q.set(open.view === 'file' ? 'f' : 'd', open.path);
   if (open.view !== 'file') q.set('s', open.view);
+}
+
+/** A session page with a file outside every workspace open over its chat. */
+export function outsideFileHref(id: string, path: string) {
+  return `${String(paths.s(id))}?${new URLSearchParams({ x: path })}`;
+}
+
+export function outsideFromSearch(search: string) {
+  return new URLSearchParams(search).get('x') ?? undefined;
 }
 
 /** A session page with a file open over its chat. */

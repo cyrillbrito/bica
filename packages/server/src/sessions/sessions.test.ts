@@ -128,6 +128,41 @@ test('stop ends the run and hands queued prompts back', async () => {
   expect(shows(conversation, 'queued for later')).toBe(false);
 });
 
+test('a long session opens with all of it, and after a compaction with the summary', async () => {
+  const tab = await bica.connect();
+  // More steps than Pi Durable's view holds at once, with output enough
+  // that a compaction summarizes the first ones.
+  const steps = Array.from({ length: 40 }, (_, i) =>
+    fauxAssistantMessage(
+      fauxToolCall('bash', {
+        command: 'yes output | head -c 4000',
+        summary: `Step ${i}`,
+      }),
+      { stopReason: 'toolUse' },
+    ),
+  );
+  bica.reply(...steps, fauxAssistantMessage('done with every step'));
+  const id = await newSession(tab, 'the very first prompt');
+  await statusOf(tab, id)('done');
+
+  const opened = await (
+    await bica.connect()
+  )
+    .watch('conversation', { id })
+    .until((c) => shows(c, 'done with every step'));
+  expect(shows(opened, 'the very first prompt')).toBe(true);
+
+  bica.reply(fauxAssistantMessage('<summary>what the steps did</summary>'));
+  await tab.request('session.compact', { id });
+  const compacted = await (
+    await bica.connect()
+  )
+    .watch('conversation', { id })
+    .until((c) => shows(c, 'what the steps did'));
+  expect(shows(compacted, 'the very first prompt')).toBe(false);
+  expect(shows(compacted, 'done with every step')).toBe(true);
+});
+
 test('a phone that reconnects and resends its request gets one session with everything in it', async () => {
   const phone = await bica.connect();
   bica.reply(fauxAssistantMessage('answer for the phone'));
@@ -167,7 +202,10 @@ test('the model reads each image where the prompt names it, with its file', asyn
     .until((c) => shows(c, 'seen them'));
   const blocks = seen as { type: string; text?: string; data?: string }[];
   const files = blocks.flatMap(
-    (b) => /^\n\[image file: (.+)\]\n$/.exec(b.text ?? '')?.[1] ?? [],
+    (b) =>
+      /^\n\[The image above as a file, for tools: (.+)\]\n$/.exec(
+        b.text ?? '',
+      )?.[1] ?? [],
   );
   expect(
     blocks.map((b) => b.text ?? b.data).filter((t) => t![0] !== '\n'),
@@ -240,7 +278,7 @@ test("Prune takes old prompts' images out of what the model reads, and keeps the
   const first = JSON.stringify(seen);
   expect(first).toContain('Look at [Image #1]');
   expect(first).not.toContain('"type":"image"');
-  expect(first).toContain('[image file: ');
+  expect(first).toContain('[The image above as a file, for tools: ');
 });
 
 test('a session on a provider you signed out of moves to the same model through another', async () => {

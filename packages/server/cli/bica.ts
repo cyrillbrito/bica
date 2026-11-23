@@ -79,15 +79,22 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-function sendClient(client: Record<string, string>, req: Request) {
+async function sendClient(client: Record<string, string>, req: Request) {
   const { pathname } = new URL(req.url);
   // A page's URL, such as /s/<id>, gets the app, which routes in the browser.
   const path =
     client[pathname] ?? (extname(pathname) ? undefined : client['/index.html']);
   if (!path || (req.method !== 'GET' && req.method !== 'HEAD'))
     return new Response(null, { status: 404 });
-  return new Response(Bun.file(path), {
+  const file = Bun.file(path);
+  // Text shrinks about 3x, which the phone feels on a slow link.
+  const gzip =
+    /\.(html|js|css|json|svg|wasm|webmanifest)$/.test(path) &&
+    /\bgzip\b/.test(req.headers.get('accept-encoding') ?? '');
+  return new Response(gzip ? Bun.gzipSync(await file.bytes()) : file, {
     headers: {
+      'Content-Type': file.type,
+      ...(gzip && { 'Content-Encoding': 'gzip' }),
       // Vite hashes the names of what it puts in assets/.
       'Cache-Control': pathname.startsWith('/assets/')
         ? 'public, max-age=31536000, immutable'

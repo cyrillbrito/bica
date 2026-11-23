@@ -24,7 +24,7 @@ export default function FilePreview(props: {
     <Switch>
       <Match when={props.kind === 'markdown'}>
         <div class="mx-auto max-w-3xl px-4 py-6">
-          <Markdown text={props.text} />
+          <Markdown text={props.text} frontmatter />
         </div>
       </Match>
       <Match when={props.kind === 'html'}>

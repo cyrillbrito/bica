@@ -1,0 +1,32 @@
+/* The kit's tokens as Tailwind's theme, so `bg-surface` or `text-muted` follow
+   the theme. Tailwind's palette and fonts are cleared, so a page can't
+   hard-code `bg-blue-500` and fall out of the theme. `dark:` follows the
+   kit's light or dark, not the system's. Fed to Tailwind's browser build in
+   the viewer, and to its compiler for an export. */
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-well: var(--well);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --font-*: initial;
+  --font-sans: var(--text-font);
+  --font-heading: var(--heading-font);
+  --font-mono: var(--mono-font);
+  --radius-card: var(--radius);
+}
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));

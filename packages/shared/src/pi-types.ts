@@ -12,7 +12,7 @@ import type {
   TypedEntry,
   UsageState,
 } from '@earendil-works/pi-durable';
-import type { JsonValue } from '@earendil-works/chord';
+import type { JsonValue } from '@earendil-works/chord/json';
 
 declare module '@earendil-works/pi-ai' {
   interface ThinkingContent {

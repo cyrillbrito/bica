@@ -2,11 +2,9 @@
 
 A lock for Bica's socket that doesn't depend on the network. None is built. Today the network is the lock: the server listens on localhost, and the phone reaches it through `tailscale serve` ([deploy.md](../deploy.md)). Anyone who reaches the socket has a shell on the machine.
 
-## A hole today
+## What protects it today
 
-The socket accepts a handshake when the `Origin` host equals the `Host` header (`upgrade` in `packages/server/src/socket.ts`). DNS rebinding passes that check: a page on `evil.example` points its own name at `127.0.0.1`, both headers say `evil.example:3142`, and the page drives the agent. Vite's `allowedHosts` doesn't help, because Bica answers the upgrade before Vite's host check. Transmission had a code execution bug of exactly this kind in 2018. The diff blobs at `/blob/<hash>` have no check at all, and with `?disk` the hash is no secret: any hash returns the file's current bytes, so a page that knows a project's id and a workspace path can read its files. The fix has to cover them too; in dev, Vite's host check does run before its proxy. Prompt images at `/attachment/<name>` are named by a SHA-256 of their bytes, which a page can't guess.
-
-The fix is a `Host` allowlist (localhost, IP addresses, `.ts.net`, and names you add), or a secret the attacker's page doesn't have. Either one is small and worth doing on its own.
+The socket accepts a handshake when the `Origin` host equals the `Host` header, and the socket and the diff blobs refuse a `Host` that isn't localhost, an IP address, or `.ts.net` ([deploy.md](../deploy.md)). Downloads and prompt images need no check: their URLs hold a random token or a hash of the bytes, which a page can't guess. The `Host` check stops DNS rebinding, where a page on `evil.example` points its own name at `127.0.0.1` so both headers say `evil.example`. Transmission had a code execution bug of exactly this kind in 2018. Anyone on the network Bica is served to still gets in, which is what the token is for.
 
 ## The design: one token, a pairing link, a cookie
 

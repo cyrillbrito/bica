@@ -26,6 +26,11 @@ const [closing, setClosing] = createSignal<ReadonlySet<string>>(new Set(), {
 });
 let settle: (choice: Choice) => void = () => {};
 
+// Unknown (no shell integration) counts as running, so it still asks.
+function idle(t: TerminalInfo) {
+  return t.status === 'exited' || t.busy === false;
+}
+
 /** Every open child session of `id`, and their children. */
 function descendants(id: string, all: readonly SessionSummary[]) {
   const out: SessionSummary[] = [];
@@ -44,7 +49,8 @@ function descendants(id: string, all: readonly SessionSummary[]) {
 /**
  * The sessions to archive along with `s`, itself included, and the
  * terminals to detach so they stay open; null when cancelled. Asks only when
- * `s` leads open child sessions or terminals. Sessions come unpicked and
+ * `s` leads open child sessions or terminals still running a command: one
+ * idle at its prompt or exited has nothing to lose. Sessions come unpicked and
  * terminals picked: a dev server is rarely worth keeping, a child session's
  * work often is. Whatever is left is detached, and ones detached already are
  * the user's, so they aren't offered.
@@ -56,7 +62,7 @@ function askArchive(
   const kids = descendants(s.id, all);
   const ids = [s.id, ...kids.map((k) => k.id)];
   const led = readTerminals().filter((t) => t.parent && ids.includes(t.parent));
-  if (!kids.length && !led.some((t) => t.parent === s.id))
+  if (!kids.length && !led.some((t) => t.parent === s.id && !idle(t)))
     return Promise.resolve({ ids: [s.id], detach: [] });
   setParent(s);
   setChildren(kids);

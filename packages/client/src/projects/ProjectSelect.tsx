@@ -1,13 +1,20 @@
 import { Dynamic, type JSX } from '@solidjs/web';
 import { For, Show, createMemo, createSignal } from 'solid-js';
 
-import { CHATS_ID, useProjects, type Target } from './projects';
+import { isOwnProject } from '@bica/shared/projects';
+import { CHATS_ID, projectName, useProjects, type Target } from './projects';
 import type { Project } from '@bica/shared/protocol';
 import { useSessions } from '../sessions/sessions';
 import { age } from '../ui/time';
 import { buttonClass } from '../ui/Button';
 import Chevron from '../ui/Chevron';
-import { CheckIcon, FolderIcon, PlusIcon, SparkleIcon } from '../ui/icons';
+import {
+  BotIcon,
+  CheckIcon,
+  FolderIcon,
+  PlusIcon,
+  SparkleIcon,
+} from '../ui/icons';
 import { NoMatches, optionClass } from '../ui/Option';
 import { createActiveOption } from '../ui/listKeys';
 import { Popover, PopoverSearch } from '../ui/Popover';
@@ -58,7 +65,7 @@ export default function ProjectSelect(props: {
     (): Item[] => {
       const has = (hay: string) => matches(query(), hay);
       const listed = projects()
-        .filter((p) => p.id !== CHATS_ID && has(p.name))
+        .filter((p) => isOwnProject(p) && has(p.name))
         .map((p) => ({
           key: p.id,
           target: { projectId: p.id },
@@ -113,9 +120,11 @@ export default function ProjectSelect(props: {
         aria-label="Project"
         title={props.project.path}
       >
-        <FolderIcon />
+        {props.project.bot ? <BotIcon /> : <FolderIcon />}
         <span class="truncate">
-          {props.project.id === CHATS_ID ? 'No project' : props.project.name}
+          {props.project.id === CHATS_ID
+            ? 'No project'
+            : projectName(props.project)}
         </span>
         <Chevron class="rotate-90 text-muted/70" />
       </button>

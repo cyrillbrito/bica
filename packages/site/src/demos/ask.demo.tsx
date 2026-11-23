@@ -1,11 +1,11 @@
-import AskCard from '@client/sessions/AskCard';
+import QuestionCard from '@client/sessions/QuestionCard';
 import { mount } from './mount';
 
 // Answers stay on the page: nothing is sent anywhere.
 export default (host: HTMLElement) =>
   mount(host, () => (
     <div class="max-w-xl">
-      <AskCard
+      <QuestionCard
         open
         onAnswer={async (text) => console.log('Answer:', text)}
         questions={[

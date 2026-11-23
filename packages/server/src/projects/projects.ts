@@ -14,6 +14,7 @@ import * as git from '../git/commands';
 import { pullRequests } from './github';
 import { live } from '../live';
 import { BICA_HOME, jsonFile } from '../storage';
+import { storedBots } from '../bots/store';
 
 export { CHATS_ID };
 
@@ -35,6 +36,22 @@ const file = jsonFile<Stored[]>('projects.json', {
 
 async function load() {
   return file.read();
+}
+
+/**
+ * The user's projects, Chats, then one project per bot for its workspace,
+ * under the bot's id: its sessions there get terminals, panels, and a place
+ * in the sidebar like any other. Real projects come first, so a folder that
+ * is both belongs to the user's project.
+ */
+async function loadAll(): Promise<Stored[]> {
+  const bots = storedBots().map((b) => ({
+    id: b.id,
+    name: b.name,
+    path: b.workspace,
+    bot: true as const,
+  }));
+  return [...(await load()), CHATS, ...bots];
 }
 
 // Checked on every read: a folder can become (or stop being) a repo.
@@ -83,7 +100,7 @@ async function withWorkspaces(p: Stored): Promise<Project> {
 }
 
 export async function listProjects(): Promise<Project[]> {
-  return Promise.all([...(await load()), CHATS].map(withWorkspaces));
+  return Promise.all((await loadAll()).map(withWorkspaces));
 }
 
 // Git is the source of truth: every worktree of the repo, wherever made.
@@ -103,7 +120,7 @@ async function workspacesOf(path: string, repo: boolean): Promise<Workspace[]> {
 
 /** One project, reading only its own worktrees. */
 export async function getProject(id: string) {
-  const stored = [...(await load()), CHATS].find((p) => p.id === id);
+  const stored = (await loadAll()).find((p) => p.id === id);
   if (!stored) throw new Error(`No project ${id}`);
   return withWorkspaces(stored);
 }

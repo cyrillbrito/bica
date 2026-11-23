@@ -1,0 +1,72 @@
+/* Paper: calm and editorial. A book face on cream, ink colors, an oxblood
+   accent, and a narrower measure for long reading. */
+@layer kit {
+  :root[data-theme='paper'] {
+    color-scheme: light;
+    --bg: #f7f2e8;
+    --surface: #fffdf8;
+    --well: #3a2f200b;
+    --fg: #2b2620;
+    --muted: #6f665a;
+    --line: #2b262021;
+    --accent: #9b2c2c;
+    --accent-fg: #fffdf8;
+    --success: #3d7a4a;
+    --warn: #a2741a;
+    --danger: #a8322d;
+    --info: #2f5f8a;
+    --chart-1: #9b2c2c;
+    --chart-2: #2f5f8a;
+    --chart-3: #b08a3e;
+    --chart-4: #4f7a5a;
+    --chart-5: #6b5b8a;
+    --chart-6: #8a6a4f;
+    --text-font: 'Libron', 'Iowan Old Style', Charter, Georgia, serif;
+    --heading-font: var(--text-font);
+    --mono-font: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+    --heading-weight: 600;
+    --radius: 4px;
+  }
+  :root[data-theme='paper'][data-mode='dark'] {
+    color-scheme: dark;
+    --bg: #1f1c18;
+    --surface: #29251f;
+    --well: #ffffff09;
+    --fg: #e8e0d2;
+    --muted: #a39a8b;
+    --line: #ffffff1a;
+    --accent: #e08a7a;
+    --accent-fg: #1f1c18;
+    --success: #8fc49a;
+    --warn: #e0b866;
+    --danger: #e8857c;
+    --info: #8ab4dc;
+    --chart-1: #e08a7a;
+    --chart-2: #8ab4dc;
+    --chart-3: #e0c07a;
+    --chart-4: #9cc8a4;
+    --chart-5: #b4a4dc;
+    --chart-6: #d0a884;
+  }
+  :root[data-theme='paper'] {
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  /* Room for a grid of cards, while prose keeps a book's line length. */
+  :root[data-theme='paper'] body {
+    max-width: 60rem;
+  }
+  :root[data-theme='paper'] :where(p, li, blockquote) {
+    max-width: 44rem;
+  }
+  :root[data-theme='paper'] h1 {
+    font-size: 2.4rem;
+    font-weight: 500;
+  }
+  :root[data-theme='paper'] th {
+    background: none;
+    border-bottom: 1.5px solid var(--fg);
+    font-style: italic;
+    font-weight: 500;
+  }
+}

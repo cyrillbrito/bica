@@ -59,6 +59,7 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - `bun run dev:web` runs the React mock on port 3145.
 - `bun run build` and `bun run start` run a built copy, see [docs/deploy.md](docs/deploy.md).
 - `bun run build:bica` compiles the `bica` binary into `dist/bica/bica`, and the `release` workflow publishes it as a draft GitHub release, see the same doc.
+- `bunx skills add <owner/repo> -a codex -y` adds a skill for agents working on this repo. `-a codex` keeps it in `.agents/skills` alone, with no `.claude/` link. The CLI also records it in `skills-lock.json`, so commit both.
 - Ports: 3141 for `bica` and `bun run start`, 3142 for Vite in dev, 3143 for the dev server, 3144 for the website, 3145 for the React mock. `BICA_PORT` moves the dev pair.
 
 ## Next
@@ -67,7 +68,9 @@ Each package owns its scripts (`dev`, `build`, `test`, `typecheck`), and the roo
 - Opening pull requests, and comparing a worktree against its branch base.
 - Installing as an app on the phone.
 - A file watcher instead of polling.
+- Live data in artifacts, and clicks inside one that send a prompt.
 - A file mode in the command palette: `/` searches the workspace's files, and ⌘P opens straight into it.
+- A new look after BoardUI's design. Two branches on GitHub hold the trials: `boardui-solid-port-prototype` ports its free components to Solid 2 (`prototypes/boardui-solid/README.md` there), and `monorepo-react-client` mocks every screen in React with them.
 
 ## Library docs
 
@@ -92,17 +95,19 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 - [orchestration.md](docs/orchestration.md): sessions working with other sessions: parents and child sessions, Detach, watching, notes, and the session tools. Read before changing how sessions start, message, or hear of each other.
 - [system-prompt.md](docs/system-prompt.md): the system prompt's sections, project instructions, skills, and reply rules. Read before changing what the agent is told.
 - [context-usage.md](docs/context-usage.md): the context chip, prompt cache, spend, compaction, pruning.
-- [agents.md](docs/agents.md): the Coding, Assistant, Night, and Hub agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
-- [night-runs.md](docs/night-runs.md): sessions held for tonight, run one at a time while the plan has room, ending with a report.
-- [assistant-mode.md](docs/assistant-mode.md): sessions that run for months, with memory in files.
-- [hub.md](docs/hub.md): the one session that coordinates the others.
+- [agents.md](docs/agents.md): the Coding and Bot agents, what an agent holds, and what Bica does around it. Read before changing what a kind of session gets.
+- [schedules.md](docs/schedules.md): reminders and routines, prompts that fire later, once or on a repeat, back into a session or as a new one; the Schedules page. Read before changing them.
+- [bots.md](docs/bots.md): the long-lived agents you make, each with a home, a workspace, and one session that gets work done through others; their Watching strip, memory files, and housekeeping. Read before changing bots or long-lived sessions.
 - [voice.md](docs/voice.md): voice calls, handoffs, hold music, and dictation.
 - [projects.md](docs/projects.md): projects, worktrees, chats, pull requests, the sidebar.
 - [layout.md](docs/layout.md): the sidebar, the centre, and the side panel on each screen size, and the side panel's tabs. Read before adding a side panel tab.
 - [files.md](docs/files.md): the workspace page, file and diff views, file lists.
+- [artifacts.md](docs/artifacts.md): the HTML report pages agents build, the kit with its themes and charts, the viewer, and export. Read before changing artifacts, the kit, or the artifacts skill.
 - [git.md](docs/git.md): the Git tab and commit messages.
 - [command-palette.md](docs/command-palette.md): ⌘K and every keyboard shortcut. Read before adding a shortcut.
 - [terminals.md](docs/terminals.md): shared shells and the agent's terminal tools.
+- [requests.md](docs/requests.md): requests, the cards a session waits on you with: questions and approvals, how they wait without running, and how an answer comes back. Read before adding a kind or changing how one is answered.
+- [connectors.md](docs/connectors.md): connected apps through Composio, their tools in code mode, the apps line in the prompt, and approval cards. Read before changing them.
 - [models.md](docs/models.md): providers and sign-ins, more than one plan account, Exa, the default and fast models, and the model picker.
 - [realtime-communication.md](docs/realtime-communication.md): the WebSocket protocol, projection, and caching. Read before adding a topic or request.
 - [deploy.md](docs/deploy.md): running Bica, Tailscale, the `bica` binary, releases.
@@ -114,12 +119,16 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 `docs/explorations/` holds research and plans for what isn't built. Read the matching one before building in its area, and delete or trim it once the feature's doc takes over. Write one only when the user asks for it.
 
 - [fast-loading.md](docs/explorations/fast-loading.md): opening, switching, and reconnecting faster on the phone.
+- [artifacts.md](docs/explorations/artifacts.md): live data in artifacts, and clicks inside one that send a prompt.
+- [rich-replies.md](docs/explorations/rich-replies.md): cards and forms in the middle of a reply.
+- [agent-memory.md](docs/explorations/agent-memory.md): dreaming, a pass that checks and tidies a bot's memory files.
+- [bots.md](docs/explorations/bots.md): what other bot products do that Bica's bots don't yet: schedules, notifications, connectors, and better memory.
 - [distribution.md](docs/explorations/distribution.md): installing and updating `bica`.
 - [session-progress.md](docs/explorations/session-progress.md): agent to-do lists, the removed Recap tab, and what could show a session's progress instead.
-- [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, and the DNS rebinding hole.
+- [self-hosted-auth.md](docs/explorations/self-hosted-auth.md): a token for the socket, so the network isn't the only lock.
 - [themes.md](docs/explorations/themes.md): editor color themes.
 - [ui-hierarchy.md](docs/explorations/ui-hierarchy.md): what the side panel next to a session belongs to.
-- [voice-and-hub.md](docs/explorations/voice-and-hub.md): what's left from OpenAI's GPT-Live and Codex voice for calls and the hub.
+- [voice-and-bots.md](docs/explorations/voice-and-bots.md): what's left from OpenAI's GPT-Live and Codex voice for calls and bots.
 - [work-lifecycle.md](docs/explorations/work-lifecycle.md): from a first question to a merged pull request.
 
 `docs/records/` holds big decisions the user asked to record: what was tried, what was found, and what was decided. Read the matching one before reopening its question. Write one only when the user asks for it; how the code is laid out today goes in `architecture.md`.
@@ -133,6 +142,8 @@ Pi Durable, Solid 2, and Pierre are new and change often, and the web may descri
 ## Rules
 
 - Write docs, comments, and commit messages as [docs/writing.md](docs/writing.md) describes. Comments are rare and say why, never what.
+- Commit only when the user asks, and only your own files: other sessions share the worktree. Messages follow Conventional Commits, such as `chore: add the improve skill`. Check `git log` and match it, and run `bun run checks` first.
+- Before adding something the repo already has more of, such as a skill, a package, or a config file, look at how the existing ones were added and match them. A tool's defaults are not the repo's conventions: check the diff it leaves for files and changes the others don't have.
 - Use the terms in [docs/GLOSSARY.md](docs/GLOSSARY.md) for names, comments, docs, and UI labels. Stored fields, socket names, and Durable extension names keep older words so stored data still reads; their comments say so. Add a term there when a new concept appears.
 - Read [docs/UI.md](docs/UI.md) before any UI work.
 - Keep this file and `docs/` up to date with every change. Add a doc when a new area appears.

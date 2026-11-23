@@ -1,5 +1,3 @@
-import { createMemo } from 'solid-js';
-import type { PickableAgent } from '@bica/shared/agents';
 import type {
   ModelChoice,
   PromptImage,
@@ -21,18 +19,6 @@ export function useSessions() {
   return useTopic('sessions', () => ({}));
 }
 
-/** The hub (docs/hub.md): the newest open hub session outside any project. */
-export function useHub() {
-  const sessions = useSessions();
-  return createMemo(
-    () =>
-      sessions().find(
-        (s) => s.agent === 'hub' && !s.archivedAt && !s.projectId,
-      ),
-    { name: 'hub' },
-  );
-}
-
 // Undefined while it loads: the session page shows its frame from the list.
 export function useConversation(id: () => string) {
   return useTopicWhenReady('conversation', () => ({ id: id() }));
@@ -45,8 +31,6 @@ export function startSession(
   images: PromptImage[],
   choice?: ModelChoice,
   worktree?: boolean,
-  agent?: PickableAgent,
-  tonight?: boolean,
 ) {
   return request('session.create', {
     projectId,
@@ -56,18 +40,7 @@ export function startSession(
     requestId: requestId(),
     choice,
     worktree,
-    agent,
-    tonight,
   });
-}
-
-/** A session held for tonight: save its prompt, run it now, or cancel. */
-export function tonightAction(
-  id: string,
-  action: 'save' | 'run' | 'cancel',
-  prompt?: string,
-) {
-  return request('session.tonight', { id, action, prompt });
 }
 
 function archiveSession(id: string, archived = true) {
@@ -174,14 +147,6 @@ export function pushQueued(id: string, submission: number) {
 
 export function stopSession(id: string) {
   return request('session.stop', { id });
-}
-
-export function retrySession(id: string) {
-  return request('session.retry', { id });
-}
-
-export function setAgent(id: string, agent: PickableAgent) {
-  return request('session.agent', { id, agent });
 }
 
 export function setVoiceSettings(id: string, voice: VoiceSettings) {

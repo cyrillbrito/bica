@@ -9,18 +9,19 @@ export const { paths } = Router;
 
 /**
  * What a location shows, read from its URL, for code outside the page's own
- * route: the palette, the side panel, the sidebar. Other pages (home, hub,
+ * route: the palette, the side panel, the sidebar. Other pages (home,
  * settings) are named by their first segment.
  */
 export type Page =
-  | { kind: 's' | 't'; id: string }
+  | { kind: 's' | 't' | 'b'; id: string }
   | { kind: 'p'; projectId: string; cwd: string | null }
   | { kind: 'other'; name: string };
 
 export function pageOf(l: { pathname: string; search: string }): Page {
   const [, name = '', raw] = l.pathname.split('/');
   const id = raw ? decodeURIComponent(raw) : undefined;
-  if ((name === 's' || name === 't') && id) return { kind: name, id };
+  if ((name === 's' || name === 't' || name === 'b') && id)
+    return { kind: name, id };
   if (name === 'p' && id)
     return {
       kind: 'p',

@@ -13,7 +13,7 @@ import {
 import { models } from './registry';
 
 /*
- * The plans' limits for the sidebar's meters and night runs, from the
+ * The plans' limits for the sidebar's meters, from the
  * rate-limit headers of each account's last reply (plans.ts). Saved, so the
  * meters survive a restart; an account that hasn't answered yet has none.
  */

@@ -1,13 +1,11 @@
 import type { Extension } from '@earendil-works/pi-durable';
 import type { AgentId } from '@bica/shared/agents';
 import { registry } from '../harness';
-import { assistant } from './assistant';
 import { coding } from './coding';
 import type { Agent } from './common';
-import { hub } from '../hub/agent';
-import { night } from '../night-runs/agent';
+import { bot } from '../bots/agent';
 
-const AGENTS: Record<AgentId, Agent> = { coding, assistant, night, hub };
+const AGENTS: Record<AgentId, Agent> = { coding, bot };
 
 export function getAgent(id: AgentId) {
   return AGENTS[id];

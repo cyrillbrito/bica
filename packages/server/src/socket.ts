@@ -15,7 +15,7 @@ import {
   type Topics,
   type WorkspaceRef,
 } from '@bica/shared/protocol';
-import { archive, markSeen, rename, setAgent, setVoice } from './sessions/meta';
+import { archive, markSeen, rename, setVoice } from './sessions/meta';
 import { removeWorktree } from './projects/worktrees';
 import {
   pruneContext,
@@ -27,12 +27,22 @@ import {
   withdraw,
 } from './sessions/prompts';
 import { createSession, fork } from './sessions/create';
-import { retryStuck } from './sessions/stuck';
 import { detach, unwatch } from './orchestration/notes';
 import { conversationDetail, watchConversation } from './sessions/conversation';
 import { watchSessions } from './sessions/store';
-import { openHub, updateHub } from './hub/hub';
-import { cancelTonight, runTonight, saveTonight } from './night-runs/night';
+import {
+  createBot,
+  deleteBot,
+  openBot,
+  readBotFiles,
+  updateBot,
+} from './bots/bots';
+import { watchBots } from './bots/store';
+import {
+  createFromComposer,
+  deleteSchedule,
+  watchSchedules,
+} from './schedules/schedules';
 import { watchModels } from './models/models';
 import { updateSettings, watchSettings } from './settings';
 import { wsLogger } from './ws-log';
@@ -46,6 +56,14 @@ import {
   watchAccounts,
 } from './models/accounts';
 import { voiceLog } from './voice/log';
+import {
+  connectApp,
+  disconnectApp,
+  searchToolkits,
+  setKey,
+  watchConnectors,
+} from './connectors/apps';
+import { answerRequest } from './sessions/requests';
 import { addPhotos, startCall, stopCall, transcribe } from './voice/voice';
 import { watchPlanUsage } from './models/usage';
 import {
@@ -82,6 +100,7 @@ import {
   watchStatus,
 } from './git/workspace';
 import { readText, watchFiles } from './files/files';
+import { watchArtifacts } from './artifacts/artifacts';
 
 type Sink = {
   snapshot: (value: unknown, kept?: number) => void;
@@ -101,19 +120,10 @@ type Handlers = {
 const calls: Handlers = {
   'session.create': async (args) =>
     createSession({ ...args, prompt: args.prompt.trim() }),
-  'session.tonight': async ({ id, action, prompt }) => {
-    if (action === 'cancel') return cancelTonight(id);
-    if (action === 'save') await saveTonight(id, prompt ?? '');
-    else await runTonight(id, prompt);
-    return '';
-  },
+  'schedule.create': async (args) => createFromComposer(args),
+  'schedule.delete': async ({ id }) => deleteSchedule(id),
   'session.configure': async ({ id, ...choice }) => configure(id, choice),
-  // Here because the hub reads settings, so settings can't call it.
-  'settings.update': async (change) => {
-    await updateSettings(change);
-    if (change.hubModel !== undefined || change.hubFolder !== undefined)
-      await updateHub();
-  },
+  'settings.update': async (change) => updateSettings(change),
   'project.add': async ({ path }) => addProject(path),
   'project.reorder': async ({ ids }) => reorderProjects(ids),
   'project.pin': async ({ id, pinned }) => pinProject(id, pinned),
@@ -136,14 +146,14 @@ const calls: Handlers = {
   'session.withdraw': async ({ id, submission }) => withdraw(id, submission),
   'session.push': async ({ id, submission }) => pushSubmission(id, submission),
   'session.stop': async ({ id }) => stop(id),
-  'session.retry': async ({ id }) => {
-    await retryStuck(id);
-  },
   'session.archive': async ({ id, archived }) => archive(id, archived),
   'session.rename': async ({ id, title }) => rename(id, title),
   'session.compact': async ({ id, instructions }) => compact(id, instructions),
-  'hub.open': async () => openHub(),
-  'session.agent': async ({ id, agent }) => setAgent(id, agent),
+  'bot.create': async (edit) => createBot(edit),
+  'bot.update': async ({ id, ...edit }) => updateBot(id, edit),
+  'bot.delete': async ({ id }) => deleteBot(id),
+  'bot.open': async ({ id }) => openBot(id),
+  'bot.files': async ({ id }) => readBotFiles(id),
   'session.voice': async ({ id, voice }) => setVoice(id, voice),
   'session.cleanup': async ({ id }) => {
     await pruneContext(id);
@@ -164,6 +174,14 @@ const calls: Handlers = {
   'account.add': async ({ provider }) => addAccount(provider),
   'account.useFirst': async ({ id }) => useFirst(id),
   'account.signOut': async ({ id }) => signOut(id),
+  'connector.key': async ({ key }) => setKey(key),
+  'connector.toolkits': async ({ search }) => searchToolkits(search),
+  'connector.connect': async ({ toolkit }) => connectApp(toolkit),
+  'connector.disconnect': async ({ id }) => disconnectApp(id),
+  'request.answer': async ({ session, call, value }) => {
+    await answerRequest(session, call, value);
+    return null;
+  },
   'git.stage': async (args) => stage(ref(args), args.paths, args.repo),
   'git.unstage': async (args) => unstage(ref(args), args.paths, args.repo),
   'git.commit': async (args) =>
@@ -211,9 +229,11 @@ const calls: Handlers = {
 // resize to a given size.
 const REPEATABLE = new Set<Call>([
   'fs.dirs',
+  'bot.files',
   'file.read',
   'file.link',
   'path.find',
+  'connector.toolkits',
   'git.diff',
   'git.log',
   'git.show',
@@ -244,15 +264,19 @@ const topics: {
 } = {
   sessions: (_params, sink) => watchSessions(sink.snapshot),
   projects: (_params, sink) => watchProjects(sink.snapshot),
+  bots: (_params, sink) => watchBots(sink.snapshot),
   models: (_params, sink) => watchModels(sink.snapshot),
   settings: (_params, sink) => watchSettings(sink.snapshot),
   accounts: (_params, sink) => watchAccounts(sink.snapshot),
+  connectors: (_params, sink) => watchConnectors(sink.snapshot),
   'plan.usage': (_params, sink) => watchPlanUsage(sink.snapshot),
   conversation: ({ id }, sink, have) => watchConversation(id, sink, have),
   'git.status': (params, sink) => watchStatus(ref(params), sink.snapshot),
   files: (params, sink) => watchFiles(ref(params), sink.snapshot),
   terminals: (_params, sink) => watchTerminals(sink.snapshot),
   terminal: ({ id }, sink) => watchTerminal(id, sink),
+  artifacts: (_params, sink) => watchArtifacts(sink.snapshot),
+  schedules: (_params, sink) => watchSchedules(sink.snapshot),
 };
 
 // Just the workspace: a call's other args stay out of caches keyed on it.

@@ -51,3 +51,34 @@ test('a spoken correction joins the running work, and the transcript shows it wi
   expect(shows(shown, 'No, use the other branch')).toBe(true);
   expect(shows(shown, 'no wait')).toBe(false);
 });
+
+test('a handoff whose run ends on a question says it waits for the user', async () => {
+  const tab = await bica.connect();
+  const { voiceSession } = await import('./session');
+  bica.reply(fauxAssistantMessage('Ready.'));
+  const { projectId } = await bica.project(tab, 'voice-waits');
+  const { id } = await tab.request('session.create', {
+    projectId,
+    prompt: 'Hello',
+    requestId: crypto.randomUUID(),
+  });
+  await tab.watch('conversation', { id }).until((c) => shows(c, 'Ready.'));
+
+  bica.reply(
+    fauxAssistantMessage(
+      fauxToolCall('ask', {
+        questions: [
+          {
+            question: 'Which branch?',
+            header: 'Branch',
+            options: [{ label: 'main' }, { label: 'dev' }],
+          },
+        ],
+        summary: 'Ask',
+      }),
+      { stopReason: 'toolUse' },
+    ),
+  );
+  const { waits } = await (await voiceSession(id)).ask('Merge it');
+  expect(waits).toEqual(['Question: Which branch? (main / dev)']);
+});

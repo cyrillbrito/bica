@@ -24,6 +24,20 @@ test("another website's page can't open the socket", async () => {
   expect(await refused(bica.connect())).toBe(false);
 });
 
+test("a website that points its own name at this machine can't open the socket or read diffs", async () => {
+  const blob = (host: string) =>
+    fetch(`http://127.0.0.1:${bica.port}/blob/${'0'.repeat(40)}`, {
+      headers: { Host: host },
+    }).then((r) => r.status);
+  for (const [host, known] of [
+    [`evil.example:${bica.port}`, false],
+    ['laptop.tailnet.ts.net', true],
+  ] as const) {
+    expect(await refused(bica.connect({ host }))).toBe(!known);
+    expect(await blob(host)).toBe(known ? 404 : 403);
+  }
+});
+
 test('file reads stay inside the workspace', async () => {
   const tab = await bica.connect();
   const ref = await bica.project(tab);

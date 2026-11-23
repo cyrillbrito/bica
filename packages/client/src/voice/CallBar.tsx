@@ -93,19 +93,14 @@ export function Meter(props: {
 }
 
 /**
- * What is being said, kept to its newest two lines: older ones slide off the
- * top, like a subtitle.
+ * What you are saying, kept to its newest two lines: older ones slide off the
+ * top, like a subtitle. The voice's words show in the transcript instead.
  */
-function Caption(props: { text: string; voice: boolean }) {
+function Caption(props: { text: string }) {
   return (
-    <div
-      class={[
-        'flex max-h-[2lh] min-w-0 flex-1 flex-col justify-end overflow-hidden text-read',
-        props.voice ? 'text-fg' : 'text-muted',
-      ]}
-    >
+    <div class="flex max-h-[2lh] min-w-0 flex-1 flex-col justify-end overflow-hidden text-read text-muted">
       <p>
-        <span class="sr-only">{props.voice ? 'Voice: ' : 'You: '}</span>
+        <span class="sr-only">You: </span>
         {props.text}
       </p>
     </div>
@@ -146,6 +141,7 @@ export default function CallBar(props: {
           if (now.photoNote) return now.photoNote.text;
           if (now.muted) return 'Muted';
           if (now.micSilent) return 'No sound from your mic';
+          if (now.talking === 'voice') return 'Speaking';
           return props.busy ? 'Working on it…' : 'Listening';
         };
         const working = () =>
@@ -164,7 +160,7 @@ export default function CallBar(props: {
                 working={working()}
               />
               <Show
-                when={c().caption}
+                when={c().talking === 'you' ? c().caption : undefined}
                 fallback={
                   <span
                     class={[
@@ -173,7 +169,10 @@ export default function CallBar(props: {
                       c().micSilent ||
                       c().photoNote?.failed
                         ? 'text-danger'
-                        : props.busy && c().phase === 'live' && !c().muted
+                        : props.busy &&
+                            c().phase === 'live' &&
+                            !c().muted &&
+                            c().talking !== 'voice'
                           ? 'shimmer text-muted'
                           : 'text-muted',
                     ]}
@@ -182,9 +181,7 @@ export default function CallBar(props: {
                   </span>
                 }
               >
-                {(caption) => (
-                  <Caption text={caption()} voice={c().talking === 'voice'} />
-                )}
+                {(caption) => <Caption text={caption()} />}
               </Show>
             </div>
             <div class="-ml-1.5 flex items-center gap-0.5">

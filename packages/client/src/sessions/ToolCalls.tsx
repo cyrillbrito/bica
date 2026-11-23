@@ -10,7 +10,12 @@ import {
   onSettled,
 } from 'solid-js';
 
+import { useNavigate } from '@solidjs/router';
+
 import { useSessions } from './sessions';
+import { looksLikeArtifact } from '../artifacts/artifacts';
+import { showPath } from '../files/files';
+import { Button } from '../ui/Button';
 import { useStepDetail } from './step-detail';
 import { createStopwatch, formatDuration, formatLive } from '../ui/time';
 import { paths } from '../router';
@@ -45,6 +50,17 @@ export default function ToolCalls(props: { calls: ToolCall[] }) {
 }
 
 function ToolRow(props: { call: ToolCall }) {
+  const navigate = useNavigate();
+  // An artifact the agent wrote opens from its row (docs/artifacts.md).
+  const artifactPath = () => {
+    const { name, status, args } = props.call;
+    return (name === 'write' || name === 'edit') &&
+      status === 'done' &&
+      typeof args.path === 'string' &&
+      looksLikeArtifact(args.path)
+      ? args.path
+      : undefined;
+  };
   const summary = () => {
     const s = props.call.args.summary;
     return typeof s === 'string' && s.trim() ? s : undefined;
@@ -101,6 +117,22 @@ function ToolRow(props: { call: ToolCall }) {
                 <span class="ml-1.5 text-danger">−{stats().removed}</span>
               </Show>
             </span>
+          )}
+        </Show>
+        <Show when={artifactPath()}>
+          {(path) => (
+            <Button
+              size="sm"
+              variant="outline"
+              class="shrink-0"
+              onClick={(e) => {
+                // Inside the summary: open the page, not the row.
+                e.preventDefault();
+                void showPath(path(), undefined, navigate);
+              }}
+            >
+              Open
+            </Button>
           )}
         </Show>
         <CallStatus call={props.call} />
@@ -203,6 +235,7 @@ const NAMES: Record<string, string> = {
   start_session: 'session',
   session_start: 'session',
   codemode: 'code',
+  composio_multi_execute_tool: 'apps',
 };
 
 // The icon shows what the call does. Its status only tints it, so a round

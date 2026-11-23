@@ -48,11 +48,12 @@ async function open(): Promise<Harness> {
       models,
       registry,
       env: ({ cwd }) => new NodeExecutionEnv({ cwd: cwd ?? process.cwd() }),
-      onReport: (error, info) => console.error('[harness]', info.type, error),
+      onReport: (report) =>
+        console.error('[harness]', report.kind, report.error),
       // Steers are corrections: every one waiting lands at the next step.
       // Follow-ups stay one per run.
       settings: {
-        // Without it, every session would get the hub's tools too.
+        // Without it, every session would get the bots' tools too.
         extensions: defaults,
         steeringMode: 'all',
         // Prompts and notes queued behind a failed run still run: many

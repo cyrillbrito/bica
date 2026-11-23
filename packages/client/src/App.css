@@ -124,6 +124,17 @@
   /* The raised thumb of a segmented control, on an `active` tray: white in
      light, a lighter veil in dark so it always reads above the tray. */
   --color-thumb: light-dark(#ffffff, #ffffff1a);
+  /* A bot's color, picked by the user (shared/src/bots.ts). Identity, not
+     status, so only its mark wears it. Equal lightness, so no bot shouts;
+     white letters keep AA on each in both themes. */
+  --color-bot-blue: light-dark(#3a6aa7, #3f70ad); /* 0.52|0.54 0.11 255 */
+  --color-bot-teal: light-dark(#007c7c, #008282); /* 0.52|0.54 0.11 195 */
+  --color-bot-green: light-dark(#317a45, #38804b); /* 0.52|0.54 0.11 150 */
+  --color-bot-olive: light-dark(#677014, #6d761c); /* 0.52|0.54 0.11 115 */
+  --color-bot-amber: light-dark(#935a11, #9a5f1a); /* 0.52|0.54 0.11 65 */
+  --color-bot-rose: light-dark(#9d4b5a, #a45160); /* 0.52|0.54 0.11 10 */
+  --color-bot-plum: light-dark(#855290, #8b5896); /* 0.52|0.54 0.11 320 */
+  --color-bot-slate: light-dark(#5f6a7b, #656f81); /* 0.52|0.54 0.03 260 */
 
   /* Radius: only these exist (see docs/UI.md). Controls by height (sm, md,
      lg), then surfaces by role. Nested corners are concentric: inner radius =
@@ -820,6 +831,10 @@
     }
     & a {
       @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
+    }
+    /* Obsidian links Bica can't open: the link color, no underline. */
+    & .wikilink {
+      @apply text-accent;
     }
     & :not(pre) > code {
       @apply rounded-sm bg-well px-1 py-px font-mono text-[0.85em];

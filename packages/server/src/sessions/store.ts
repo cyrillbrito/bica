@@ -22,7 +22,7 @@ import {
   agentIdOf,
   parentOf,
 } from './session-doc';
-import { stuckOf, watchStuck } from './stuck';
+import { isStuck, watchStuck } from './stuck';
 
 export { SessionDoc, agentIdOf, parentOf };
 
@@ -48,26 +48,30 @@ export function load() {
   return (loaded ??= (async () => {
     const harness = await getHarness();
     let scheduled: ReturnType<typeof setTimeout> | undefined;
-    harness.subscribeCommits(({ changes }) => {
-      for (const change of changes) {
-        const id = touched(change);
-        if (id !== undefined) dirty.add(id);
-        // Automatic ones too. The prompt cache starts over anyway, so the next
-        // prompt takes a fresh memory index and project list (prompts.ts).
-        if (
-          change.type === 'entry' &&
-          CompactionEntry.is(change.value) &&
-          !subagents.has(change.value.conversationId)
-        )
-          void editSession(change.value.conversationId, (meta) => {
-            delete meta.memory;
-            delete meta.projects;
-          }).catch((error) => console.error('[sessions]', error));
-      }
-      scheduled ??= setTimeout(() => {
-        scheduled = undefined;
-        void sessions.refresh();
-      }, 250);
+    harness.observeCommits({
+      advance: ({ changes }) => {
+        for (const change of changes) {
+          const id = touched(change);
+          if (id !== undefined) dirty.add(id);
+          // Automatic ones too. The prompt cache starts over anyway, so the next
+          // prompt takes a fresh memory index and project list (prompts.ts).
+          if (
+            change.type === 'entry' &&
+            CompactionEntry.is(change.value) &&
+            !subagents.has(change.value.conversationId)
+          )
+            void editSession(change.value.conversationId, (meta) => {
+              delete meta.memory;
+              delete meta.projects;
+              delete meta.apps;
+            }).catch((error) => console.error('[sessions]', error));
+        }
+        scheduled ??= setTimeout(() => {
+          scheduled = undefined;
+          void sessions.refresh();
+        }, 250);
+      },
+      end: (end) => console.error('[sessions] commits ended', end),
     });
     await watchStuck(harness, (ids) => {
       for (const id of ids) dirty.add(id);
@@ -80,7 +84,17 @@ export function load() {
   }));
 }
 
-export async function listSessions(): Promise<SessionSummary[]> {
+// One read at a time: a second one would find `dirty` empty and return the
+// rows the first is still bringing up to date.
+let listing: Promise<unknown> = Promise.resolve();
+
+export function listSessions(): Promise<SessionSummary[]> {
+  const next = listing.then(readSessions);
+  listing = next.catch(() => {});
+  return next;
+}
+
+async function readSessions(): Promise<SessionSummary[]> {
   await load();
   const ids = [...dirty];
   dirty.clear();
@@ -124,16 +138,17 @@ export async function summarize(
   if (subagents.has(id)) return undefined;
   const harness = await getHarness();
   if (!(await harness.conversation(id, context))) return undefined;
-  const [meta, live, agent, newest, usage] = await Promise.all([
+  const [meta, live, agent, recent, usage] = await Promise.all([
     sessionMeta(id),
     harness.snapshot(LiveDoc, id, context),
     harness.snapshot(AgentDoc, id, context),
-    newestTurn(id),
+    newestEntries(id),
     harness.snapshot(UsageDoc, id, context),
   ]);
+  const newest = recent.findLast(isTurn);
   const createdAt = meta?.createdAt ?? 0;
-  let status = statusOf(live, newest);
-  const stuck = stuckOf(id);
+  let status = statusOf(live, recent);
+  const stuck = isStuck(id);
   // Its run would look busy for good.
   if (stuck && isBusy(status)) status = 'error';
   if (
@@ -162,8 +177,8 @@ export async function summarize(
     watchedBy: meta?.watchedBy ?? [],
     cleanedUp: meta?.cleanedUp ?? null,
     agent: agentIdOf(meta),
+    bot: meta?.bot ?? null,
     voice: meta?.voice ?? null,
-    tonight: meta?.tonight || null,
     stuck,
     cost: costOf(usage),
   };
@@ -230,10 +245,11 @@ export async function newestEntry(id: ConversationId) {
 }
 
 /** The newest entry from the agent or a prompt: voice lines don't set the status. */
-async function newestTurn(id: ConversationId) {
+/** The newest 50 entries, oldest first. */
+async function newestEntries(id: ConversationId) {
   const conversation = await (await getHarness()).conversation(id, context);
   const page = await conversation?.entries({}, 50, undefined, context);
-  return page?.items.find(isTurn);
+  return page?.items.toReversed() ?? [];
 }
 
 /** The session list now and whenever it changes. */

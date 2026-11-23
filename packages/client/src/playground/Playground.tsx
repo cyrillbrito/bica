@@ -28,6 +28,8 @@ import { Tag, type Tone } from '../ui/Tag';
 import TextArea from '../ui/TextArea';
 import { ThinkingLoader } from '../ui/ThinkingLoader';
 import StatusDot, { STATUS } from '../sessions/StatusDot';
+import BotMark from '../bots/BotMark';
+import { BOT_COLORS } from '@bica/shared/bots';
 import Working from '../sessions/Working';
 import { toast } from '../ui/Toast';
 import { Trend } from '../ui/Trend';
@@ -37,7 +39,6 @@ import {
   CompactIcon,
   CopyIcon,
   FolderIcon,
-  MoonIcon,
   PencilIcon,
   PlusIcon,
   PushIcon,
@@ -145,6 +146,19 @@ function Colors() {
           )}
         </For>
       </div>
+      <Row>
+        <For each={BOT_COLORS}>
+          {(color) => (
+            <span class="flex items-center gap-1.5 text-meta text-muted">
+              <BotMark bot={{ name: color, color }} />
+              <BotMark bot={{ name: color, color }} size="md" />
+              {color}
+            </span>
+          )}
+        </For>
+        <BotMark bot={{ name: '🦊 Fox', color: 'amber' }} />
+        <BotMark bot={{ name: '王秀英', color: 'rose' }} size="md" />
+      </Row>
       <Row>
         <For each={INKS}>
           {([name, cls]) => (
@@ -349,17 +363,12 @@ function Labels() {
       </Row>
       <div class="rounded-tray bg-panel p-1">
         <Strip
-          tone="accent"
-          icon={<MoonIcon />}
-          label="Runs tonight at 01:00"
-        />
-        <Strip
           tone="danger"
           icon={<AlertIcon />}
-          label="Paused after crashing Bica again and again"
+          label="Stuck: its code is gone from Bica"
           action={
             <Button size="sm" variant="outline">
-              Retry
+              Stop
             </Button>
           }
         />
@@ -397,7 +406,7 @@ function Overlays() {
               label: 'Agent',
               options: [
                 { id: 'coding', label: 'Coding' },
-                { id: 'assistant', label: 'Assistant' },
+                { id: 'bot', label: 'Bot' },
               ],
             },
           ]}

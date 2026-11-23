@@ -1,7 +1,8 @@
-import { BICA_HOME } from '../storage';
-import { readdir, readFile } from 'node:fs/promises';
+import { BICA_HOME, dataPath } from '../storage';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import artifacts from '../artifacts/SKILL.md' with { type: 'text' };
 
 // Agent Skills (https://agentskills.io): folders holding a SKILL.md with a
 // name and description. Only those two go into the instructions; the agent
@@ -13,7 +14,25 @@ export interface Skill {
   path: string;
 }
 
-/** Earlier folders win when two skills share a name: project over user. */
+// Skills that ship with Bica, by folder name. The agent reads a skill with
+// its own tools, which need a real file, and the `bica` binary holds these
+// only in memory, so each start writes them to the data folder.
+const BUNDLED: Record<string, string> = { artifacts };
+const BUNDLED_DIR = dataPath('bundled-skills');
+
+export async function installBundledSkills() {
+  for (const [name, text] of Object.entries(BUNDLED)) {
+    const path = join(BUNDLED_DIR, name, 'SKILL.md');
+    if ((await readFile(path, 'utf8').catch(() => null)) === text) continue;
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, text);
+  }
+}
+
+/**
+ * Earlier folders win when two skills share a name: project over user, and
+ * both over Bica's own, so a skill of the same name replaces it.
+ */
 function skillDirs(cwd: string) {
   const home = homedir();
   return [
@@ -23,6 +42,7 @@ function skillDirs(cwd: string) {
     join(home, '.agents/skills'),
     join(home, '.claude/skills'),
     join(BICA_HOME, 'skills'),
+    BUNDLED_DIR,
   ];
 }
 

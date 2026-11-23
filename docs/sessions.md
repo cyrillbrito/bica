@@ -6,7 +6,7 @@ Sessions run on Pi Durable, which saves every turn and tool call before anyone s
 
 ## Starting one
 
-The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. Run tonight, under the send button's chevron, holds the prompt for tonight's [night run](./night-runs.md) instead. The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
+The home page is the composer and nothing else: a model in it, and the project and workspace below it ([projects.md](./projects.md)). It starts the session with your first prompt. Schedule…, under the send button's chevron, starts it later or on a repeat instead ([schedules.md](./schedules.md)). The fast model names the session, and renaming by hand wins. Model and effort can change at any time, for that session only. Defaults live in Settings ([models.md](./models.md)).
 
 ## The transcript
 
@@ -21,7 +21,7 @@ The transcript shows your prompts with their images, the agent's replies, its th
 - Each new paragraph, list item, or code block of a streaming reply fades in as it starts, except in a catch-up.
 - While you're at the bottom, the transcript follows new lines on a spring instead of jumping, so a steady stream scrolls as one motion (`ui/stick-to-bottom.ts`, with the spring of StackBlitz's [use-stick-to-bottom](https://github.com/stackblitz-labs/use-stick-to-bottom)). Opening a session lands where you left it, for the tab's lifetime: at the end, following, if you were there, or at the same place otherwise. A session you haven't opened yet lands at the end at once.
 - Hover a reply to copy or fork it. Code blocks get their own copy button.
-- A ` ```mermaid ` block renders as a diagram once its fence closes, with the same renderer as `.mmd` files (`markdown/Mermaid.tsx`): hand-drawn, in the theme's colors. Mermaid loads on the first diagram. One that fails to parse shows as code, with the reason under it, so you can ask the agent to fix it. Every agent is told replies render Mermaid.
+- A ` ```mermaid ` block renders as a diagram once its fence closes, with the same renderer as `.mmd` files (`markdown/Mermaid.tsx`): hand-drawn, in the theme's colors. Mermaid loads on the first diagram. One that fails to parse shows as code, with the reason under it, so you can ask the agent to fix it. Every agent is told replies render Mermaid, links, and images, so a reply about a shop or a product can link it and show a picture.
 - Notes from Bica and messages from other sessions show as a quiet row with the sender.
 - Hide thinking, in Settings → Appearance, leaves thinking out on that device.
 
@@ -39,7 +39,7 @@ While the agent works, sending steers: the prompt joins the current run after th
 
 ## Other sessions
 
-Agents start and follow sessions of their own, which stay normal sessions you can open and write to. A session an agent started shows a "Parent in charge" strip, and one the hub watches a "Hub watching" strip. [orchestration.md](./orchestration.md) covers who leads a session and who hears of its runs.
+Agents start and follow sessions of their own, which stay normal sessions you can open and write to. A session an agent started shows a "Parent in charge" strip, and one another session watches, usually a [bot](./bots.md)'s, a "Watched by" strip. [orchestration.md](./orchestration.md) covers who leads a session and who hears of its runs.
 
 ## Composer
 
@@ -48,12 +48,13 @@ Agents start and follow sessions of their own, which stay normal sessions you ca
 - A long paste folds into a marker like `[Pasted text #1 · 40 lines]` and goes out in full.
 - A pasted, picked, or dropped image puts a marker like `[Image #1]` at the caret, and its thumbnail shows the same number. The model gets each image right after its marker, so you can talk about images in order, as with Claude Code's `[Image #N]`. Removing the thumbnail removes the marker, and one Backspace right after a marker removes it with its image, as in Codex. An image whose marker you edit away goes after the text.
 - An image shows at once, dimmed with a spinner, while the browser shrinks it, which takes seconds for a phone photo. While a prompt's images upload, the send button spins.
-- The server saves each sent image as a file in the data folder's `attachments/`, named by its content hash, and the prompt gives the agent its path right after the image. The model sees the pixels, and its tools can hand the file to a script, such as a barcode reader. Codex does the same with a [`<local_image path=…>`](https://github.com/openai/codex/issues/40595) tag next to each image.
+- The server saves each sent image as a file in the data folder's `attachments/`, named by its content hash, and the prompt gives the agent its path right after the image. The model sees the pixels, and its tools can hand the file to a script, such as a barcode reader. Codex does the same with a [`<local_image path=…>`](https://github.com/openai/codex/issues/40595) tag next to each image, and Claude Code with an `[Image: source: …]` line. The note says the image is the one above, so the agent doesn't open the file just to look and pay for the image twice.
+- The files are never cleaned up, since sessions are never deleted, and an identical image sent twice is one file. They are copies: the session keeps each image too, so deleting `attachments/` while Bica is stopped loses nothing: each session saves its images again the first time it opens.
 - The transcript names the file instead of carrying the image, and the browser loads it over HTTP at `/attachment/<name>` and keeps it for good. Older images are saved the first time their session opens.
 
 ## Forks
 
-A fork is a new session with another one's history up to a chosen reply. It runs in the same workspace, so files are shared, not rolled back. It keeps the project, agent, and voice of the original, and it is yours: it has no [parent](./orchestration.md).
+A fork is a new session with another one's history up to a chosen reply. It runs in the same workspace, so files are shared, not rolled back. It keeps the project, agent, and voice of the original, and it is yours: it has no [parent](./orchestration.md). A bot's own session can't be renamed, forked, or archived; Start a new session in its menu replaces it instead ([bots.md](./bots.md#its-session)).
 
 ## Status
 
@@ -61,20 +62,20 @@ Each session in the sidebar shows its status:
 
 - Running: the agent is working.
 - Retrying: the provider failed, and Pi Durable will try again.
-- Failed: the last run ended in an error, or its work is stuck.
-- Waiting for you: the agent asked a question.
+- Failed: the last run ended in an error or without an answer, or its work is stuck.
+- Waiting for you: the agent asked a question, or a call waits for your approval ([requests.md](./requests.md)).
 - Unread: finished with a reply you haven't opened.
 - Idle: everything else.
 
 The right end of a row shows a live clock while it runs, in one unit like `3m` (hover for the exact time), a tag when it needs you, or how long ago it last moved. Needs you means waiting for you, unread, or failed, in that order of urgency (`packages/shared/src/status.ts`). Tabs on top of the sidebar filter to All or Active: what needs you, what runs, and any session that moved in the last few minutes.
 
-Work is stuck when Pi Durable won't run it. Work that was cut off by crashes too many times in a row, such as a tool that runs Bica out of memory, is paused instead of crashing Bica again. Work whose code is gone from Bica, such as a removed extension's tool, can't run at all. A strip above the composer says which, with Retry for paused work. Stop ends either.
+A run that ends without an answer says why at the end of the transcript (`pi.live.runFailure`), such as a step that crashed Bica too often in a row, or a model that's gone. A new prompt runs again. Work is stuck when its code is gone from Bica, such as a removed extension's tool: Pi Durable can't run it, so a strip above the composer says so, and Stop ends it.
 
 Read state lives on the server, so opening a session on the phone marks it read on the laptop too. A chime plays when a session stops, different for done, asking, and failed. The installed app's icon shows a badge with the sessions that need you (`packages/client/src/sessions/alerts.ts`).
 
 ## Session actions
 
-A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `packages/client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, assistant mode on or off, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
+A session's row menu in the sidebar, ⌘K's This session group, and the ⋯ menu in the session's top bar offer the same actions, from one list in `packages/client/src/sessions/actions.tsx`: Stop, Mark as read or unread, Rename, Fork, Archive, Open in new tab, and Copy session ID. Each place leaves out what doesn't fit it: ⌘K hides actions that can't run now, and the top bar has no Open in new tab. The top bar's menu adds Voice settings.
 
 ## Archiving
 

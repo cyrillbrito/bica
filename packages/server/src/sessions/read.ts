@@ -1,6 +1,11 @@
-import type { ConversationId, Cursor } from '@earendil-works/pi-durable';
+import {
+  LiveDoc,
+  type ConversationId,
+  type Cursor,
+} from '@earendil-works/pi-durable';
 
-import type { Question } from '@bica/shared/transcript';
+import { requestOf } from '@bica/shared/requests';
+import { openRequests, type Question } from '@bica/shared/transcript';
 import { ASK } from '../tools/ask';
 import { context, getHarness } from '../harness';
 import { getConversation, listSessions, sessionMeta, summarize } from './store';
@@ -13,36 +18,70 @@ export function named(s: { id: string; title: string }) {
   return `"${s.title || 'Untitled'}" (session ${s.id})`;
 }
 
-/** A session's title, status, and last reply, as an agent reads it. */
+/**
+ * A session's title, status, last reply, and what it waits on the user for,
+ * as an agent, a note, or a call reads it.
+ */
 export async function readSession(id: string) {
   const { id: conversationId } = await getConversation(id);
   const s = await summarize(conversationId);
   if (!s) throw new Error(`No session ${id}`);
-  return { ...s, reply: await lastReply(conversationId) };
+  const [reply, waits] = await Promise.all([
+    lastReply(conversationId),
+    s.status === 'waiting' ? waitingOn(conversationId) : [],
+  ]);
+  return { ...s, reply, waits };
+}
+
+/**
+ * Each request the session waits on, in a line: its questions with their
+ * options, and its approval cards (docs/requests.md).
+ */
+async function waitingOn(id: ConversationId) {
+  const harness = await getHarness();
+  const conversation = await harness.conversation(id, context);
+  const [live, page] = await Promise.all([
+    harness.snapshot(LiveDoc, id, context),
+    // Newest first; an open request is among the last entries.
+    conversation?.entries({}, 20, undefined, context),
+  ]);
+  const entries = (page?.items ?? []).toReversed();
+  const open = openRequests(live, entries);
+  const lines: string[] = [];
+  for (const m of entries.flatMap((e) => e.model ?? [])) {
+    if (m.role === 'assistant')
+      for (const b of m.content)
+        if (b.type === 'toolCall' && b.name === ASK && open.has(b.id))
+          for (const q of (b.arguments as { questions?: Question[] })
+            .questions ?? [])
+            lines.push(
+              `Question: ${q.question} (${q.options.map((o) => (o.description ? `${o.label}: ${o.description}` : o.label)).join(' / ')})`,
+            );
+    const request =
+      m.role === 'toolResult' && open.has(m.toolCallId) && requestOf(m);
+    if (request && request !== 'question')
+      lines.push(
+        `Approval card: ${request.items.map((i) => i.tool ?? i.message).join(', ')}. It hasn't run, and only the user can approve it.`,
+      );
+  }
+  return lines;
 }
 
 /**
  * A session's last `count` messages, prompts and replies, oldest first,
- * without tool calls; and the `ask` questions it waits on, if any.
+ * without tool calls.
  */
 export async function recentMessages(id: string, count: number) {
   const conversation = await (
     await getHarness()
   ).conversation(Number(id) as ConversationId, context);
   const messages: { from: 'prompt' | 'reply'; text: string }[] = [];
-  let questions: Question[] | undefined;
   let cursor: Cursor | undefined;
   // ponytail: looks back at most 1,000 entries.
   for (let pages = 0; pages < 10 && messages.length < count; pages++) {
     const page = await conversation?.entries({}, 100, cursor, context);
     for (const entry of page?.items ?? [])
       for (const m of (entry.model ?? []).toReversed()) {
-        if (m.role === 'assistant')
-          questions ??= m.content.flatMap((b) =>
-            b.type === 'toolCall' && b.name === ASK
-              ? ((b.arguments as { questions?: Question[] }).questions ?? [])
-              : [],
-          );
         if (m.role !== 'assistant' && m.role !== 'user') continue;
         const text = textOf(m.content);
         if (text && messages.length < count)
@@ -54,7 +93,7 @@ export async function recentMessages(id: string, count: number) {
     cursor = page?.next;
     if (!cursor) break;
   }
-  return { messages: messages.toReversed(), questions: questions ?? [] };
+  return messages.toReversed();
 }
 
 /** Who sent a session's newest prompt: "user", "bica", or a session id. */

@@ -12,7 +12,7 @@ Browser (one socket per tab)                  Server (dev machine)
 
   subscribe   (sub, topic, params) ──▶        live state: session list,
   unsubscribe (sub)                ──▶        a conversation, git status,
-  snapshot    (sub, n, value)      ◀──        files, settings, terminals
+  snapshot    (sub, n, value)      ◀──        bots, files, settings, terminals
   changes     (sub, n, ops)        ◀──
 ```
 
@@ -20,7 +20,9 @@ A request asks once and gets one reply. A subscription, called a topic, gives a 
 
 ## Where live data comes from
 
-Pi Durable hands over a conversation once, then the exact changes from every save. Partial replies are saved several times a second, so the stream looks live.
+Pi Durable hands over a conversation once, then the exact changes from every save. Partial replies are shown several times a second, so the stream looks live, and stored about once a second.
+
+Pi's view of a conversation holds only its newest entries by default, so Bica asks for its whole history and cuts it at the newest compaction summary (`packages/server/src/sessions/active-view.ts`): the transcript, the status, and the context meter show what the model reads now.
 
 The browser gets a slimmer copy of the conversation (`packages/shared/src/projection.ts`). Tool calls keep their name, status, timing, and a one-line summary, and thoughts only that they exist and how long they took. Opening one asks the server for its full contents. So streamed tool output costs nothing until you open it. Its type is `ProjectedView`, with the documents the browser reads typed, so client code reads what is really sent. This follows [Pi Pocket's projection](https://github.com/TannerMidd/pi-pocket/blob/main/src/lib/projection.ts).
 

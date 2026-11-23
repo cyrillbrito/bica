@@ -46,13 +46,18 @@ export const folderName = baseName;
 
 export { CHATS_ID };
 
+/** A project's name, or "Ada's workspace" for a bot's workspace. */
+export function projectName(project: Pick<Project, 'name' | 'bot'>) {
+  return project.bot ? `${project.name}'s workspace` : project.name;
+}
+
 // The main folder is just "project": a label like "main" reads as the branch
 // and clashes with the branch line below it.
 /** "project" for the main folder, "project / folder" for a worktree. */
 export function workspaceName(project: Project, path: string) {
   const workspace = project.workspaces.find((w) => w.path === path);
-  if (workspace?.main || path === project.path) return project.name;
-  return `${project.name} / ${folderName(path)}`;
+  if (workspace?.main || path === project.path) return projectName(project);
+  return `${projectName(project)} / ${folderName(path)}`;
 }
 
 /** Where a session runs or ran: its workspace, or the branch of a worktree since removed. */
@@ -63,7 +68,7 @@ export function whereOf(
   const project = projects.find((p) => p.id === s.projectId);
   if (!project) return undefined;
   if (s.cleanedUp?.branch) return `${project.name} / ${s.cleanedUp.branch}`;
-  if (project.id === CHATS_ID || !s.cwd) return project.name;
+  if (project.id === CHATS_ID || !s.cwd) return projectName(project);
   return workspaceName(project, s.cwd);
 }
 

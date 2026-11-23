@@ -3,14 +3,13 @@ import { useLocation } from '@solidjs/router';
 import { For, Show, createEffect } from 'solid-js';
 
 import Accounts from '../models/Accounts';
+import ConnectedApps from '../connectors/ConnectedApps';
 import { Card, Setting, Toggle } from '../ui/Card';
 import Alert from '../ui/Alert';
 import { Button } from '../ui/Button';
 import ModelFavorites from '../models/ModelFavorites';
 import ModelPicker from '../models/ModelPicker';
 import TopBar from '../app/TopBar';
-import Input from '../ui/Input';
-import { toast } from '../ui/Toast';
 import { Segmented, segmentClass } from '../ui/Segmented';
 import {
   MODE_LABELS,
@@ -128,6 +127,10 @@ export default function Settings() {
             <Accounts />
           </div>
 
+          <div id="connectors">
+            <ConnectedApps />
+          </div>
+
           <Card title="Models">
             <Show when={!hasKey()}>
               <div class="p-2">
@@ -205,65 +208,7 @@ export default function Settings() {
 
           <ModelFavorites />
 
-          <div id="hub">
-            <Card
-              title="Hub"
-              description="The session that coordinates the others."
-            >
-              <Setting
-                label="Hub folder"
-                hint="Where the hub keeps its memory files, such as a folder in your notes vault. It starts once this is set."
-              >
-                <Input
-                  class="h-8 w-64 max-w-full touch:h-11"
-                  placeholder="~/Vault/Hub"
-                  aria-label="Hub folder"
-                  value={settings().hubFolder ?? ''}
-                  onChange={(e) =>
-                    void updateSettings({
-                      hubFolder: e.currentTarget.value || null,
-                    }).catch((error: unknown) => toast.error(error))
-                  }
-                />
-              </Setting>
-              <Setting
-                label="Model"
-                hint="Unset, it runs Claude Sonnet 5.5 through Anthropic at low effort."
-              >
-                <ModelPicker
-                  provider
-                  empty="Unset"
-                  value={settings().hubModel ?? undefined}
-                  onChange={(hubModel) => void updateSettings({ hubModel })}
-                />
-                <Show when={settings().hubModel}>
-                  <Button
-                    size="sm"
-                    onClick={() => void updateSettings({ hubModel: null })}
-                  >
-                    Clear
-                  </Button>
-                </Show>
-              </Setting>
-            </Card>
-          </div>
-
           <Card title="Behavior">
-            <Setting
-              label="Night runs start at"
-              hint="Sessions held for tonight start one at a time from then, for 5 hours, while the plan has 20% of its week left. Pick a time at least 5 hours before your day starts, so its window is fresh."
-            >
-              <Input
-                type="time"
-                class="h-7"
-                value={settings().nightStart}
-                onChange={(e) =>
-                  void updateSettings({
-                    nightStart: e.currentTarget.value,
-                  }).catch((error) => toast.error(error))
-                }
-              />
-            </Setting>
             <Toggle
               label="Stage on view"
               hint="Opening a diff under Changes stages the file. Staged is what you reviewed; whatever the agent writes after shows up under Changes again."

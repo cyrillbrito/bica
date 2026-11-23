@@ -2,9 +2,9 @@
 
 Every page has three parts: the sidebar on the left, the page itself in the centre, and the side panel on the right.
 
-- The sidebar lists the hub, your projects and their workspaces, and each workspace's sessions, terminals, and kept files ([projects.md](./projects.md)).
-- The centre shows what you opened: a session, a workspace page with a file or diff ([files.md](./files.md)), a terminal, or Settings.
-- The side panel shows the open workspace in two tabs, Files and Git ([git.md](./git.md)). Hub sessions don't work in a project, so they have no side panel.
+- The sidebar lists Artifacts, your [bots](./bots.md), your projects and their workspaces, and each workspace's sessions, terminals, and kept files ([projects.md](./projects.md)).
+- The centre shows what you opened: a session, a workspace page with a file or diff ([files.md](./files.md)), an artifact ([artifacts.md](./artifacts.md)), a terminal, or Settings.
+- The side panel shows the open workspace in two tabs, Files and Git ([git.md](./git.md)). A bot's session and artifacts belong to no project, so their pages have no side panel.
 
 ## On each screen
 

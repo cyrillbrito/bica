@@ -1,9 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AgentId } from '@bica/shared/agents';
-import type { ModelChoice, ThinkingLevel } from '@bica/shared/protocol';
+import type { Bot, ModelChoice, ThinkingLevel } from '@bica/shared/protocol';
 import { BICA_HOME } from '../storage';
-import { CHATS_ID, listProjects } from '../projects/projects';
 
 // What every agent is made of, and the parts they share (docs/agents.md).
 // Each agent is one file next to this one, registered in registry.ts.
@@ -11,8 +10,8 @@ import { CHATS_ID, listProjects } from '../projects/projects';
 /**
  * The prompt's sections, in the order they render. First the Pi coding
  * agent's default prompt (preamble, tools, rules, project context, skills,
- * cwd), then what makes the agent different, so switching between Coding,
- * Assistant, and Night keeps most of the prompt cache. `replies` renders
+ * cwd), then what makes the agent different, so switching agents keeps
+ * most of the prompt cache. `replies` renders
  * last, after every tool's own section (registry.ts).
  */
 // Pi's order, with the tool sections (codemode) between the rules and the
@@ -21,9 +20,11 @@ import { CHATS_ID, listProjects } from '../projects/projects';
 export const HEAD_SECTIONS = ['preamble', 'tools', 'rules'] as const;
 export const TAIL_SECTIONS = [
   'project_context',
+  'bot',
   'memory',
   'projects',
   'skills',
+  'artifacts',
   'cwd',
   'handoffs',
   'long_lived',
@@ -46,16 +47,33 @@ export type ExtensionName =
   | 'session-tools'
   | 'ask'
   | 'codemode'
-  | 'hub-file-tools'
-  | 'hub-session-tools'
-  | 'hub-terminal-tools';
+  | 'connectors';
 
-/** What a section reads: the session's tools, folder, and kept copies. */
+/**
+ * What a section reads: the session's tools, folder, and kept copies, and
+ * for a bot's session, the bot.
+ */
 export interface SectionInput {
   tools: readonly string[];
   cwd: string;
   memory?: string;
   projects?: string;
+  bot?: Bot;
+}
+
+/** What an agent's voice brief reads: the session's folder, and its bot. */
+export type VoiceInput = Pick<SectionInput, 'cwd' | 'bot'>;
+
+/**
+ * What a voice call on a session of this agent is told on top of the call's
+ * own rules (server/src/voice/voice.ts), which know nothing of agents.
+ */
+export interface VoiceBrief {
+  // Who the voice is to the user, and what they talk to it about.
+  identity: string;
+  // Names the user may say, most likely first, so the voice hears and
+  // spells them right. The call cuts the list to fit.
+  names: string[];
 }
 
 type Rendered = string | null | undefined;
@@ -65,7 +83,7 @@ export type Section =
 
 /**
  * What goes into a session that runs as this agent, and nothing else: what
- * Bica does around its sessions, such as housekeeping or night runs, keys on its
+ * Bica does around its sessions, such as housekeeping, keys on its
  * id instead (docs/agents.md). Label and description are shared/src/agents.ts.
  */
 export interface Agent {
@@ -84,10 +102,16 @@ export interface Agent {
   // Lists the skills found for its folder (skills.ts).
   skills: boolean;
   // Its instructions, by prompt section. A key it leaves out isn't rendered.
-  // Not `skills` or `long_lived`: the `skills` flag and isLongLived give those.
+  // Not `skills` or `artifacts`: the `skills` flag gives those.
   sections: Partial<
-    Record<Exclude<SectionKey, 'skills' | 'long_lived'>, Section>
+    Record<Exclude<SectionKey, 'skills' | 'artifacts'>, Section>
   >;
+  // What its prompt shows as copies, the `memory` and `projects` sections:
+  // taken at the first prompt and after each compaction, so edits in
+  // between don't break the prompt cache (sessions/prompts.ts).
+  copies?: (cwd: string) => Promise<{ memory: string; projects: string }>;
+  // Its voice on a call (docs/voice.md).
+  voice: (s: VoiceInput) => Promise<VoiceBrief>;
 }
 
 // The opening of every prompt, around the agent's own first lines. Pi
@@ -165,13 +189,17 @@ const TOOL_GUIDE: { tools: string[]; line: string; rules?: string[] }[] = [
     tools: ['session_watch'],
     line: 'Hear each turn a session ends, until you stop',
   },
+  {
+    tools: ['schedule'],
+    line: 'Reminders and routines: a prompt that fires later, once or on a repeat',
+  },
   { tools: ['ask'], line: 'Put multiple-choice questions to the user' },
 ];
 
 function guide(s: SectionInput) {
   return TOOL_GUIDE.flatMap((g) => {
     const tools = g.tools.filter((t) => s.tools.includes(t));
-    // A group's rules are about all of its tools, e.g. the hub's terminal_read
+    // A group's rules are about all of its tools, e.g. a bot's terminal_read
     // alone doesn't start terminals.
     const rules = tools.length === g.tools.length ? g.rules : undefined;
     return tools.length ? [{ ...g, tools, rules }] : [];
@@ -190,7 +218,6 @@ export const BASE_SECTIONS = {
       .map((r) => `- ${r}`)
       .join('\n') || null,
   project_context: (s) => projectContext(s.cwd),
-  memory: (s) => s.memory,
   cwd: (s) => s.cwd,
 } satisfies Agent['sections'];
 
@@ -199,7 +226,8 @@ export const BASE_SECTIONS = {
 // where softer wording didn't. Replies render last so the long AGENTS.md
 // doesn't bury them.
 export const STYLE = `- Write the way a colleague talks: plain words, full sentences, one idea per sentence. Say what a thing is before naming it, and what code does, not how it feels. Give numbers only when they are the answer.
-- Replies render as Markdown, drafts included, so use Markdown syntax for lists and formatting. Mermaid renders too: when a flow, structure, or sequence is easier seen than read, draw it in a \`mermaid\` fenced block. Keep it small and top-down (\`flowchart TD\`), quote labels with brackets in them (\`A["run (once)"]\`), and still say the point in words.`;
+- Replies render as Markdown, drafts included, so use Markdown syntax for lists and formatting. Mermaid renders too: when a flow, structure, or sequence is easier seen than read, draw it in a \`mermaid\` fenced block. Keep it small and top-down (\`flowchart TD\`), quote labels with brackets in them (\`A["run (once)"]\`), and still say the point in words.
+- Replies render links and images too: when you name a shop, product, place, or page, link it, and show a picture with \`![alt](url)\` when it helps, using a real URL you found, never a guessed one.`;
 
 /** Code and paths, for a reader who looks at the reply. */
 export const QUOTE_EXACTLY = `- Use inline code for code, paths, and commands, and fenced blocks for snippets. Quote code, paths, commands, and errors exactly.`;
@@ -217,68 +245,6 @@ ${lines.join('\n')}
 - Go longer only when they ask you to explain, walk through, or plan, and still answer first. Before anything destructive or irreversible, say what will happen and confirm.
 
 Before sending, cut an opening that announces and a closing that recaps or offers more help, and end with at most one question or next step. The first and last lines alone should say what happened and what to do next.`;
-}
-
-// For agents that hand work to child sessions, assistant and hub: what makes
-// a child session's start and report work without the conversation behind them
-// (docs/hub.md, Sources).
-export const HANDOFFS = `Handoffs to other sessions:
-- A session_start prompt stands alone, like a ticket: the goal, the files and findings it needs, the boundaries (what not to touch, when to ask, and no merging, pushing, or committing to main unless the user asked), what done looks like, and the report it ends with: status, result, the checks it ran and couldn't run, where long output went, and what it needs next.
-- When a child session finishes, check its report against the ticket before you call it done.
-- One session per thread: continue a thread with session_send to its session, so its context stays warm. Code work gets its own worktree (\`worktree: true\`).`;
-
-// For the long-lived agents, assistant and hub, which Bica keeps small while
-// idle (server/src/sessions/housekeeping.ts): the files are the long-term memory,
-// and replies carry what pruning would otherwise take away.
-export const LONG_LIVED = `This session lasts weeks or months. Bica clears old tool output and compacts older turns on its own, so the memory files are the long-term record:
-- Search them before relying on anything from earlier, and say so when they hold nothing.
-- Write decisions, preferences, open tasks, and lasting facts in the same reply they come up in, and quick notes the user dictates where they belong. Keep what they said or you verified and that will still matter in months. Let moods, one-off details, and guesses go.
-- Replace a line that changed instead of adding one, and split a note that grows too long, leaving a one-line pointer in the index.
-- Say in your reply what you learned from tools that matters later: their output gets cleared.`;
-
-// The memory index, loaded with the instructions so the agent never has to
-// remember to read it. The first name found wins.
-const MEMORY_FILES = ['MEMORY.md', 'PROFILE.md'];
-const MEMORY_LIMIT = 8_000;
-
-/**
- * The memory index in `cwd`, as an instructions section, or '' when there is
- * none. Taken once and kept until the next compaction (server/src/sessions/prompts.ts),
- * because the agent edits it mid-session and each change would break the
- * prompt cache.
- */
-export async function loadMemory(cwd: string) {
-  for (const name of MEMORY_FILES) {
-    const path = join(cwd, name);
-    const text = (await readFile(path, 'utf8').catch(() => null))?.trim();
-    if (!text) continue;
-    // Cut loudly, never silently: the agent should know it sees only part.
-    const body =
-      text.length > MEMORY_LIMIT
-        ? `${text.slice(0, MEMORY_LIMIT)}\n\n[Cut at ${MEMORY_LIMIT} of ${text.length} characters. Read the file for the rest, and make it shorter.]`
-        : text;
-    return `This is ${path} as it was when this session started or last compacted. Your edits since then are in the file, not here.\n\n<memory_file path="${path}">\n${body}\n</memory_file>`;
-  }
-  return '';
-}
-
-/**
- * Every project with its main folder and worktrees, for an agent with a
- * `projects` section. Taken with the memory index, at the start and after
- * each compaction, so it doesn't break the prompt cache; `list` has the live
- * state.
- */
-export async function projectList() {
-  const lines = (await listProjects())
-    .filter((p) => p.id !== CHATS_ID)
-    .flatMap((p) => [
-      `- ${p.name}`,
-      ...p.workspaces.map(
-        (w) =>
-          `  - ${w.main ? 'main' : `worktree ${w.branch ?? '(detached)'}`}: ${w.path}`,
-      ),
-    ]);
-  return `Bica's projects as they were when this session started or last compacted. Pass one of these paths as session_start's \`folder\`. \`list\` shows what changed since, and every session's status.\n\n${lines.join('\n')}`;
 }
 
 // Same names and order as the Pi coding agent.
@@ -304,10 +270,11 @@ async function contextFile(dir: string) {
  * Like Pi: the user's own `~/.bica/AGENTS.md` first, for every project, then
  * one file per folder from the root down to `cwd`, so the nearest comes last.
  * A copy with the same text is skipped, as in a worktree nested in its repo.
+ * Without `cwd`, the user's own file alone.
  */
-async function projectContext(cwd: string) {
+export async function projectContext(cwd?: string) {
   const dirs = [];
-  for (let dir = cwd; ; dir = dirname(dir)) {
+  for (let dir = cwd; dir; dir = dirname(dir)) {
     dirs.unshift(dir);
     if (dirname(dir) === dir) break;
   }
